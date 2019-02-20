@@ -58,11 +58,11 @@ It will produce an output similar to the following.
 
 The tool will *unroll* the assembler code multiple times, i.e., it will create multiple copies of it. The results are averages per copy of the assembler code for multiple runs of the entire generated code sequence.
 
-The config file contains the required information for configuring the programmable performance counters with the desired events. We provide example configuration files for recent Intel and AMD microarchitectures in the `config` folder. When using the kernel-module, the config file must not be larger than 4kB.
+The config file contains the required information for configuring the programmable performance counters with the desired events. We provide example configuration files for recent Intel and AMD microarchitectures in the `config` folder. When using the kernel-module, the config file must not be larger than 4 kB.
 
 The assembler code sequence may use and modify any general-purpose or vector registers, including the stack pointer. There is no need to restore the registers to their original values at the end (unless the `-loop` or `-no_mem` options are used).
 
-R14, RDI, RSI, RSP, and RBP are initialized with addresses in a dedicated buffer (of about 2MB), that can be freely modified by the assembler code. The addresses in R14, RDI, RSI, RSP, and RBP are at least 4kB apart from each other.
+R14, RDI, RSI, RSP, and RBP are initialized with addresses in a dedicated memory area (of about 2 MB), that can be freely modified by the assembler code. The addresses in R14, RDI, RSI, RSP, and RBP are at least 4 kB apart from each other.
 
 All other registers have initially undefined values. They can, however, be initialized as shown in the following example.
 
