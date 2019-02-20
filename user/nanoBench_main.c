@@ -1,0 +1,299 @@
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <sched.h>
+#include <unistd.h>
+
+#include "../common/nanoBench.h"
+
+void print_usage() {
+    printf("\n");
+    printf("nanoBench usage:\n");
+    printf("\n");
+    printf("  -code <filename>:           Binary file containing the code to be benchmarked.\n");
+    printf("  -code_init <filename>:      Binary file containing code to be executed once in the beginning\n");
+    printf("  -config <filename>:         File with performance counter event specifications.\n");
+    printf("  -n_measurements <n>:        Number of times the measurements are repeated.\n");
+    printf("  -unroll_count <n>:          Number of copies of the benchmark code inside the inner loop.\n");
+    printf("  -loop_count <n>:            Number of iterations of the inner loop.\n");
+    printf("  -warm_up_count <n>:         Number of runs before the first measurement gets recorded.\n");
+    printf("  -initial_warm_up_count <n>: Number of runs before any measurement is performed.\n");
+    printf("  -avg:                       Selects the arithmetic mean as the aggregate function.\n");
+    printf("  -median:                    Selects the median as the aggregate function.\n");
+    printf("  -min:                       Selects the minimum as the aggregate function.\n");
+    printf("  -basic_mode:                Enables basic mode.\n");
+    printf("  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses.\n");
+    printf("  -verbose:                   Outputs the results of all performance counter readings.\n");
+    printf("  -cpu <n>:                   Pins the measurement thread to CPU n. \n");
+    printf("  -usr <n>:                   If 1, counts events at a privilege level greater than 0.\n");
+    printf("  -os <n>:                    If 1, counts events at a privilege level 0.\n");
+}
+
+size_t mmap_file(char* filename, char** content) {
+    int fd = open(filename, O_RDONLY);
+    size_t len = lseek(fd, 0, SEEK_END);
+    *content = mmap(0, len, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (*content == MAP_FAILED) {
+        fprintf(stderr, "Error reading %s\n", filename);
+        exit(1);
+    }
+    close(fd);
+    return len;
+}
+
+int main(int argc, char **argv) {
+    /*************************************
+     * Parse command-line options
+     ************************************/
+    char* config_file_name = NULL;
+    int usr = 1;
+    int os = 0;
+
+    struct option long_opts[] = {
+        {"code", required_argument, 0, 'c'},
+        {"code_init", required_argument, 0, 'i'},
+        {"config", required_argument, 0, 'f'},
+        {"n_measurements", required_argument, 0, 'n'},
+        {"unroll_count", required_argument, 0, 'u'},
+        {"loop_count", required_argument, 0, 'l'},
+        {"warm_up_count", required_argument, 0, 'w'},
+        {"initial_warm_up_count", required_argument, 0, 'a'},
+        {"avg", no_argument, &aggregate_function, AVG_20_80},
+        {"median", no_argument, &aggregate_function, MED},
+        {"min", no_argument, &aggregate_function, MIN},
+        {"basic_mode", no_argument, &basic_mode, 1},
+        {"no_mem", no_argument, &no_mem, 1},
+        {"verbose", no_argument, &verbose, 1},
+        {"cpu", required_argument, 0, 'p'},
+        {"usr", required_argument, 0, 'r'},
+        {"os", required_argument, 0, 's'},
+        {"help", no_argument, 0, 'h'},
+        {0, 0, 0, 0}
+    };
+
+    int option = 0;
+    while ((option = getopt_long_only(argc, argv, "", long_opts, NULL)) != -1) {
+        switch (option) {
+            case 0:
+                break;
+            case 'c':
+                code_length = mmap_file(optarg, &code);
+                break;
+            case 'i':
+                code_init_length = mmap_file(optarg, &code_init);
+                break;
+            case 'f': ;
+                config_file_name = optarg;
+                break;
+            case 'n':
+                n_measurements = atol(optarg);
+                break;
+            case 'u':
+                unroll_count = atol(optarg);
+                if (unroll_count <= 0) {
+                    fprintf(stderr, "Error: unroll_count must be > 0\n");
+                    return 1;
+                }
+                break;
+            case 'l':
+                loop_count = atol(optarg);
+                break;
+            case 'w':
+                warm_up_count = atol(optarg);
+                break;
+            case 'a':
+                initial_warm_up_count = atol(optarg);
+                break;
+            case 'p':
+                cpu = atol(optarg);
+                break;
+            case 'r':
+                usr = atoi(optarg);
+                break;
+            case 's':
+                os = atoi(optarg);
+                break;
+            default:
+                print_usage();
+                return 1;
+            }
+    }
+
+    /*************************************
+     * Check CPUID and parse config file
+     ************************************/
+    if (check_cpuid()) {
+        return 1;
+    }
+
+    if (config_file_name) {
+        char* config_mmap;
+        size_t len = mmap_file(config_file_name, &config_mmap);
+        pfc_config_file_content = calloc(len+1, sizeof(char));
+        memcpy(pfc_config_file_content, config_mmap, len);
+        parse_counter_configs();
+    }
+
+    /*************************************
+     * Pin thread to CPU
+     ************************************/
+    if (cpu == -1) {
+        cpu = sched_getcpu();
+    }
+
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+
+    if (sched_setaffinity(0, sizeof(cpu_set_t), &mask) == -1) {
+        fprintf(stderr, "Error: Could not pin thread to core %d\n", cpu);
+        return 1;
+    }
+
+    /*************************************
+     * Allocate memory
+     ************************************/
+    size_t runtime_code_length = code_init_length + (unroll_count)*code_length*2 + 10000;
+    posix_memalign((void**)&runtime_code, sysconf(_SC_PAGESIZE), runtime_code_length);
+    if (!runtime_code) {
+        fprintf(stderr, "Error: Failed to allocate memory for runtime_code\n");
+        return 1;
+    }
+    if (mprotect(runtime_code, runtime_code_length, (PROT_READ | PROT_WRITE |PROT_EXEC))) {
+        fprintf(stderr, "Error: mprotect failed\n");
+        return 1;
+    }
+
+    runtime_mem = malloc(2*1024*1024);
+    if(!runtime_mem){
+        fprintf(stderr, "Error: Could not allocate memory for runtime_mem\n");
+        return 1;
+    }
+
+    for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
+        measurement_results[i] = malloc(n_measurements*sizeof(int64_t));
+        measurement_results_base[i] = malloc(n_measurements*sizeof(int64_t));
+        if(!measurement_results[i] || !measurement_results_base[i]){
+            fprintf(stderr, "Error: Could not allocate memory for measurement_results\n");
+            return 1;
+        }
+    }
+
+    /*************************************
+     * Fixed-function counters
+     ************************************/
+    long base_unroll_count = (basic_mode?0:unroll_count);
+    long main_unroll_count = (basic_mode?unroll_count:2*unroll_count);
+    long base_loop_count = (basic_mode?0:loop_count);
+    long main_loop_count = loop_count;
+
+    char buf[100];
+    char* measurement_template;
+
+    if (is_AMD_CPU) {
+        if (no_mem) {
+            measurement_template = (char*)&measurement_RDTSC_template_noMem;
+        } else {
+            measurement_template = (char*)&measurement_RDTSC_template;
+        }
+    } else {
+        if (no_mem) {
+            measurement_template = (char*)&measurement_FF_template_Intel_noMem;
+        } else {
+            measurement_template = (char*)&measurement_FF_template_Intel;
+        }
+    }
+
+    run_warmup_experiment(measurement_template);
+
+    if (is_AMD_CPU) {
+        run_experiment(measurement_template, measurement_results_base, 1, base_unroll_count, base_loop_count);
+        run_experiment(measurement_template, measurement_results, 1, main_unroll_count, main_loop_count);
+
+        if (verbose) {
+            printf("\nRDTSC results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+            print_all_measurement_results(measurement_results_base, 1);
+            printf("RDTSC results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+            print_all_measurement_results(measurement_results, 1);
+        }
+
+        printf("%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
+    } else {
+        configure_perf_ctrs_FF(usr, os);
+
+        run_experiment(measurement_template, measurement_results_base, 4, base_unroll_count, base_loop_count);
+        run_experiment(measurement_template, measurement_results, 4, main_unroll_count, main_loop_count);
+
+        if (verbose) {
+            printf("\nRDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+            print_all_measurement_results(measurement_results_base, 4);
+            printf("RDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+            print_all_measurement_results(measurement_results, 4);
+        }
+
+        printf("%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
+        printf("%s", compute_result_str(buf, sizeof(buf), "Instructions retired", 1));
+        printf("%s", compute_result_str(buf, sizeof(buf), "Core cycles", 2));
+        printf("%s", compute_result_str(buf, sizeof(buf), "Reference cycles", 3));
+    }
+
+    /*************************************
+     * Programmable counters
+     ************************************/
+    if (is_AMD_CPU) {
+        if (no_mem) {
+            measurement_template = (char*)&measurement_template_AMD_noMem;
+        } else {
+            measurement_template = (char*)&measurement_template_AMD;
+        }
+    } else {
+        if (no_mem) {
+            measurement_template = (char*)&measurement_template_Intel_noMem;
+        } else {
+            measurement_template = (char*)&measurement_template_Intel;
+        }
+    }
+
+    for (size_t i=0; i<n_pfc_configs; i+=n_programmable_counters) {
+        size_t end = i + n_programmable_counters;
+        if (end > n_pfc_configs) {
+            end = n_pfc_configs;
+        }
+
+        configure_perf_ctrs_programmable(i, end, usr, os);
+
+        run_experiment(measurement_template, measurement_results_base, n_programmable_counters, base_unroll_count, base_loop_count);
+        run_experiment(measurement_template, measurement_results, n_programmable_counters, main_unroll_count, main_loop_count);
+
+        if (verbose) {
+            printf("\nProgrammable counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+            print_all_measurement_results(measurement_results_base, n_programmable_counters);
+            printf("Programmable counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+            print_all_measurement_results(measurement_results, n_programmable_counters);
+        }
+
+        for (int c=0; c < n_programmable_counters && i + c < n_pfc_configs; c++) {
+            if (!pfc_configs[i+c].invalid) printf("%s", compute_result_str(buf, sizeof(buf), pfc_configs[i+c].description, c));
+        }
+    }
+
+    /*************************************
+     * Cleanup
+     ************************************/
+    free(runtime_code);
+    free(runtime_mem);
+
+    for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
+        free(measurement_results[i]);
+        free(measurement_results_base[i]);
+    }
+
+    if (pfc_config_file_content) {
+        free(pfc_config_file_content);
+    }
+
+    return 0;
+}

@@ -1,0 +1,13 @@
+# Performance monitoring events for AMD Family 17h processors.
+# See Section 2.1.13.3 of AMD's "Preliminary Processor Programming Reference" (Apr. 2017)
+
+076.00 LsNotHaltedCyc
+0C0.00 ExRetInstr
+0C1.00 ExRetCops
+000.01 FpuPipeAssignment.Total0
+000.02 FpuPipeAssignment.Total1
+000.04 FpuPipeAssignment.Total2
+000.08 FpuPipeAssignment.Total3
+0C2.00 ExRetBrn
+0C3.00 ExRetBrnMisp
+040.00 LsDcAccesses
