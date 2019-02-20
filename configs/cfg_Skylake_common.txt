@@ -1,5 +1,5 @@
 # Performance monitoring events for processors based on Skylake, Kaby Lake and Coffee Lake microarchitectures.
-# Applies to processors with DisplayFamily_DisplayModel of 06_4EH and 06_5EH.
+# Applies to processors with DisplayFamily_DisplayModel of 06_4EH, 06_5EH, 06_8EH, and 06_9EH.
 # See Table 19-5 of Intel's "System Programming Guide" (Jan. 2019)
 
 0E.01 UOPS_ISSUED.ANY
