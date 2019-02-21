@@ -1,8 +1,10 @@
 # Catch all's
 *.cmd
 *.o
+*.o.ur-safe
 
 # Kernel ignore files/directories
+kernel/.cache.mk
 kernel/.tmp_versions/
 kernel/Module.symvers
 kernel/modules.order
