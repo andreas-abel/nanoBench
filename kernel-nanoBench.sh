@@ -71,6 +71,27 @@ while [ "$1" ]; do
     elif [[ "$1" == -avg* ]]; then
         echo "avg" > /sys/nb/agg
         shift
+    elif [[ "$1" == -h || "$1" == --help ]]; then
+        echo "kernel-nanoBench usage:"
+        echo
+        echo "  -code <filename>:           Binary file containing the code to be benchmarked."
+        echo "  -code_init <filename>:      Binary file containing code to be executed once in the beginning"
+        echo "  -config <filename>:         File with performance counter event specifications."
+        echo "  -n_measurements <n>:        Number of times the measurements are repeated."
+        echo "  -unroll_count <n>:          Number of copies of the benchmark code inside the inner loop."
+        echo "  -loop_count <n>:            Number of iterations of the inner loop."
+        echo "  -warm_up_count <n>:         Number of runs before the first measurement gets recorded."
+        echo "  -initial_warm_up_count <n>: Number of runs before any measurement is performed."
+        echo "  -avg:                       Selects the arithmetic mean as the aggregate function."
+        echo "  -median:                    Selects the median as the aggregate function."
+        echo "  -min:                       Selects the minimum as the aggregate function."
+        echo "  -basic_mode:                Enables basic mode."
+        echo "  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses."
+        echo "  -verbose:                   Outputs the results of all performance counter readings."
+        echo "  -cpu <n>:                   Pins the measurement thread to CPU n."
+        echo "  -usr <n>:                   If 1, counts events at a privilege level greater than 0."
+        echo "  -os <n>:                    If 1, counts events at a privilege level 0."
+        exit 0
     else
         echo "Invalid option: " "$1"
         exit 1
