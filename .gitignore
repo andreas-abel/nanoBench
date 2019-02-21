@@ -1,0 +1,13 @@
+# Catch all's
+*.cmd
+*.o
+
+# Kernel ignore files/directories
+kernel/.tmp_versions/
+kernel/Module.symvers
+kernel/modules.order
+kernel/nb.ko
+kernel/nb.mod.c
+
+# User ignore files
+user/nanoBench
