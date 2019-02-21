@@ -16,6 +16,8 @@ There are two variants of the tool: A user-space implementation and a kernel mod
     cd nanoBench
     make user
 
+*nanoBench might not work if Secure Boot is enabled. [Click here](https://askubuntu.com/a/762255/925982) for instructions on how to disable Secure Boot.*
+
 ### Kernel Module
 *Note: The following is not necessary if you would just like to use the user-space version.*
 

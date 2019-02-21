@@ -1,5 +1,5 @@
 // nanoBench
-//   
+//
 // Copyright (C) 2019 Andreas Abel
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of version 3 of the GNU Affero General Public License.
@@ -58,7 +58,7 @@ void build_cpuid_string(char* buf, unsigned int r0, unsigned int r1, unsigned in
 int check_cpuid() {
     unsigned int eax, ebx, ecx, edx;
     __cpuid(0, eax, ebx, ecx, edx);
-    
+
     char proc_vendor_string[17] = {0};
     build_cpuid_string(proc_vendor_string, ebx, edx, ecx, 0);
     print_user_verbose("Vendor ID: %s\n", proc_vendor_string);
@@ -71,7 +71,7 @@ int check_cpuid() {
     __cpuid(0x80000004, eax, ebx, ecx, edx);
     build_cpuid_string(proc_brand_string+32, eax, ebx, ecx, edx);
     print_user_verbose("Brand: %s\n", proc_brand_string);
-    
+
     __cpuid(0x01, eax, ebx, ecx, edx);
     unsigned int displ_family = ((eax >> 8) & 0xF);
     if (displ_family == 0x0F) {
@@ -85,9 +85,9 @@ int check_cpuid() {
     print_user_verbose("Stepping ID: %u\n", (eax & 0xF));
 
     if (strcmp(proc_vendor_string, "GenuineIntel") == 0) {
-        is_Intel_CPU = 1;        
+        is_Intel_CPU = 1;
         n_programmable_counters = 4;
-        
+
         __cpuid(0x0A, eax, ebx, ecx, edx);
         unsigned int perf_mon_ver = (eax & 0xFF);
         print_user_verbose("Performance monitoring version: %u\n", perf_mon_ver);
@@ -95,8 +95,8 @@ int check_cpuid() {
             print_error("Error: performance monitoring version >= 2 required\n");
             return 1;
         }
-        
-        unsigned int n_available_counters = ((eax >> 8) & 0xFF);        
+
+        unsigned int n_available_counters = ((eax >> 8) & 0xFF);
         print_user_verbose("Number of general-purpose performance counters: %u\n", n_available_counters);
         print_user_verbose("Bit widths of general-purpose performance counters: %u\n", ((eax >> 16) & 0xFF));
 
@@ -110,14 +110,14 @@ int check_cpuid() {
     } else {
         print_error("Error: unsupported CPU found\n");
         return 1;
-    }    
-    
+    }
+
     return 0;
 }
 
 void parse_counter_configs() {
     n_pfc_configs = 0;
-    
+
     char* line;
     char* next_line = pfc_config_file_content;
     while ((line = strsep(&next_line, "\n")) != NULL) {
@@ -137,19 +137,19 @@ void parse_counter_configs() {
         if (strlen(config_str) >= sizeof(buf)) {
             print_error("config string too long: %s\n", config_str);
             continue;
-        }        
+        }
         strcpy(buf, config_str);
-        
+
         char* tok = buf;
-                      
+
         char* evt_num = strsep(&tok, ".");
         nb_strtoul(evt_num, 16, &(pfc_configs[n_pfc_configs].evt_num));
-        
+
         if (!tok) {
             print_error("invalid configuration: %s\n", config_str);
             continue;
         }
-                    
+
         char* umask = strsep(&tok, ".");
         nb_strtoul(umask, 16, &(pfc_configs[n_pfc_configs].umask));
 
@@ -177,18 +177,18 @@ void parse_counter_configs() {
                     pfc_configs[n_pfc_configs] = pfc_configs[prev_n_pfc_configs];
                     pfc_configs[n_pfc_configs].invalid = 0;
                 }
-            } else if (!strncmp(ce, "CMSK=", 5)) {                
+            } else if (!strncmp(ce, "CMSK=", 5)) {
                 nb_strtoul(ce+5, 0, &(pfc_configs[n_pfc_configs].cmask));
-            } else if (!strncmp(ce, "MSR_3F6H=", 9)) {                
+            } else if (!strncmp(ce, "MSR_3F6H=", 9)) {
                 nb_strtoul(ce+9, 0, &(pfc_configs[n_pfc_configs].msr_3f6h));
-            } else if (!strncmp(ce, "MSR_PF=", 7)) {                
+            } else if (!strncmp(ce, "MSR_PF=", 7)) {
                 nb_strtoul(ce+7, 0, &(pfc_configs[n_pfc_configs].msr_pf));
-            } else if (!strncmp(ce, "MSR_RSP0=", 9)) {                
+            } else if (!strncmp(ce, "MSR_RSP0=", 9)) {
                 nb_strtoul(ce+9, 0, &(pfc_configs[n_pfc_configs].msr_rsp0));
-            } else if (!strncmp(ce, "MSR_RSP1=", 9)) {                
+            } else if (!strncmp(ce, "MSR_RSP1=", 9)) {
                 nb_strtoul(ce+9, 0, &(pfc_configs[n_pfc_configs].msr_rsp1));
-            }            
-        }        
+            }
+        }
         n_pfc_configs++;
     }
 }
@@ -197,14 +197,14 @@ void parse_counter_configs() {
 uint64_t read_value_from_cmd(char* cmd) {
     FILE* fp;
     if(!(fp = popen(cmd, "r"))){
-        printf("Error reading from \"%s\"\n", cmd);
+        print_error("Error reading from \"%s\"", cmd);
         return 0;
     }
-    
+
     char buf[20];
     fgets(buf, sizeof(buf), fp);
     pclose(fp);
-    
+
     uint64_t val;
     nb_strtoul(buf, 0, &val);
     return val;
@@ -214,9 +214,9 @@ uint64_t read_value_from_cmd(char* cmd) {
 uint64_t read_msr(unsigned int msr) {
     #ifdef __KERNEL__
         return native_read_msr(msr);
-    #else    
+    #else
         char cmd[50];
-        snprintf(cmd, sizeof(cmd), "rdmsr -c -p%d %#x", cpu, msr);                
+        snprintf(cmd, sizeof(cmd), "rdmsr -c -p%d %#x", cpu, msr);
         return read_value_from_cmd(cmd);
     #endif
 }
@@ -226,17 +226,20 @@ void write_msr(unsigned int msr, uint64_t value) {
         native_write_msr(msr, (uint32_t)value, (uint32_t)(value>>32));
     #else
         char cmd[50];
-        snprintf(cmd, sizeof(cmd), "wrmsr -a -p%d %#x %#lx", cpu, msr, value);
-        system(cmd);    
+        snprintf(cmd, sizeof(cmd), "wrmsr -p%d %#x %#lx", cpu, msr, value);
+        if (system(cmd)) {
+            print_error("\"%s\" failed. You may need to disable Secure Boot (see README.md).", cmd);
+            exit(1);
+        }
     #endif
 }
 
-void configure_perf_ctrs_FF(unsigned int usr, unsigned int os) {    
+void configure_perf_ctrs_FF(unsigned int usr, unsigned int os) {
     if (is_Intel_CPU) {
-        uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);        
+        uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
         global_ctrl |= ((uint64_t)7 << 32) | 15;
         write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
-                
+
         uint64_t fixed_ctrl = read_msr(MSR_IA32_FIXED_CTR_CTRL);
         // disable fixed counters
         fixed_ctrl &= ~((1 << 12) - 1);
@@ -252,12 +255,12 @@ void configure_perf_ctrs_FF(unsigned int usr, unsigned int os) {
     }
 }
 
-void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsigned int os) {  
+void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsigned int os) {
     if (is_Intel_CPU) {
-        uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);        
+        uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
         global_ctrl |= ((uint64_t)7 << 32) | 15;
         write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
-        
+
         for (int i=0; i<n_programmable_counters; i++) {
             uint64_t perfevtselx = read_msr(MSR_IA32_PERFEVTSEL0+i);
 
@@ -307,15 +310,15 @@ void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsi
         for (int i=0; i<n_programmable_counters; i++) {
             // clear
             write_msr(CORE_X86_MSR_PERF_CTR+(2*i), 0);
-            
+
             if (start+i >= end) {
                 write_msr(CORE_X86_MSR_PERF_CTL + (2*i), 0);
                 continue;
             }
-            
+
             struct pfc_config config = pfc_configs[start+i];
-            
-            uint64_t perf_ctl = 0;      
+
+            uint64_t perf_ctl = 0;
             perf_ctl |= ((config.evt_num) & 0xF00) << 24;
             perf_ctl |= (config.evt_num) & 0xFF;
             perf_ctl |= ((config.umask) & 0xFF) << 8;
@@ -324,8 +327,8 @@ void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsi
             perf_ctl |= (1ULL << 22);
             perf_ctl |= (config.edge << 18);
             perf_ctl |= (os << 17);
-            perf_ctl |= (usr << 16);            
-            
+            perf_ctl |= (usr << 16);
+
             write_msr(CORE_X86_MSR_PERF_CTL + (2*i), perf_ctl);
         }
     }
@@ -334,7 +337,7 @@ void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsi
 void create_runtime_code(char* measurement_template, long local_unroll_count, long local_loop_count) {
     int templateI = 0;
     int rci = 0;
-    
+
     while (!starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_TEMPLATE_END)) {
         if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_INIT)) {
             templateI += 8;
@@ -342,7 +345,7 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             rci += code_init_length;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_CODE)) {
             templateI += 8;
-            
+
             if (local_loop_count == 0) {
                 for (long i=0; i<local_unroll_count; i++) {
                     memcpy(&runtime_code[rci], code, code_length);
@@ -352,16 +355,16 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                 runtime_code[rci++] = '\x49'; runtime_code[rci++] = '\xC7'; runtime_code[rci++] = '\xC7';
                 *(int32_t*)(&runtime_code[rci]) = (int32_t)local_loop_count; rci += 4; // mov R15, local_loop_count
                 int rci_loop_start = rci;
-                
+
                 for (long i=0; i<local_unroll_count; i++) {
                     memcpy(&runtime_code[rci], code, code_length);
                     rci += code_length;
                 }
-                
+
                 runtime_code[rci++] = '\x49'; runtime_code[rci++] = '\xFF'; runtime_code[rci++] = '\xCF'; //dec R15
                 runtime_code[rci++] = '\x0F'; runtime_code[rci++] = '\x85';
                 *(int32_t*)(&runtime_code[rci]) = (int32_t)(rci_loop_start-rci-4); rci += 4; // jnz loop_start
-            }           
+            }
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC)) {
             *(void**)(&runtime_code[rci]) = pfc_mem;
             templateI += 8;
@@ -374,7 +377,7 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             *(void**)(&runtime_code[rci]) = runtime_mem;
             templateI += 8;
             rci += 8;
-        } else {            
+        } else {
             runtime_code[rci++] = measurement_template[templateI];
             templateI++;
         }
@@ -387,33 +390,33 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
 
 void run_warmup_experiment(char* measurement_template) {
     if (!initial_warm_up_count) return;
-    
+
     create_runtime_code(measurement_template, unroll_count, loop_count);
-    
-    for (int i=0; i<initial_warm_up_count; i++) {         
+
+    for (int i=0; i<initial_warm_up_count; i++) {
         ((void(*)(void))runtime_code)();
-    }    
+    }
 }
 
 void run_experiment(char* measurement_template, int64_t* results[], int n_counters, long local_unroll_count, long local_loop_count) {
     create_runtime_code(measurement_template, local_unroll_count, local_loop_count);
-    
+
     #ifdef __KERNEL__
-        get_cpu();     
+        get_cpu();
         unsigned long flags;
         raw_local_irq_save(flags);
     #endif
-    
+
     for (long ri=-warm_up_count; ri<n_measurements; ri++) {
-        ((void(*)(void))runtime_code)(); 
+        ((void(*)(void))runtime_code)();
 
         // ignore "warm-up" runs (ri<0), but don't execute different branches
         long ri_ = (ri>=0)?ri:0;
-        for (int c=0; c<n_counters; c++) {            
+        for (int c=0; c<n_counters; c++) {
                 results[c][ri_] = pfc_mem[c];
         }
     }
-    
+
     #ifdef __KERNEL__
         raw_local_irq_restore(flags);
         put_cpu();
@@ -423,26 +426,26 @@ void run_experiment(char* measurement_template, int64_t* results[], int n_counte
 char* compute_result_str(char* buf, size_t buf_len, char* desc, int counter) {
     int64_t agg = get_aggregate_value_100(measurement_results[counter], n_measurements);
     int64_t agg_base = get_aggregate_value_100(measurement_results_base[counter], n_measurements);
-    
+
     int64_t n_rep = loop_count * unroll_count;
     if (loop_count == 0) {
         n_rep = unroll_count;
     }
-    
+
     int64_t result = ((agg-agg_base) + n_rep/2)/n_rep;
-    
+
     snprintf(buf, buf_len, "%s: %s%lld.%.2lld\n", desc, (result<0?"-":""), ll_abs(result/100), ll_abs(result)%100);
     return buf;
 }
 
 int64_t get_aggregate_value_100(int64_t* values, size_t length) {
     if (aggregate_function == MIN) {
-        int64_t min = values[0];    
+        int64_t min = values[0];
         for (int i=0; i<length; i++) {
             if (values[i] < min) {
                 min = values[i];
             }
-        }        
+        }
         return min * 100;
     } else {
         qsort(values, length, sizeof(int64_t), cmpInt64);
@@ -453,8 +456,8 @@ int64_t get_aggregate_value_100(int64_t* values, size_t length) {
             int count = 0;
             for (int i=length/5; i<length-(length/5); i++, count++) {
                 sum += (values[i] * 100);
-            }            
-            return sum/count;   
+            }
+            return sum/count;
         } else {
             return values[length/2] * 100;
         }
@@ -475,17 +478,17 @@ long long ll_abs(long long val) {
 
 void print_all_measurement_results(int64_t* results[], int n_counters) {
     int run_padding = (n_measurements<=10?1:(n_measurements<=100?2:(n_measurements<=1000?3:4)));
-    
+
     size_t size = 120;
-    char buf[size];   
-    
+    char buf[size];
+
     sprintf(buf, "\t%*s      ", run_padding, "");
-    for (int c=0; c<n_counters; c++) {        
+    for (int c=0; c<n_counters; c++) {
         sprintf(buf + strlen(buf), "        Ctr%d", c);
     }
     print_verbose("%s\n", buf);
 
-    for (int i=0; i<n_measurements; i++) {        
+    for (int i=0; i<n_measurements; i++) {
         sprintf(buf, "\trun %*d: ", run_padding, i);
         for (int c=0; c<n_counters; c++) {
             sprintf(buf + strlen(buf), "%12lld", (long long)results[c][i]);
@@ -499,7 +502,7 @@ int starts_with_magic_bytes(char* c, int64_t magic_bytes) {
     return (*((int64_t*)c) == magic_bytes);
 }
 
-void measurement_template_Intel() { 
+void measurement_template_Intel() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -540,8 +543,8 @@ void measurement_template_Intel() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");    
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -568,7 +571,7 @@ void measurement_template_Intel() {
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_template_Intel_noMem() {   
+void measurement_template_Intel_noMem() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -595,8 +598,8 @@ void measurement_template_Intel_noMem() {
         "shl rdx, 32; or rdx, rax                \n"
         "sub r11, rdx                            \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    "); 
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -626,7 +629,7 @@ void measurement_template_Intel_noMem() {
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_template_AMD() {   
+void measurement_template_AMD() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -678,7 +681,7 @@ void measurement_template_AMD() {
         "pop rax;                                \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -710,10 +713,10 @@ void measurement_template_AMD() {
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
     RESTORE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_template_AMD_noMem() { 
+void measurement_template_AMD_noMem() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -750,8 +753,8 @@ void measurement_template_AMD_noMem() {
         "shl rdx, 32; or rdx, rax                \n"
         "sub r13, rdx                            \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    "); 
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -791,7 +794,7 @@ void measurement_template_AMD_noMem() {
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_FF_template_Intel() {  
+void measurement_FF_template_Intel() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -832,10 +835,10 @@ void measurement_FF_template_Intel() {
         "pop rax;                                \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
-        "lfence                                  \n"                
+        "lfence                                  \n"
         "mov rcx, 0x40000001                     \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
@@ -857,7 +860,7 @@ void measurement_FF_template_Intel() {
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_FF_template_Intel_noMem() {    
+void measurement_FF_template_Intel_noMem() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -884,7 +887,7 @@ void measurement_FF_template_Intel_noMem() {
         "sub r11, rdx                            \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -910,10 +913,10 @@ void measurement_FF_template_Intel_noMem() {
         "mov [r15+24], r10                       \n"
         ".att_syntax noprefix                    ");
     RESTORE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_FF_template_AMD() {    
+void measurement_FF_template_AMD() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -947,7 +950,7 @@ void measurement_FF_template_AMD() {
         "pop rax;                                \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -960,7 +963,7 @@ void measurement_FF_template_AMD() {
         "mov rcx, 0x000000E7                     \n"
         "lfence; rdmsr; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
-        "add [r15+8], rdx                        \n"        
+        "add [r15+8], rdx                        \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15], rdx                          \n"
@@ -991,7 +994,7 @@ void measurement_FF_template_AMD_noMem() {
         "sub r10, rdx                            \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -1015,7 +1018,7 @@ void measurement_FF_template_AMD_noMem() {
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_RDTSC_template() { 
+void measurement_RDTSC_template() {
     SAVE_REGS_FLAGS();
     INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
@@ -1039,7 +1042,7 @@ void measurement_RDTSC_template() {
         "pop rax;                                \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
@@ -1064,7 +1067,7 @@ void measurement_RDTSC_template_noMem() {
         "sub r8, rdx                             \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));   
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
