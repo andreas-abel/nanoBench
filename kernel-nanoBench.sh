@@ -71,8 +71,8 @@ while [ "$1" ]; do
     elif [[ "$1" == -avg* ]]; then
         echo "avg" > /sys/nb/agg
         shift
-    elif [[ "$1" == -h || "$1" == --help ]]; then
-        echo "kernel-nanoBench usage:"
+    elif [[ "$1" == -h* ]]; then
+        echo "kernel-nanoBench.sh usage:"
         echo
 	echo "  -asm <code>:                Assembler code string (in Intel syntax) to be benchmarked."
 	echo "  -asm_init <code>:           Assembler code string (in Intel syntax) to be executed once in the beginning"
@@ -92,7 +92,7 @@ while [ "$1" ]; do
         echo "  -verbose:                   Outputs the results of all performance counter readings."
         exit 0
     else
-        echo "Invalid option: " "$1"
+        echo "Invalid option: $1"
         exit 1
     fi
 done
