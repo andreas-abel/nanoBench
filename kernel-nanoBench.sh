@@ -74,6 +74,8 @@ while [ "$1" ]; do
     elif [[ "$1" == -h || "$1" == --help ]]; then
         echo "kernel-nanoBench usage:"
         echo
+	echo "  -asm <code>:                Assembler code string (in Intel syntax) to be benchmarked."
+	echo "  -asm_init <code>:           Assembler code string (in Intel syntax) to be executed once in the beginning"
         echo "  -code <filename>:           Binary file containing the code to be benchmarked."
         echo "  -code_init <filename>:      Binary file containing code to be executed once in the beginning"
         echo "  -config <filename>:         File with performance counter event specifications."
@@ -88,9 +90,6 @@ while [ "$1" ]; do
         echo "  -basic_mode:                Enables basic mode."
         echo "  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses."
         echo "  -verbose:                   Outputs the results of all performance counter readings."
-        echo "  -cpu <n>:                   Pins the measurement thread to CPU n."
-        echo "  -usr <n>:                   If 1, counts events at a privilege level greater than 0."
-        echo "  -os <n>:                    If 1, counts events at a privilege level 0."
         exit 0
     else
         echo "Invalid option: " "$1"
