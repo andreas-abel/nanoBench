@@ -73,6 +73,7 @@ while [ "$1" ]; do
         shift
     else
         echo "Invalid option: " "$1"
+        exit 1
     fi
 done
 
