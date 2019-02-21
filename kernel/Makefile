@@ -1,5 +1,14 @@
 MODULE_NAME = nb
 
+BUILD_DIR = /lib/modules/$(shell uname -r)/build
+HEADERS_EXIST = $(shell if [ -d "${BUILD_DIR}" ]; then echo "${BUILD_DIR}"; \
+                  else echo ""; fi)
+
+ifneq (${HEADERS_EXIST}, ${BUILD_DIR})
+  $(warning "Check you have linux headers installed")
+  $(error   "${BUILD_DIR} does not exist!")
+endif
+
 SRC := nb_km.c ../common/nanoBench.c
 
 $(MODULE_NAME)-objs += $(SRC:.c=.o)
@@ -17,4 +26,4 @@ all:
 clean:
 	rm -f ../common/*.o ../common/*.ur-safe
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
-	
+
