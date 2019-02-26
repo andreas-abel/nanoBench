@@ -34,7 +34,7 @@ while [ "$2" ]; do
         as asm-init.s -o asm-init.o || exit
         objcopy asm-init.o -O binary asm-init.bin
         args="$args -code_init asm-init.bin"
-        shift 2    
+        shift 2
     else
         args="$args $1"
         shift

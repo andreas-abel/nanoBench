@@ -1,5 +1,5 @@
 // nanoBench
-//   
+//
 // Copyright (C) 2019 Andreas Abel
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of version 3 of the GNU Affero General Public License.
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
         {"min", no_argument, &aggregate_function, MIN},
         {"basic_mode", no_argument, &basic_mode, 1},
         {"no_mem", no_argument, &no_mem, 1},
-        {"verbose", no_argument, &verbose, 1},        
+        {"verbose", no_argument, &verbose, 1},
         {"cpu", required_argument, 0, 'p'},
         {"usr", required_argument, 0, 'r'},
         {"os", required_argument, 0, 's'},
