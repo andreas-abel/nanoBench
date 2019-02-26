@@ -21,6 +21,7 @@ int no_mem = NO_MEM_DEFAULT;
 int basic_mode = BASIC_MODE_DEFAULT;
 int aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
 int verbose = VERBOSE_DEFAULT;
+int debug = DEBUG_DEFAULT;
 
 char* code = NULL;
 size_t code_length = 0;
@@ -361,9 +362,13 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                     rci += code_length;
                 }
 
-                runtime_code[rci++] = '\x49'; runtime_code[rci++] = '\xFF'; runtime_code[rci++] = '\xCF'; //dec R15
+                runtime_code[rci++] = '\x49'; runtime_code[rci++] = '\xFF'; runtime_code[rci++] = '\xCF'; // dec R15
                 runtime_code[rci++] = '\x0F'; runtime_code[rci++] = '\x85';
                 *(int32_t*)(&runtime_code[rci]) = (int32_t)(rci_loop_start-rci-4); rci += 4; // jnz loop_start
+            }
+
+            if (debug) {
+                runtime_code[rci++] = '\xCC'; // INT3
             }
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC)) {
             *(void**)(&runtime_code[rci]) = pfc_mem;
@@ -385,7 +390,7 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
     templateI += 8;
     do {
         runtime_code[rci++] = measurement_template[templateI++];
-    } while (measurement_template[templateI-1] != '\xc3'); // 0xc3 = ret
+    } while (measurement_template[templateI-1] != '\xC3'); // 0xC3 = ret
 }
 
 void run_warmup_experiment(char* measurement_template) {

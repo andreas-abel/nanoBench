@@ -138,7 +138,7 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | `-loop_count <n>`            | Number of iterations of the inner loop. If n>0, the code to be benchmarked **must not modify R15**, as this register contains the loop counter. If n=0, the instructions for the loop are omitted; the loop body is then executed once. `[Default: n=0]` |
 | `-warm_up_count <n>`         | Number of runs of the generated benchmark code sequence (in each invocation of `run(...)`) before the first measurement result gets recorded . This can, for example, be useful for excluding outliers due to cold caches.   `[Default: n=5]` |
 | `-initial_warm_up_count <n>` | Number of runs of the benchmark code sequence before the first invocation of `run(...)`. This can be useful for benchmarking instructions that require a warm-up period before they can execute at full speed, like [AVX2 instructions on some microarchitectures](https://www.agner.org/optimize/blog/read.php?i=415).  `[Default: n=0]` |
-| `-avg`                       |  Selects the arithmetic mean (excluding the top and bottom 20% of the values) as the aggregate function. `[This is the default]` |
+| `-avg`                       | Selects the arithmetic mean (excluding the top and bottom 20% of the values) as the aggregate function. `[This is the default]` |
 | `-median`                    | Selects the median as the aggregate function. |
 | `-min`                       | Selects the minimum as the aggregate function. |
 | `-basic_mode`                | The effect of this option is described in the [Generated Code](#generated-code) section. |
@@ -152,6 +152,7 @@ The following parameters are only supported by `nanoBench.sh`.
 | `-cpu <n>` | Pins the measurement thread to CPU n. `[Default: Pin the thread to the CPU it is currently running on.]` |
 | `-usr <n>` | If n=1, performance events are counted when the processor is operating at a privilege level greater than 0. `[Default: n=1]` |
 | `-os <n>`  | If n=1, performance events are counted when the processor is operating at privilege level 0.  `[Default: n=0]` |
+| `-debug`   | Enables the debug mode (see [below](#debug-mode)). |
 
 
 ## Performance Counter Config Files
@@ -163,6 +164,10 @@ The format of the entries in the configuration files is
     EvtSel.UMASK(.CMSK=...)(.AnyT)(.EDG)(.INV)(.CTR=...)(.MSR_3F6H=...)(.MSR_PF=...)(.MSR_RSP0=...)(.MSR_RSP1=...) Name
 
 You can find details on the meanings of the different parts of the entries in chapters 18 and 19 of [Intel's System Programming Guide](https://software.intel.com/sites/default/files/managed/a4/60/325384-sdm-vol-3abcd.pdf).
+
+## Debug Mode
+
+If the debug mode is enabled, the [generated code](#generated-code) contains a breakpoint right before the line `m2 = read_perf_ctrs`, and *nanoBench* is run using *gdb*. This makes it possible to analyze the effect of the code to be benchmarked on registers and on the memory. The command `info all-registers` can, for example, be used to display the current values of all registers.
 
 ## Supported Platforms
 

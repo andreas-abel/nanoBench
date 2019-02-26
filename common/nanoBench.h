@@ -110,6 +110,10 @@ extern int aggregate_function;
 extern int verbose;
 #define VERBOSE_DEFAULT 0;
 
+// Whether to generate a breakpoint trap after executing the code to be benchmarked.
+extern int debug;
+#define DEBUG_DEFAULT 0;
+
 extern char* code;
 extern size_t code_length;
 
@@ -262,6 +266,7 @@ void measurement_RDTSC_template_noMem(void);
         "mov r11, 0\n"                                    \
         "mov r12, 0\n"                                    \
         "mov r13, 0\n"                                    \
+        "mov r15, 0\n"                                    \
         "mov r14, rsp\n"                                  \
         "add r14, 0x1000\n"                               \
         "mov rdi, rsp\n"                                  \

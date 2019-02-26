@@ -41,6 +41,7 @@ void print_usage() {
     printf("  -cpu <n>:                   Pins the measurement thread to CPU n. \n");
     printf("  -usr <n>:                   If 1, counts events at a privilege level greater than 0.\n");
     printf("  -os <n>:                    If 1, counts events at a privilege level 0.\n");
+    printf("  -debug:                     Generate a breakpoint trap after running the code to be benchmarked.\n");
 }
 
 size_t mmap_file(char* filename, char** content) {
@@ -77,10 +78,11 @@ int main(int argc, char **argv) {
         {"min", no_argument, &aggregate_function, MIN},
         {"basic_mode", no_argument, &basic_mode, 1},
         {"no_mem", no_argument, &no_mem, 1},
-        {"verbose", no_argument, &verbose, 1},
+        {"verbose", no_argument, &verbose, 1},        
         {"cpu", required_argument, 0, 'p'},
         {"usr", required_argument, 0, 'r'},
         {"os", required_argument, 0, 's'},
+        {"debug", no_argument, &debug, 1},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };

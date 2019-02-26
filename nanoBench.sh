@@ -12,6 +12,13 @@ if ! command -v rdmsr &>/dev/null; then
     exit 1
 fi
 
+debug=false
+for p in "$@"; do
+    if [[ "$p" == -d* ]]; then
+        debug=true
+    fi
+done
+
 args=''
 while [ "$2" ]; do
     if [ "$1" == '-asm' ]; then
@@ -27,7 +34,7 @@ while [ "$2" ]; do
         as asm-init.s -o asm-init.o || exit
         objcopy asm-init.o -O binary asm-init.bin
         args="$args -code_init asm-init.bin"
-        shift 2
+        shift 2    
     else
         args="$args $1"
         shift
@@ -52,7 +59,11 @@ iTCO_vendor_support_prev_loaded=$?
 prev_nmi_watchdog=$(cat /proc/sys/kernel/nmi_watchdog)
 echo 0 > /proc/sys/kernel/nmi_watchdog
 
-user/nanoBench $@
+if [ "$debug" = true ]; then
+    gdb -ex=run --args user/nanoBench $@
+else
+    user/nanoBench $@
+fi
 
 rm -f asm-code.*
 rm -f asm-init.*
