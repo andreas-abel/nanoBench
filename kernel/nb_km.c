@@ -63,11 +63,15 @@ static ssize_t unroll_count_show(struct kobject *kobj, struct kobj_attribute *at
     return sprintf(buf, "%ld\n", unroll_count);
 }
 static ssize_t unroll_count_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    long old_unroll_count = unroll_count;
     sscanf(buf, "%ld", &unroll_count);
-    vfree(runtime_code);
-    runtime_code = __vmalloc(PAGE_SIZE + (unroll_count)*PAGE_SIZE*2 + 10000, GFP_KERNEL, PAGE_KERNEL_EXEC);
-    if (!runtime_code) {
-        pr_debug("failed to allocate executable memory\n");
+
+    if (old_unroll_count != unroll_count) {
+        vfree(runtime_code);
+        runtime_code = __vmalloc(PAGE_SIZE + (unroll_count)*PAGE_SIZE*2 + 10000, GFP_KERNEL, PAGE_KERNEL_EXEC);
+        if (!runtime_code) {
+            pr_debug("failed to allocate executable memory\n");
+        }
     }
     return count;
 }
@@ -86,10 +90,18 @@ static ssize_t n_measurements_show(struct kobject *kobj, struct kobj_attribute *
     return sprintf(buf, "%ld\n", n_measurements);
 }
 static ssize_t n_measurements_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    long old_n_measurements = n_measurements;
     sscanf(buf, "%ld", &n_measurements);
-    for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
-        kfree(measurement_results[i]);
-        measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
+    
+    if (old_n_measurements != n_measurements) {
+        for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
+            kfree(measurement_results[i]);
+            kfree(measurement_results_base[i]);
+            measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
+            measurement_results_base[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
+            memset(measurement_results[i], 0, n_measurements*sizeof(int64_t));
+            memset(measurement_results_base[i], 0, n_measurements*sizeof(int64_t));
+        }
     }
     return count;
 }
@@ -322,12 +334,14 @@ static int __init nb_init (void) {
     }
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
-        measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
+        measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);        
         measurement_results_base[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
         if(!measurement_results[i] || !measurement_results_base[i]){
             printk(KERN_ERR "Could not allocate memory for measurement_results\n");
             return -1;
         }
+        memset(measurement_results[i], 0, n_measurements*sizeof(int64_t));
+        memset(measurement_results_base[i], 0, n_measurements*sizeof(int64_t));
     }
 
     runtime_mem = kmalloc(2*1024*1024, GFP_KERNEL);
