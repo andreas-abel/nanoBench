@@ -14,6 +14,8 @@ fi
 
 cat /sys/nb/reset
 
+taskset=""
+
 while [ "$1" ]; do
     if [[ "$1" == -asm_init ]]; then
         echo ".intel_syntax noprefix" > asm-init.s
@@ -35,6 +37,9 @@ while [ "$1" ]; do
     elif [[ "$1" == -code ]]; then
         cp "$2" /sys/nb/code
         shift 2
+    elif [[ "$1" == -cpu ]]; then
+        taskset="taskset -c $2"
+        shift 2    
     elif [[ "$1" == -config ]]; then
         cp "$2" /sys/nb/config
         shift 2
@@ -89,7 +94,8 @@ while [ "$1" ]; do
         echo "  -min:                       Selects the minimum as the aggregate function."
         echo "  -basic_mode:                Enables basic mode."
         echo "  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses."
-        echo "  -verbose:                   Outputs the results of all performance counter readings."
+        echo "  -cpu <n>:                   Pins the measurement thread to CPU n."
+        echo "  -verbose:                   Outputs the results of all performance counter readings."        
         exit 0
     else
         echo "Invalid option: $1"
@@ -97,4 +103,4 @@ while [ "$1" ]; do
     fi
 done
 
-cat /sys/nb/run
+$taskset cat /sys/nb/run

@@ -143,13 +143,13 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | `-min`                       | Selects the minimum as the aggregate function. |
 | `-basic_mode`                | The effect of this option is described in the [Generated Code](#generated-code) section. |
 | `-no_mem`                    | If this option is enabled, the code for `read_perf_ctrs` does not make any memory accesses and stores all performance counter values in registers. This can, for example, be useful for benchmarks that require that the state of the data caches does not change after the execution of `code_init`. *If this option is used, the code to be benchmarked must not modify registers* ***R8-R11 (Intel)*** *and* ***R8-R13 (AMD).*** *Furthermore, `read_perf_ctrs` will modify* ***RAX, RCX, and RDX***. |
+| `-cpu <n>`                   | Pins the measurement thread to CPU n. `[Default: Pin the thread to the CPU it is currently running on.]` |
 | `-verbose`                   | Outputs the results of all performance counter readings. In the user-space version, the results are printed to stdout. The output of the kernel module can be accessed using `dmesg`. |
 
 The following parameters are only supported by `nanoBench.sh`.
 
 | Option     | Description |
 |------------|-------------|
-| `-cpu <n>` | Pins the measurement thread to CPU n. `[Default: Pin the thread to the CPU it is currently running on.]` |
 | `-usr <n>` | If n=1, performance events are counted when the processor is operating at a privilege level greater than 0. `[Default: n=1]` |
 | `-os <n>`  | If n=1, performance events are counted when the processor is operating at privilege level 0.  `[Default: n=0]` |
 | `-debug`   | Enables the debug mode (see [below](#debug-mode)). |
