@@ -1,5 +1,5 @@
 // nanoBench
-//   
+//
 // Copyright (C) 2019 Andreas Abel
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of version 3 of the GNU Affero General Public License.
@@ -92,7 +92,7 @@ static ssize_t n_measurements_show(struct kobject *kobj, struct kobj_attribute *
 static ssize_t n_measurements_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
     long old_n_measurements = n_measurements;
     sscanf(buf, "%ld", &n_measurements);
-    
+
     if (old_n_measurements != n_measurements) {
         for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
             kfree(measurement_results[i]);
@@ -316,27 +316,27 @@ static int __init nb_init (void) {
     }
 
     code = kmalloc(PAGE_SIZE, GFP_KERNEL);
-    if(!code){
+    if (!code) {
         printk(KERN_ERR "Could not allocate memory for code\n");
         return -1;
     }
 
     code_init = kmalloc(PAGE_SIZE, GFP_KERNEL);
-    if(!code_init){
+    if (!code_init) {
         printk(KERN_ERR "Could not allocate memory for code_init\n");
         return -1;
     }
 
     pfc_config_file_content = kmalloc(PAGE_SIZE+1, GFP_KERNEL);
-    if(!pfc_config_file_content){
+    if (!pfc_config_file_content) {
         printk(KERN_ERR "Could not allocate memory for pfc_config_file_content\n");
         return -1;
     }
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
-        measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);        
+        measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
         measurement_results_base[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
-        if(!measurement_results[i] || !measurement_results_base[i]){
+        if (!measurement_results[i] || !measurement_results_base[i]) {
             printk(KERN_ERR "Could not allocate memory for measurement_results\n");
             return -1;
         }
@@ -344,9 +344,14 @@ static int __init nb_init (void) {
         memset(measurement_results_base[i], 0, n_measurements*sizeof(int64_t));
     }
 
-    runtime_mem = kmalloc(2*1024*1024, GFP_KERNEL);
-    if(!runtime_mem){
-        printk(KERN_ERR "Could not allocate memory for runtime_mem\n");
+    // vmalloc addresses are page aligned
+    runtime_r14 = vmalloc(RUNTIME_R_SIZE);
+    runtime_rbp = vmalloc(RUNTIME_R_SIZE);
+    runtime_rdi = vmalloc(RUNTIME_R_SIZE);
+    runtime_rsi = vmalloc(RUNTIME_R_SIZE);
+    runtime_rsp = vmalloc(RUNTIME_R_SIZE);
+    if (!runtime_r14 || !runtime_rbp || !runtime_rdi || !runtime_rsi || !runtime_rsp) {
+        printk(KERN_ERR "Could not allocate memory for runtime_r*\n");
         return -1;
     }
 
@@ -357,7 +362,7 @@ static int __init nb_init (void) {
     }
 
     nb_kobject = kobject_create_and_add("nb", kernel_kobj->parent);
-    if(!nb_kobject) {
+    if (!nb_kobject) {
         pr_debug("failed to create and add nb\n");
         return -1;
     }
@@ -387,15 +392,19 @@ static int __init nb_init (void) {
 }
 
 static void __exit nb_exit (void) {
-    if (code) kfree(code);
-    if (code_init) kfree(code_init);
-    if (pfc_config_file_content) kfree(pfc_config_file_content);
-    if (runtime_code) vfree(runtime_code);
-    if (runtime_mem) kfree(runtime_mem);
+    kfree(code);
+    kfree(code_init);
+    kfree(pfc_config_file_content);
+    vfree(runtime_code);
+    vfree(runtime_r14);
+    vfree(runtime_rbp);
+    vfree(runtime_rdi);
+    vfree(runtime_rsi);
+    vfree(runtime_rsp);
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
-        if (measurement_results[i]) kfree(measurement_results[i]);
-        if (measurement_results_base[i]) kfree(measurement_results_base[i]);
+        kfree(measurement_results[i]);
+        kfree(measurement_results_base[i]);
     }
 
     kobject_put(nb_kobject);

@@ -40,7 +40,11 @@ int is_AMD_CPU = 0;
 int n_programmable_counters;
 
 char* runtime_code;
-void* runtime_mem;
+void* runtime_r14;
+void* runtime_rbp;
+void* runtime_rdi;
+void* runtime_rsi;
+void* runtime_rsp;
 int64_t pfc_mem[MAX_PROGRAMMABLE_COUNTERS];
 void* RSP_mem;
 
@@ -378,8 +382,24 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             *(void**)(&runtime_code[rci]) = &RSP_mem;
             templateI += 8;
             rci += 8;
-        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_MEM)) {
-            *(void**)(&runtime_code[rci]) = runtime_mem;
+        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_R14)) {
+            *(void**)(&runtime_code[rci]) = runtime_r14 + RUNTIME_R_SIZE/2;
+            templateI += 8;
+            rci += 8;
+        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RBP)) {
+            *(void**)(&runtime_code[rci]) = runtime_rbp + RUNTIME_R_SIZE/2;
+            templateI += 8;
+            rci += 8;
+        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RDI)) {
+            *(void**)(&runtime_code[rci]) = runtime_rdi + RUNTIME_R_SIZE/2;
+            templateI += 8;
+            rci += 8;
+        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RSI)) {
+            *(void**)(&runtime_code[rci]) = runtime_rsi + RUNTIME_R_SIZE/2;
+            templateI += 8;
+            rci += 8;
+        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RSP)) {
+            *(void**)(&runtime_code[rci]) = runtime_rsp + RUNTIME_R_SIZE/2;
             templateI += 8;
             rci += 8;
         } else {
@@ -509,14 +529,13 @@ int starts_with_magic_bytes(char* c, int64_t magic_bytes) {
 
 void measurement_template_Intel() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
-        "push rax                                \n"        
+        "push rax                                \n"
         "push rcx                                \n"
         "push rdx                                \n"
         "push r15                                \n"
@@ -547,7 +566,7 @@ void measurement_template_Intel() {
         "pop rcx; lfence                         \n"
         "pop rax; lfence                         \n"
         "cmp al, -127; lfence                    \n"
-        "sahf; lfence                            \n"        
+        "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
         ".att_syntax noprefix                    ");
@@ -580,7 +599,6 @@ void measurement_template_Intel() {
 
 void measurement_template_Intel_noMem() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
@@ -638,7 +656,6 @@ void measurement_template_Intel_noMem() {
 
 void measurement_template_AMD() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
@@ -727,7 +744,6 @@ void measurement_template_AMD() {
 
 void measurement_template_AMD_noMem() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
@@ -805,7 +821,6 @@ void measurement_template_AMD_noMem() {
 
 void measurement_FF_template_Intel() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
@@ -873,7 +888,6 @@ void measurement_FF_template_Intel() {
 
 void measurement_FF_template_Intel_noMem() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
@@ -929,11 +943,10 @@ void measurement_FF_template_Intel_noMem() {
 
 void measurement_FF_template_AMD() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
-        "push rax                                \n"        
+        "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
         "push rax                                \n"
@@ -989,7 +1002,6 @@ void measurement_FF_template_AMD() {
 
 void measurement_FF_template_AMD_noMem() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
@@ -1035,7 +1047,6 @@ void measurement_FF_template_AMD_noMem() {
 
 void measurement_RDTSC_template() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
@@ -1074,7 +1085,6 @@ void measurement_RDTSC_template() {
 
 void measurement_RDTSC_template_noMem() {
     SAVE_REGS_FLAGS();
-    INITIALIZE_REGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"

@@ -149,8 +149,14 @@ extern int n_programmable_counters;
 // Pointer to a memory region that is writable and executable.
 extern char* runtime_code;
 
-// During measurement, RSP, RDI, RSI, and R14 will point to locations in runtime_mem.
-extern void* runtime_mem;
+#define RUNTIME_R_SIZE (1024*1024)
+
+// During measurements, R14, RBP, RDI, RSI, and RSP will contain these addresses plus RUNTIME_R_SIZE/2.
+extern void* runtime_r14;
+extern void* runtime_rbp;
+extern void* runtime_rdi;
+extern void* runtime_rsi;
+extern void* runtime_rsp;
 
 // Stores performance counter values during measurements.
 extern int64_t pfc_mem[MAX_PROGRAMMABLE_COUNTERS];
@@ -198,9 +204,13 @@ void print_all_measurement_results(int64_t* results[], int n_counters);
 #define MAGIC_BYTES_INIT 0x10b513b1C2813F04
 #define MAGIC_BYTES_CODE 0x20b513b1C2813F04
 #define MAGIC_BYTES_RSP_ADDRESS 0x30b513b1C2813F04
-#define MAGIC_BYTES_RUNTIME_MEM 0x40b513b1C2813F04
-#define MAGIC_BYTES_PFC 0x50b513b1C2813F04
-#define MAGIC_BYTES_TEMPLATE_END 0x60b513b1C2813F04
+#define MAGIC_BYTES_RUNTIME_R14 0x40b513b1C2813F04
+#define MAGIC_BYTES_RUNTIME_RBP 0x50b513b1C2813F04
+#define MAGIC_BYTES_RUNTIME_RDI 0x60b513b1C2813F04
+#define MAGIC_BYTES_RUNTIME_RSI 0x70b513b1C2813F04
+#define MAGIC_BYTES_RUNTIME_RSP 0x80b513b1C2813F04
+#define MAGIC_BYTES_PFC 0x90b513b1C2813F04
+#define MAGIC_BYTES_TEMPLATE_END 0xA0b513b1C2813F04
 
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
@@ -232,11 +242,22 @@ void measurement_RDTSC_template_noMem(void);
         "pushfq\n"                                        \
         "mov r15, "STRINGIFY(MAGIC_BYTES_RSP_ADDRESS)"\n" \
         "mov [r15], rsp\n"                                \
-        "mov rsp, "STRINGIFY(MAGIC_BYTES_RUNTIME_MEM)"\n" \
-        "add rsp, 0xfffff\n"                              \
-        "mov r15, 0xfff\n" /*4 kB alignment*/             \
-        "not r15\n"                                       \
-        "and rsp, r15\n"                                  \
+        "mov rax, 0\n"                                    \
+        "mov rbx, 0\n"                                    \
+        "mov rcx, 0\n"                                    \
+        "mov rdx, 0\n"                                    \
+        "mov r8,  0\n"                                    \
+        "mov r9,  0\n"                                    \
+        "mov r10, 0\n"                                    \
+        "mov r11, 0\n"                                    \
+        "mov r12, 0\n"                                    \
+        "mov r13, 0\n"                                    \
+        "mov r15, 0\n"                                    \
+        "mov r14, "STRINGIFY(MAGIC_BYTES_RUNTIME_R14)"\n" \
+        "mov rbp, "STRINGIFY(MAGIC_BYTES_RUNTIME_RBP)"\n" \
+        "mov rdi, "STRINGIFY(MAGIC_BYTES_RUNTIME_RDI)"\n" \
+        "mov rsi, "STRINGIFY(MAGIC_BYTES_RUNTIME_RSI)"\n" \
+        "mov rsp, "STRINGIFY(MAGIC_BYTES_RUNTIME_RSP)"\n" \
         ".att_syntax noprefix");
     
 #define RESTORE_REGS_FLAGS()                              \
@@ -251,30 +272,6 @@ void measurement_RDTSC_template_noMem(void);
         "pop r12\n"                                       \
         "pop rbp\n"                                       \
         "pop rbx\n"                                       \
-        ".att_syntax noprefix");
-    
-#define INITIALIZE_REGS()                                 \
-    asm volatile(                                         \
-        ".intel_syntax noprefix\n"                        \
-        "mov rax, 0\n"                                    \
-        "mov rbx, 0\n"                                    \
-        "mov rcx, 0\n"                                    \
-        "mov rdx, 0\n"                                    \
-        "mov r8,  0\n"                                    \
-        "mov r9,  0\n"                                    \
-        "mov r10, 0\n"                                    \
-        "mov r11, 0\n"                                    \
-        "mov r12, 0\n"                                    \
-        "mov r13, 0\n"                                    \
-        "mov r15, 0\n"                                    \
-        "mov r14, rsp\n"                                  \
-        "add r14, 0x1000\n"                               \
-        "mov rdi, rsp\n"                                  \
-        "add rdi, 0x2000\n"                               \
-        "mov rsi, rsp\n"                                  \
-        "add rsi, 0x3000\n"                               \
-        "mov rbp, rsp\n"                                  \
-        "add rbp, 0x4000\n"                               \
         ".att_syntax noprefix");
 
 #endif

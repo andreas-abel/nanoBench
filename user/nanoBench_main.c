@@ -180,16 +180,20 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    runtime_mem = malloc(2*1024*1024);
-    if(!runtime_mem){
-        fprintf(stderr, "Error: Could not allocate memory for runtime_mem\n");
+    posix_memalign((void**)&runtime_r14, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rbp, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rdi, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rsi, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rsp, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    if (!runtime_r14 || !runtime_rbp || !runtime_rdi || !runtime_rsi || !runtime_rsp) {
+        fprintf(stderr, "Error: Could not allocate memory for runtime_r*\n");
         return 1;
     }
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         measurement_results[i] = malloc(n_measurements*sizeof(int64_t));
         measurement_results_base[i] = malloc(n_measurements*sizeof(int64_t));
-        if(!measurement_results[i] || !measurement_results_base[i]){
+        if (!measurement_results[i] || !measurement_results_base[i]) {
             fprintf(stderr, "Error: Could not allocate memory for measurement_results\n");
             return 1;
         }
@@ -297,7 +301,11 @@ int main(int argc, char **argv) {
      * Cleanup
      ************************************/
     free(runtime_code);
-    free(runtime_mem);
+    free(runtime_r14);
+    free(runtime_rbp);
+    free(runtime_rdi);
+    free(runtime_rsi);
+    free(runtime_rsp);
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         free(measurement_results[i]);
