@@ -11,12 +11,17 @@
 
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/mm.h>
+#include <linux/sched.h>
 #include <../arch/x86/include/asm/fpu/api.h>
 
 #include "../common/nanoBench.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Andreas Abel");
+
+struct page** pages = NULL;
+unsigned long npages = 0;
 
 static ssize_t init_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     memcpy(buf, code_init, code_init_length);
@@ -157,6 +162,42 @@ static ssize_t agg_store(struct kobject *kobj, struct kobj_attribute *attr, cons
     return count;
 }
 static struct kobj_attribute agg_attribute =__ATTR(agg, 0660, agg_show, agg_store);
+
+static ssize_t use_huge_pages_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return 0;
+}
+static ssize_t use_huge_pages_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    if (huge_pages) {
+        vm_unmap_ram(huge_pages, npages);
+    }
+    for (int i=0; i<npages; i++) {
+       put_page(pages[i]);
+    }
+    vfree(pages);
+
+    long len = *(long*)(buf+sizeof(void*));
+    npages = (len+PAGE_SIZE-1)/PAGE_SIZE;
+    if (npages == 0) {
+        pr_debug("Huge pages disabled.");
+        pages = NULL;
+        huge_pages = NULL;
+        return count;
+    }
+
+    pages = vmalloc(npages * sizeof(struct page*));
+
+    down_read(&current->mm->mmap_sem);
+    int res = get_user_pages(*(unsigned long*)(buf), npages, FOLL_WRITE, pages, NULL);
+    if (res) {
+        int nid = page_to_nid(pages[0]);
+        huge_pages = vm_map_ram(pages, npages, nid, PAGE_KERNEL);
+    }
+    up_read(&current->mm->mmap_sem);
+
+    pr_debug("Huge pages enabled. Start address: %px", huge_pages);
+    return count;
+}
+static struct kobj_attribute use_huge_pages_attribute =__ATTR(use_huge_pages, 0660, use_huge_pages_show, use_huge_pages_store);
 
 static ssize_t verbose_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%u\n", verbose);
@@ -381,6 +422,7 @@ static int __init nb_init (void) {
     error |= sysfs_create_file(nb_kobject, &agg_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &basic_mode_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &no_mem_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &use_huge_pages_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &verbose_attribute.attr);
 
     if (error) {
@@ -401,6 +443,14 @@ static void __exit nb_exit (void) {
     vfree(runtime_rdi);
     vfree(runtime_rsi);
     vfree(runtime_rsp);
+
+    if (huge_pages) {
+        vm_unmap_ram(huge_pages, npages);
+    }
+    for (int i=0; i<npages; i++) {
+       put_page(pages[i]);
+    }
+    vfree(pages);
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         kfree(measurement_results[i]);

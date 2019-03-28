@@ -45,6 +45,7 @@ void* runtime_rbp;
 void* runtime_rdi;
 void* runtime_rsi;
 void* runtime_rsp;
+void* huge_pages = NULL;
 int64_t pfc_mem[MAX_PROGRAMMABLE_COUNTERS];
 void* RSP_mem;
 
@@ -383,7 +384,11 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             templateI += 8;
             rci += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_R14)) {
-            *(void**)(&runtime_code[rci]) = runtime_r14 + RUNTIME_R_SIZE/2;
+            if (huge_pages) {
+                *(void**)(&runtime_code[rci]) = huge_pages;
+            } else {
+                *(void**)(&runtime_code[rci]) = runtime_r14 + RUNTIME_R_SIZE/2;
+            }
             templateI += 8;
             rci += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RBP)) {

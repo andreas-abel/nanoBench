@@ -158,6 +158,9 @@ extern void* runtime_rdi;
 extern void* runtime_rsi;
 extern void* runtime_rsp;
 
+// If non-null, R14 will contain this address instead of runtime_r14.
+extern void* huge_pages;
+
 // Stores performance counter values during measurements.
 extern int64_t pfc_mem[MAX_PROGRAMMABLE_COUNTERS];
 
