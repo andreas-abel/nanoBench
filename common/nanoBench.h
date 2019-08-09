@@ -120,6 +120,9 @@ extern size_t code_length;
 extern char* code_init;
 extern size_t code_init_length;
 
+extern char* code_one_time_init;
+extern size_t code_one_time_init_length;
+
 struct pfc_config {
     unsigned long evt_num;
     unsigned long umask;
@@ -134,11 +137,20 @@ struct pfc_config {
     unsigned int invalid;
     char* description;
 };
-
 extern struct pfc_config pfc_configs[];
 extern size_t n_pfc_configs;
-
 extern char* pfc_config_file_content;
+
+struct msr_config {
+    unsigned long rdmsr;
+    unsigned long wrmsr[10];
+    unsigned long wrmsr_val[10];
+    size_t n_wrmsr;
+    char* description;
+};
+extern struct msr_config msr_configs[];
+extern size_t n_msr_configs;
+extern char* msr_config_file_content;
 
 extern int is_Intel_CPU;
 extern int is_AMD_CPU;
@@ -146,20 +158,19 @@ extern int is_AMD_CPU;
 #define MAX_PROGRAMMABLE_COUNTERS 6
 extern int n_programmable_counters;
 
-// Pointer to a memory region that is writable and executable.
+// Pointers to a memory regions that are writable and executable.
 extern char* runtime_code;
+extern char* runtime_one_time_init_code;
 
 #define RUNTIME_R_SIZE (1024*1024)
 
 // During measurements, R14, RBP, RDI, RSI, and RSP will contain these addresses plus RUNTIME_R_SIZE/2.
+// If r14_size is set in the kernel module, R14 will not have this offset.
 extern void* runtime_r14;
 extern void* runtime_rbp;
 extern void* runtime_rdi;
 extern void* runtime_rsi;
 extern void* runtime_rsp;
-
-// If non-null, R14 will contain this address instead of runtime_r14.
-extern void* huge_pages;
 
 // Stores performance counter values during measurements.
 extern int64_t pfc_mem[MAX_PROGRAMMABLE_COUNTERS];
@@ -178,6 +189,7 @@ extern int cpu;
 int check_cpuid(void);
 
 void parse_counter_configs(void);
+void parse_msr_configs(void);
 
 uint64_t read_value_from_cmd(char* cmd);
 
@@ -191,10 +203,12 @@ void configure_perf_ctrs_FF(unsigned int usr, unsigned int os);
 // start and end are indices into the pfc_configs array.
 void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsigned int os);
 
+void configure_MSRs(struct msr_config config);
 
 void create_runtime_code(char* measurement_template, long local_unroll_count, long local_loop_count);
 void run_warmup_experiment(char* measurement_template);
 void run_experiment(char* measurement_template, int64_t* results[], int n_counters, long local_unroll_count, long local_loop_count);
+void create_and_run_one_time_init_code(void);
 
 char* compute_result_str(char* buf, size_t buf_len, char* desc, int counter);
 int64_t get_aggregate_value_100(int64_t* values, size_t length);
@@ -213,7 +227,8 @@ void print_all_measurement_results(int64_t* results[], int n_counters);
 #define MAGIC_BYTES_RUNTIME_RSI 0x70b513b1C2813F04
 #define MAGIC_BYTES_RUNTIME_RSP 0x80b513b1C2813F04
 #define MAGIC_BYTES_PFC 0x90b513b1C2813F04
-#define MAGIC_BYTES_TEMPLATE_END 0xA0b513b1C2813F04
+#define MAGIC_BYTES_MSR 0xA0b513b1C2813F04
+#define MAGIC_BYTES_TEMPLATE_END 0xB0b513b1C2813F04
 
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
@@ -231,6 +246,9 @@ void measurement_FF_template_AMD(void);
 void measurement_FF_template_AMD_noMem(void);
 void measurement_RDTSC_template(void);
 void measurement_RDTSC_template_noMem(void);
+void measurement_RDMSR_template(void);
+void measurement_RDMSR_template_noMem(void);
+void one_time_init_template(void);
 
 // RBX, RBP, and R12–R15 are callee saved registers according to the "System V AMD64 ABI" (https://en.wikipedia.org/wiki/X86_calling_conventions)
 #define SAVE_REGS_FLAGS()                                 \

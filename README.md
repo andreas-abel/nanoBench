@@ -60,7 +60,7 @@ It will produce an output similar to the following.
 
 The tool will *unroll* the assembler code multiple times, i.e., it will create multiple copies of it. The results are averages per copy of the assembler code for multiple runs of the entire generated code sequence.
 
-The config file contains the required information for configuring the programmable performance counters with the desired events. We provide example configuration files for recent Intel and AMD microarchitectures in the `config` folder. When using the kernel-module, the config file must not be larger than 4 kB.
+The config file contains the required information for configuring the programmable performance counters with the desired events. We provide example configuration files for recent Intel and AMD microarchitectures in the `config` folder.
 
 The assembler code sequence may use and modify any general-purpose or vector registers (unless the `-loop` or `-no_mem` options are used), including the stack pointer. There is no need to restore the registers to their original values at the end.
 

@@ -17,31 +17,47 @@ cat /sys/nb/reset
 taskset=""
 
 while [ "$1" ]; do
-    if [[ "$1" == -asm_init ]]; then
+    if [[ "$1" == -asm_i* ]]; then
         echo ".intel_syntax noprefix" > asm-init.s
         echo "$2" >> asm-init.s
         as asm-init.s -o asm-init.o
-        objcopy asm-init.o -O binary /sys/nb/init
+        objcopy asm-init.o -O binary asm-init.o
+        echo -n "asm-init.o" > /sys/nb/init
         rm -f asm-init.s asm-init.o
         shift 2
-    elif [[ "$1" == -asm ]]; then
+    elif [[ "$1" == -asm_o* ]]; then
+        echo ".intel_syntax noprefix" > asm-one-time-init.s
+        echo "$2" >> asm-one-time-init.s
+        as asm-one-time-init.s -o asm-one-time-init.o
+        objcopy asm-one-time-init.o -O binary asm-one-time-init.o
+        echo -n "asm-one-time-init.o" > /sys/nb/one_time_init
+        rm -f asm-one-time-init.s asm-one-time-init.o
+        shift 2
+    elif [[ "$1" == -as* ]]; then
         echo ".intel_syntax noprefix" > asm-code.s
         echo "$2" >> asm-code.s
         as asm-code.s -o asm-code.o
-        objcopy asm-code.o -O binary /sys/nb/code
+        objcopy asm-code.o -O binary asm-code.o
+        echo -n "asm-code.o" > /sys/nb/code
         rm -f asm-code.s asm-code.o
         shift 2
-    elif [[ "$1" == -code_init ]]; then
-        cp "$2" /sys/nb/init
+    elif [[ "$1" == -code_i* ]]; then
+        echo -n "$2" > /sys/nb/init
         shift 2
-    elif [[ "$1" == -code ]]; then
-        cp "$2" /sys/nb/code
+    elif [[ "$1" == -code_o* ]]; then
+        echo -n "$2" > /sys/nb/one_time_init
+        shift 2
+    elif [[ "$1" == -cod* ]]; then
+        echo -n "$2" > /sys/nb/code
         shift 2
     elif [[ "$1" == -cpu ]]; then
         taskset="taskset -c $2"
         shift 2    
-    elif [[ "$1" == -config ]]; then
-        cp "$2" /sys/nb/config
+    elif [[ "$1" == -con* ]]; then
+        echo -n "$2" > /sys/nb/config
+        shift 2
+    elif [[ "$1" == -msr* ]]; then
+        echo -n "$2" > /sys/nb/msr_config
         shift 2
     elif [[ "$1" == -u* ]]; then
         echo "$2" > /sys/nb/unroll_count
@@ -103,4 +119,4 @@ while [ "$1" ]; do
     fi
 done
 
-$taskset cat /sys/nb/run
+$taskset cat /proc/nanoBench

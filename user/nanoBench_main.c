@@ -24,24 +24,25 @@ void print_usage() {
     printf("\n");
     printf("nanoBench usage:\n");
     printf("\n");
-    printf("  -code <filename>:           Binary file containing the code to be benchmarked.\n");
-    printf("  -code_init <filename>:      Binary file containing code to be executed once in the beginning\n");
-    printf("  -config <filename>:         File with performance counter event specifications.\n");
-    printf("  -n_measurements <n>:        Number of times the measurements are repeated.\n");
-    printf("  -unroll_count <n>:          Number of copies of the benchmark code inside the inner loop.\n");
-    printf("  -loop_count <n>:            Number of iterations of the inner loop.\n");
-    printf("  -warm_up_count <n>:         Number of runs before the first measurement gets recorded.\n");
-    printf("  -initial_warm_up_count <n>: Number of runs before any measurement is performed.\n");
-    printf("  -avg:                       Selects the arithmetic mean as the aggregate function.\n");
-    printf("  -median:                    Selects the median as the aggregate function.\n");
-    printf("  -min:                       Selects the minimum as the aggregate function.\n");
-    printf("  -basic_mode:                Enables basic mode.\n");
-    printf("  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses.\n");
-    printf("  -verbose:                   Outputs the results of all performance counter readings.\n");
-    printf("  -cpu <n>:                   Pins the measurement thread to CPU n. \n");
-    printf("  -usr <n>:                   If 1, counts events at a privilege level greater than 0.\n");
-    printf("  -os <n>:                    If 1, counts events at a privilege level 0.\n");
-    printf("  -debug:                     Generate a breakpoint trap after running the code to be benchmarked.\n");
+    printf("  -code <filename>:               Binary file containing the code to be benchmarked.\n");
+    printf("  -code_init <filename>:          Binary file containing code to be executed once before each measurement\n");
+    printf("  -code_one_time_init <filename>: Binary file containing code to be executed once before the first measurement\n");
+    printf("  -config <filename>:             File with performance counter event specifications.\n");
+    printf("  -n_measurements <n>:            Number of times the measurements are repeated.\n");
+    printf("  -unroll_count <n>:              Number of copies of the benchmark code inside the inner loop.\n");
+    printf("  -loop_count <n>:                Number of iterations of the inner loop.\n");
+    printf("  -warm_up_count <n>:             Number of runs before the first measurement gets recorded.\n");
+    printf("  -initial_warm_up_count <n>:     Number of runs before any measurement is performed.\n");
+    printf("  -avg:                           Selects the arithmetic mean as the aggregate function.\n");
+    printf("  -median:                        Selects the median as the aggregate function.\n");
+    printf("  -min:                           Selects the minimum as the aggregate function.\n");
+    printf("  -basic_mode:                    Enables basic mode.\n");
+    printf("  -no_mem:                        The code for reading the perf. ctrs. does not make memory accesses.\n");
+    printf("  -verbose:                       Outputs the results of all performance counter readings.\n");
+    printf("  -cpu <n>:                       Pins the measurement thread to CPU n. \n");
+    printf("  -usr <n>:                       If 1, counts events at a privilege level greater than 0.\n");
+    printf("  -os <n>:                        If 1, counts events at a privilege level 0.\n");
+    printf("  -debug:                         Generate a breakpoint trap after running the code to be benchmarked.\n");
 }
 
 size_t mmap_file(char* filename, char** content) {
@@ -67,6 +68,7 @@ int main(int argc, char **argv) {
     struct option long_opts[] = {
         {"code", required_argument, 0, 'c'},
         {"code_init", required_argument, 0, 'i'},
+        {"code_one_time_init", required_argument, 0, 'o'},
         {"config", required_argument, 0, 'f'},
         {"n_measurements", required_argument, 0, 'n'},
         {"unroll_count", required_argument, 0, 'u'},
@@ -97,6 +99,9 @@ int main(int argc, char **argv) {
                 break;
             case 'i':
                 code_init_length = mmap_file(optarg, &code_init);
+                break;
+            case 'o':
+                code_one_time_init_length = mmap_file(optarg, &code_one_time_init);
                 break;
             case 'f': ;
                 config_file_name = optarg;
@@ -180,15 +185,31 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    posix_memalign((void**)&runtime_r14, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
-    posix_memalign((void**)&runtime_rbp, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
-    posix_memalign((void**)&runtime_rdi, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
-    posix_memalign((void**)&runtime_rsi, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
-    posix_memalign((void**)&runtime_rsp, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    size_t runtime_one_time_init_code_length = code_one_time_init_length + 10000;
+    posix_memalign((void**)&runtime_one_time_init_code, sysconf(_SC_PAGESIZE), runtime_one_time_init_code_length);
+    if (!runtime_one_time_init_code) {
+        fprintf(stderr, "Error: Failed to allocate memory for runtime_one_time_init_code\n");
+        return 1;
+    }
+    if (mprotect(runtime_one_time_init_code, runtime_one_time_init_code_length, (PROT_READ | PROT_WRITE |PROT_EXEC))) {
+        fprintf(stderr, "Error: mprotect failed\n");
+        return 1;
+    }
+
+    runtime_r14 = malloc(RUNTIME_R_SIZE);
+    runtime_rbp = malloc(RUNTIME_R_SIZE);
+    runtime_rdi = malloc(RUNTIME_R_SIZE);
+    runtime_rsi = malloc(RUNTIME_R_SIZE);
+    runtime_rsp = malloc(RUNTIME_R_SIZE);
     if (!runtime_r14 || !runtime_rbp || !runtime_rdi || !runtime_rsi || !runtime_rsp) {
         fprintf(stderr, "Error: Could not allocate memory for runtime_r*\n");
         return 1;
     }
+    runtime_r14 += RUNTIME_R_SIZE/2;
+    runtime_rbp += RUNTIME_R_SIZE/2;
+    runtime_rdi += RUNTIME_R_SIZE/2;
+    runtime_rsi += RUNTIME_R_SIZE/2;
+    runtime_rsp += RUNTIME_R_SIZE/2;
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         measurement_results[i] = malloc(n_measurements*sizeof(int64_t));
@@ -224,6 +245,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    create_and_run_one_time_init_code();
     run_warmup_experiment(measurement_template);
 
     if (is_AMD_CPU) {
@@ -301,11 +323,12 @@ int main(int argc, char **argv) {
      * Cleanup
      ************************************/
     free(runtime_code);
-    free(runtime_r14);
-    free(runtime_rbp);
-    free(runtime_rdi);
-    free(runtime_rsi);
-    free(runtime_rsp);
+    free(runtime_one_time_init_code);
+    free(runtime_r14 - RUNTIME_R_SIZE/2);
+    free(runtime_rbp - RUNTIME_R_SIZE/2);
+    free(runtime_rdi - RUNTIME_R_SIZE/2);
+    free(runtime_rsi - RUNTIME_R_SIZE/2);
+    free(runtime_rsp - RUNTIME_R_SIZE/2);
 
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         free(measurement_results[i]);
