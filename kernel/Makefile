@@ -20,10 +20,9 @@ CFLAGS_nanoBench.o := -DDEBUG
 
 ccflags-y+=-std=gnu99 -Wno-declaration-after-statement
 
-all: hp
+all: 
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
-hp: hp.o
 
 clean:
 	rm -f hp ../common/*.o ../common/*.ur-safe
