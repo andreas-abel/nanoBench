@@ -24,7 +24,7 @@ class ReplPolicySim(object):
 
    def flush(self, block):
       if block in self.blocks:
-         self.blocks[self.blocks.index(block)] = block
+         self.blocks[self.blocks.index(block)] = None
 
 
 class FIFOSim(ReplPolicySim):
