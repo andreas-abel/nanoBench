@@ -7,7 +7,7 @@ fi
 
 if [ $# -eq 0 ]; then
     echo "Usage: sudo ./set-R14-size.sh <size>"
-    echo "Example: sudo ./enable-HugePages.sh 128M"
+    echo "Example: sudo ./set-R14-size.sh 128M"
     exit 1
 fi
 

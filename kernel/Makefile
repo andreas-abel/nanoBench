@@ -25,6 +25,6 @@ all:
 
 
 clean:
-	rm -f hp ../common/*.o ../common/*.ur-safe
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	rm -f ../common/*.o ../common/*.ur-safe
+	rm -rf *.o *.ko *.mod.c .tmp_versions modules.order Module.symvers
 

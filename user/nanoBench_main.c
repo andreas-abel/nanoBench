@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
     /*************************************
      * Allocate memory
      ************************************/
-    size_t runtime_code_length = code_init_length + (unroll_count)*code_length*2 + 10000;
+    size_t runtime_code_length = get_required_runtime_code_length();
     posix_memalign((void**)&runtime_code, sysconf(_SC_PAGESIZE), runtime_code_length);
     if (!runtime_code) {
         fprintf(stderr, "Error: Failed to allocate memory for runtime_code\n");
@@ -290,9 +290,17 @@ int main(int argc, char **argv) {
         }
     } else {
         if (no_mem) {
-            measurement_template = (char*)&measurement_template_Intel_noMem;
+            if (n_programmable_counters >= 4) {
+                measurement_template = (char*)&measurement_template_Intel_noMem_4;
+            } else {
+                measurement_template = (char*)&measurement_template_Intel_noMem_2;
+            }
         } else {
-            measurement_template = (char*)&measurement_template_Intel;
+            if (n_programmable_counters >= 4) {
+                measurement_template = (char*)&measurement_template_Intel_4;
+            } else {
+                measurement_template = (char*)&measurement_template_Intel_2;
+            }
         }
     }
 

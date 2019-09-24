@@ -99,7 +99,6 @@ int check_cpuid() {
 
     if (strcmp(proc_vendor_string, "GenuineIntel") == 0) {
         is_Intel_CPU = 1;
-        n_programmable_counters = 4;
 
         __cpuid(0x0A, eax, ebx, ecx, edx);
         unsigned int perf_mon_ver = (eax & 0xFF);
@@ -111,12 +110,17 @@ int check_cpuid() {
 
         unsigned int n_available_counters = ((eax >> 8) & 0xFF);
         print_user_verbose("Number of general-purpose performance counters: %u\n", n_available_counters);
-        print_user_verbose("Bit widths of general-purpose performance counters: %u\n", ((eax >> 16) & 0xFF));
-
-        if (n_available_counters < n_programmable_counters) {
-            print_error("Error: only %u programmable counters available; nanoBench requires at least %u\n", n_available_counters, n_programmable_counters);
+        if (n_available_counters >= 4) {
+            n_programmable_counters = 4;
+        } else if (n_available_counters >= 2) {
+            n_programmable_counters = 2;
+        } else {
+            print_error("Error: only %u programmable counters available; nanoBench requires at least 2\n", n_available_counters);
             return 1;
         }
+
+        print_user_verbose("Bit widths of general-purpose performance counters: %u\n", ((eax >> 16) & 0xFF));
+
     } else if (strcmp(proc_vendor_string, "AuthenticAMD") == 0) {
         is_AMD_CPU = 1;
         n_programmable_counters = 6;
@@ -137,6 +141,8 @@ void parse_counter_configs() {
         if (strlen(line) == 0 || line[0] == '#') {
             continue;
         }
+
+        pfc_configs[n_pfc_configs].invalid = 0;
 
         char* config_str = strsep(&line, " \t");
 
@@ -401,72 +407,132 @@ void configure_MSRs(struct msr_config config) {
     cur_rdmsr = config.rdmsr;
 }
 
+size_t get_required_runtime_code_length() {
+    size_t req_code_length = code_length;
+    for (size_t i=0; i+7<code_length; i++) {
+        if (starts_with_magic_bytes(&code[i], MAGIC_BYTES_CODE_PFC_START) || starts_with_magic_bytes(&code[i], MAGIC_BYTES_CODE_PFC_STOP)) {
+            req_code_length += 100;
+        }
+    }
+    return code_init_length + 2*unroll_count*req_code_length + 10000;
+}
+
 void create_runtime_code(char* measurement_template, long local_unroll_count, long local_loop_count) {
-    int templateI = 0;
-    int rci = 0;
+    size_t templateI = 0;
+    size_t codeI = 0;
+    long unrollI = 0;
+    size_t rcI = 0;
+    size_t rcI_loop_start = 0;
+    size_t magic_bytes_pfc_start_I = 0;
+    size_t magic_bytes_code_I = 0;
+
+    int code_contains_magic_bytes = 0;
+    for (size_t i=0; i+7<code_length; i++) {
+        if (starts_with_magic_bytes(&code[i], MAGIC_BYTES_CODE_PFC_START) || starts_with_magic_bytes(&code[i], MAGIC_BYTES_CODE_PFC_STOP)) {
+            if (!no_mem) {
+                print_error("starting/stopping the counters is only supported in no_mem mode");
+                return;
+            }
+            code_contains_magic_bytes = 1;
+            break;
+        }
+    }
 
     while (!starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_TEMPLATE_END)) {
         if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_INIT)) {
             templateI += 8;
-            memcpy(&runtime_code[rci], code_init, code_init_length);
-            rci += code_init_length;
+            memcpy(&runtime_code[rcI], code_init, code_init_length);
+            rcI += code_init_length;
+        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC_START)) {
+            magic_bytes_pfc_start_I = templateI;
+            templateI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_CODE)) {
+            magic_bytes_code_I = templateI;
             templateI += 8;
 
-            if (local_loop_count == 0) {
-                for (long i=0; i<local_unroll_count; i++) {
-                    memcpy(&runtime_code[rci], code, code_length);
-                    rci += code_length;
+            if (unrollI == 0 && codeI == 0) {
+                if (local_loop_count > 0) {
+                    runtime_code[rcI++] = '\x49'; runtime_code[rcI++] = '\xC7'; runtime_code[rcI++] = '\xC7';
+                    *(int32_t*)(&runtime_code[rcI]) = (int32_t)local_loop_count; rcI += 4; // mov R15, local_loop_count
+                    rcI_loop_start = rcI;
+                }
+            }
+
+            if (!code_contains_magic_bytes) {
+                // in this case, we can use a memcpy, which is faster
+                for (unrollI=0; unrollI<local_unroll_count; unrollI++) {
+                    memcpy(&runtime_code[rcI], code, code_length);
+                    rcI += code_length;
                 }
             } else {
-                runtime_code[rci++] = '\x49'; runtime_code[rci++] = '\xC7'; runtime_code[rci++] = '\xC7';
-                *(int32_t*)(&runtime_code[rci]) = (int32_t)local_loop_count; rci += 4; // mov R15, local_loop_count
-                int rci_loop_start = rci;
+                while (unrollI < local_unroll_count) {
+                    while (codeI < code_length) {
+                        if (codeI+7 < code_length && starts_with_magic_bytes(&code[codeI], MAGIC_BYTES_CODE_PFC_START)) {
+                            codeI += 8;
+                            templateI = magic_bytes_pfc_start_I;
+                            goto continue_outer_loop;
+                        }
+                        if (codeI+7 < code_length && starts_with_magic_bytes(&code[codeI], MAGIC_BYTES_CODE_PFC_STOP)) {
+                            codeI += 8;
+                            goto continue_outer_loop;
+                        }
+                        runtime_code[rcI++] = code[codeI];
+                        codeI++;
+                    }
+                    unrollI++;
+                    codeI = 0;
+                }
+            }
 
-                for (long i=0; i<local_unroll_count; i++) {
-                    memcpy(&runtime_code[rci], code, code_length);
-                    rci += code_length;
+            if (unrollI >= local_unroll_count) {
+                if (local_loop_count > 0) {
+                    runtime_code[rcI++] = '\x49'; runtime_code[rcI++] = '\xFF'; runtime_code[rcI++] = '\xCF'; // dec R15
+                    runtime_code[rcI++] = '\x0F'; runtime_code[rcI++] = '\x85';
+                    *(int32_t*)(&runtime_code[rcI]) = (int32_t)(rcI_loop_start-rcI-4); rcI += 4; // jnz loop_start
                 }
 
-                runtime_code[rci++] = '\x49'; runtime_code[rci++] = '\xFF'; runtime_code[rci++] = '\xCF'; // dec R15
-                runtime_code[rci++] = '\x0F'; runtime_code[rci++] = '\x85';
-                *(int32_t*)(&runtime_code[rci]) = (int32_t)(rci_loop_start-rci-4); rci += 4; // jnz loop_start
+                if (debug) {
+                    runtime_code[rcI++] = '\xCC'; // INT3
+                }
             }
-
-            if (debug) {
-                runtime_code[rci++] = '\xCC'; // INT3
+        } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC_END)) {
+            if (unrollI < local_unroll_count) {
+                templateI = magic_bytes_code_I;
+            } else {
+                templateI += 8;
             }
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC)) {
-            *(void**)(&runtime_code[rci]) = pfc_mem;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = pfc_mem;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_MSR)) {
-            *(void**)(&runtime_code[rci]) = (void*)cur_rdmsr;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = (void*)cur_rdmsr;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RSP_ADDRESS)) {
-            *(void**)(&runtime_code[rci]) = &RSP_mem;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = &RSP_mem;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_R14)) {
-            *(void**)(&runtime_code[rci]) = runtime_r14;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = runtime_r14;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RBP)) {
-            *(void**)(&runtime_code[rci]) = runtime_rbp;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = runtime_rbp;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RDI)) {
-            *(void**)(&runtime_code[rci]) = runtime_rdi;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = runtime_rdi;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RSI)) {
-            *(void**)(&runtime_code[rci]) = runtime_rsi;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = runtime_rsi;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_RUNTIME_RSP)) {
-            *(void**)(&runtime_code[rci]) = runtime_rsp;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_code[rcI]) = runtime_rsp;
+            templateI += 8; rcI += 8;
         } else {
-            runtime_code[rci++] = measurement_template[templateI++];
+            runtime_code[rcI++] = measurement_template[templateI++];
         }
+        continue_outer_loop: ;
     }
     templateI += 8;
     do {
-        runtime_code[rci++] = measurement_template[templateI++];
+        runtime_code[rcI++] = measurement_template[templateI++];
     } while (measurement_template[templateI-1] != '\xC3'); // 0xC3 = ret
 }
 
@@ -474,39 +540,39 @@ void create_and_run_one_time_init_code() {
     if (code_one_time_init_length == 0) return;
 
     char* template = (char*)&one_time_init_template;
-    int templateI = 0;
-    int rci = 0;
+    size_t templateI = 0;
+    size_t rcI = 0;
 
     while (!starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_TEMPLATE_END)) {
         if (starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_INIT)) {
             templateI += 8;
-            memcpy(&runtime_one_time_init_code[rci], code_one_time_init, code_one_time_init_length);
-            rci += code_one_time_init_length;
+            memcpy(&runtime_one_time_init_code[rcI], code_one_time_init, code_one_time_init_length);
+            rcI += code_one_time_init_length;
         } else if (starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_RSP_ADDRESS)) {
-            *(void**)(&runtime_one_time_init_code[rci]) = &RSP_mem;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_one_time_init_code[rcI]) = &RSP_mem;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_RUNTIME_R14)) {
-            *(void**)(&runtime_one_time_init_code[rci]) = runtime_r14;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_one_time_init_code[rcI]) = runtime_r14;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_RUNTIME_RBP)) {
-            *(void**)(&runtime_one_time_init_code[rci]) = runtime_rbp;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_one_time_init_code[rcI]) = runtime_rbp;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_RUNTIME_RDI)) {
-            *(void**)(&runtime_one_time_init_code[rci]) = runtime_rdi;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_one_time_init_code[rcI]) = runtime_rdi;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_RUNTIME_RSI)) {
-            *(void**)(&runtime_one_time_init_code[rci]) = runtime_rsi;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_one_time_init_code[rcI]) = runtime_rsi;
+            templateI += 8; rcI += 8;
         } else if (starts_with_magic_bytes(&template[templateI], MAGIC_BYTES_RUNTIME_RSP)) {
-            *(void**)(&runtime_one_time_init_code[rci]) = runtime_rsp;
-            templateI += 8; rci += 8;
+            *(void**)(&runtime_one_time_init_code[rcI]) = runtime_rsp;
+            templateI += 8; rcI += 8;
         } else {
-            runtime_one_time_init_code[rci++] = template[templateI++];
+            runtime_one_time_init_code[rcI++] = template[templateI++];
         }
     }
     templateI += 8;
     do {
-        runtime_one_time_init_code[rci++] = template[templateI++];
+        runtime_one_time_init_code[rcI++] = template[templateI++];
     } while (template[templateI-1] != '\xC3'); // 0xC3 = ret
 
     ((void(*)(void))runtime_one_time_init_code)();
@@ -626,7 +692,59 @@ int starts_with_magic_bytes(char* c, int64_t magic_bytes) {
     return (*((int64_t*)c) == magic_bytes);
 }
 
-void measurement_template_Intel() {
+void measurement_template_Intel_2() {
+    SAVE_REGS_FLAGS();
+    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "push rax                                \n"
+        "lahf                                    \n"
+        "seto al                                 \n"
+        "push rax                                \n"
+        "push rcx                                \n"
+        "push rdx                                \n"
+        "push r15                                \n"
+        "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
+        "mov qword ptr [r15 + 0], 0              \n"
+        "mov qword ptr [r15 + 8], 0              \n"
+        "mov rcx, 0                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "sub [r15 + 0], rdx                      \n"
+        "mov rcx, 1                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "sub [r15 + 8], rdx                      \n"
+        "lfence                                  \n"
+        "pop r15; lfence                         \n"
+        "pop rdx; lfence                         \n"
+        "pop rcx; lfence                         \n"
+        "pop rax; lfence                         \n"
+        "cmp al, -127; lfence                    \n"
+        "sahf; lfence                            \n"
+        "pop rax;                                \n"
+        "lfence                                  \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "lfence                                  \n"
+        "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
+        "mov rcx, 0                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "add [r15 + 0], rdx                      \n"
+        "mov rcx, 1                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "add [r15 + 8], rdx                      \n"
+        "lfence                                  \n"
+        ".att_syntax noprefix                    ");
+    RESTORE_REGS_FLAGS();
+    asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
+}
+
+void measurement_template_Intel_4() {
     SAVE_REGS_FLAGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
@@ -643,19 +761,19 @@ void measurement_template_Intel() {
         "mov qword ptr [r15 + 8], 0              \n"
         "mov qword ptr [r15 + 16], 0             \n"
         "mov qword ptr [r15 + 24], 0             \n"
-        "mov rcx, 0x00000000                     \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 0], rdx                      \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 8], rdx                      \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 16], rdx                     \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 24], rdx                     \n"
@@ -674,19 +792,19 @@ void measurement_template_Intel() {
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
-        "mov rcx, 0x00000000                     \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 0], rdx                      \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 8], rdx                      \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 16], rdx                     \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 24], rdx                     \n"
@@ -696,7 +814,52 @@ void measurement_template_Intel() {
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
-void measurement_template_Intel_noMem() {
+void measurement_template_Intel_noMem_2() {
+    SAVE_REGS_FLAGS();
+    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "mov r8, 0                               \n"
+        "mov r9, 0                               \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "mov rcx, 0                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "sub r8, rdx                             \n"
+        "mov rcx, 1                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "sub r9, rdx                             \n"
+        "lfence                                  \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "lfence                                  \n"
+        "mov rcx, 0                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "add r8, rdx                             \n"
+        "mov rcx, 1                              \n"
+        "lfence; rdpmc; lfence                   \n"
+        "shl rdx, 32; or rdx, rax                \n"
+        "add r9, rdx                             \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "mov rax, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
+        "mov [rax + 0], r8                       \n"
+        "mov [rax + 8], r9                       \n"
+        ".att_syntax noprefix                    ");
+    RESTORE_REGS_FLAGS();
+    asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
+}
+
+void measurement_template_Intel_noMem_4() {
     SAVE_REGS_FLAGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
@@ -705,19 +868,23 @@ void measurement_template_Intel_noMem() {
         "mov r9, 0                               \n"
         "mov r10, 0                              \n"
         "mov r11, 0                              \n"
-        "mov rcx, 0x00000000                     \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r9, rdx                             \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r10, rdx                            \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r11, rdx                            \n"
@@ -727,22 +894,26 @@ void measurement_template_Intel_noMem() {
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
-        "mov rcx, 0x00000000                     \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r9, rdx                             \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r10, rdx                            \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r11, rdx                            \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "mov rax, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [rax + 0], r8                       \n"
         "mov [rax + 8], r9                       \n"
@@ -772,27 +943,27 @@ void measurement_template_AMD() {
         "mov qword ptr [r15 + 24], 0             \n"
         "mov qword ptr [r15 + 32], 0             \n"
         "mov qword ptr [r15 + 40], 0             \n"
-        "mov rcx, 0x00000000                     \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 0], rdx                      \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 8], rdx                      \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 16], rdx                     \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 24], rdx                     \n"
-        "mov rcx, 0x00000004                     \n"
+        "mov rcx, 4                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 32], rdx                     \n"
-        "mov rcx, 0x00000005                     \n"
+        "mov rcx, 5                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub [r15 + 40], rdx                     \n"
@@ -811,27 +982,27 @@ void measurement_template_AMD() {
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
-        "mov rcx, 0x00000000                     \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 0], rdx                      \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 8], rdx                      \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 16], rdx                     \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 24], rdx                     \n"
-        "mov rcx, 0x00000004                     \n"
+        "mov rcx, 4                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 32], rdx                     \n"
-        "mov rcx, 0x00000005                     \n"
+        "mov rcx, 5                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add [r15 + 40], rdx                     \n"
@@ -852,27 +1023,31 @@ void measurement_template_AMD_noMem() {
         "mov r11, 0                              \n"
         "mov r12, 0                              \n"
         "mov r13, 0                              \n"
-        "mov rcx, 0x00000000                     \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r9, rdx                             \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r10, rdx                            \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r11, rdx                            \n"
-        "mov rcx, 0x00000004                     \n"
+        "mov rcx, 4                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r12, rdx                            \n"
-        "mov rcx, 0x00000005                     \n"
+        "mov rcx, 5                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r13, rdx                            \n"
@@ -882,30 +1057,34 @@ void measurement_template_AMD_noMem() {
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "lfence                                  \n"
-        "mov rcx, 0x00000000                     \n"
+        "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
-        "mov rcx, 0x00000001                     \n"
+        "mov rcx, 1                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r9, rdx                             \n"
-        "mov rcx, 0x00000002                     \n"
+        "mov rcx, 2                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r10, rdx                            \n"
-        "mov rcx, 0x00000003                     \n"
+        "mov rcx, 3                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r11, rdx                            \n"
-        "mov rcx, 0x00000004                     \n"
+        "mov rcx, 4                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r12, rdx                            \n"
-        "mov rcx, 0x00000005                     \n"
+        "mov rcx, 5                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r13, rdx                            \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "mov rax, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [rax + 0], r8                       \n"
         "mov [rax + 8], r9                       \n"
@@ -994,6 +1173,10 @@ void measurement_FF_template_Intel_noMem() {
         "mov r9, 0                               \n"
         "mov r10, 0                              \n"
         "mov r11, 0                              \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
@@ -1030,6 +1213,10 @@ void measurement_FF_template_Intel_noMem() {
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         "mov [r15+8], r9                         \n"
@@ -1107,6 +1294,10 @@ void measurement_FF_template_AMD_noMem() {
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
         "mov r10, 0                              \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
@@ -1135,6 +1326,10 @@ void measurement_FF_template_AMD_noMem() {
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         "mov [r15+8], r9                         \n"
@@ -1188,6 +1383,10 @@ void measurement_RDTSC_template_noMem() {
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "mov r8, 0                               \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
@@ -1200,6 +1399,10 @@ void measurement_RDTSC_template_noMem() {
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         ".att_syntax noprefix                    ");
@@ -1255,6 +1458,10 @@ void measurement_RDMSR_template_noMem() {
     asm volatile(
         ".intel_syntax noprefix                  \n"
         "mov r8, 0                               \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "mov rcx, "STRINGIFY(MAGIC_BYTES_MSR)"   \n"
         "lfence; rdmsr; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
@@ -1269,6 +1476,10 @@ void measurement_RDMSR_template_noMem() {
         "lfence; rdmsr; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
+        ".att_syntax noprefix                    ");
+    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
+    asm volatile(
+        ".intel_syntax noprefix                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         ".att_syntax noprefix                    ");

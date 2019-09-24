@@ -205,6 +205,8 @@ void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsi
 
 void configure_MSRs(struct msr_config config);
 
+size_t get_required_runtime_code_length(void);
+
 void create_runtime_code(char* measurement_template, long local_unroll_count, long local_loop_count);
 void run_warmup_experiment(char* measurement_template);
 void run_experiment(char* measurement_template, int64_t* results[], int n_counters, long local_unroll_count, long local_loop_count);
@@ -229,6 +231,12 @@ void print_all_measurement_results(int64_t* results[], int n_counters);
 #define MAGIC_BYTES_PFC 0x90b513b1C2813F04
 #define MAGIC_BYTES_MSR 0xA0b513b1C2813F04
 #define MAGIC_BYTES_TEMPLATE_END 0xB0b513b1C2813F04
+#define MAGIC_BYTES_PFC_START 0xC0b513b1C2813F04
+#define MAGIC_BYTES_PFC_END 0xD0b513b1C2813F04
+
+#define MAGIC_BYTES_CODE_PFC_START 0xE0b513b1C2813F04
+#define MAGIC_BYTES_CODE_PFC_STOP 0xF0b513b1C2813F04
+
 
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
@@ -236,8 +244,10 @@ void print_all_measurement_results(int64_t* results[], int n_counters);
 int starts_with_magic_bytes(char* c, int64_t magic_bytes);
 
 // The following functions must not use global variables (or anything that uses RIP-relative addressing)
-void measurement_template_Intel(void);
-void measurement_template_Intel_noMem(void);
+void measurement_template_Intel_2(void);
+void measurement_template_Intel_4(void);
+void measurement_template_Intel_noMem_2(void);
+void measurement_template_Intel_noMem_4(void);
 void measurement_template_AMD(void);
 void measurement_template_AMD_noMem(void);
 void measurement_FF_template_Intel(void);

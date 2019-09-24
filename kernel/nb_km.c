@@ -37,7 +37,7 @@ size_t n_r14_segments = 0;
 static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_len, size_t *buf_memory_size) {
     struct file *filp = NULL;
     filp = filp_open(file_name, O_RDONLY, 0);
-    if (!filp) {
+    if (IS_ERR(filp)) {
         pr_debug("Error opening file %s\n", file_name);
         return -1;
     }
@@ -55,11 +55,12 @@ static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_
 
     if (file_size + 1 > *buf_memory_size) {
         kfree(*buf);
-        *buf_memory_size = max(file_size + 1, PAGE_SIZE);
+        *buf_memory_size = max(2*(file_size + 1), PAGE_SIZE);
         *buf = kmalloc(*buf_memory_size, GFP_KERNEL);
         if (!*buf) {
             printk(KERN_ERR "Could not allocate memory for %s\n", file_name);
             *buf_memory_size = 0;
+            filp_close(filp, NULL);
             return -1;
         }
     }
@@ -68,12 +69,13 @@ static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_
     kernel_read(filp, *buf, file_size, &pos);
     (*buf)[file_size] = '\0';
 
+    path_put(&p);
     filp_close(filp, NULL);
     return 0;
 }
 
 static void extend_runtime_code(void) {
-    size_t new_runtime_code_memory_size = 10000 + code_init_memory_size + 2*(unroll_count)*code_memory_size;
+    size_t new_runtime_code_memory_size = get_required_runtime_code_length();
     if (new_runtime_code_memory_size > runtime_code_memory_size) {
         runtime_code_memory_size = new_runtime_code_memory_size;
         vfree(runtime_code);
@@ -189,12 +191,16 @@ static ssize_t n_measurements_store(struct kobject *kobj, struct kobj_attribute 
     long old_n_measurements = n_measurements;
     sscanf(buf, "%ld", &n_measurements);
 
-    if (old_n_measurements != n_measurements) {
+    if (old_n_measurements < n_measurements) {
         for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
             kfree(measurement_results[i]);
             kfree(measurement_results_base[i]);
             measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
             measurement_results_base[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
+            if (!measurement_results[i] || !measurement_results_base[i]) {
+                printk(KERN_ERR "Could not allocate memory for measurement_results\n");
+                return 0;
+            }
             memset(measurement_results[i], 0, n_measurements*sizeof(int64_t));
             memset(measurement_results_base[i], 0, n_measurements*sizeof(int64_t));
         }
@@ -305,7 +311,7 @@ static ssize_t r14_size_store(struct kobject *kobj, struct kobj_attribute *attr,
     r14_segments = vmalloc(n_r14_segments * sizeof(void*));
 
     for (size_t i=0; i<n_r14_segments; i++) {
-        r14_segments[i] = kmalloc(R14_SEGMENT_SIZE, GFP_KERNEL);
+        r14_segments[i] = kmalloc(R14_SEGMENT_SIZE, GFP_KERNEL|__GFP_COMP);
     }
 
     sort(r14_segments, n_r14_segments, sizeof(void*), cmpPtr, NULL);
@@ -314,6 +320,21 @@ static ssize_t r14_size_store(struct kobject *kobj, struct kobj_attribute *attr,
     return count;
 }
 static struct kobj_attribute r14_size_attribute =__ATTR(r14_size, 0660, r14_size_show, r14_size_store);
+
+size_t print_r14_length = 8;
+static ssize_t print_r14_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    size_t count = sprintf(buf, "0x");
+    for (size_t i=0; i<print_r14_length && i<PAGE_SIZE-3; i++) {
+        count += sprintf(&(buf[count]), "%02x", ((unsigned char*)runtime_r14)[i]);
+    }
+    count += sprintf(&(buf[count]), "\n");
+    return count;
+}
+static ssize_t print_r14_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%zu", &print_r14_length);
+    return count;
+}
+static struct kobj_attribute print_r14_attribute =__ATTR(print_r14, 0660, print_r14_show, print_r14_store);
 
 static ssize_t verbose_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%u\n", verbose);
@@ -359,6 +380,13 @@ static ssize_t reset_store(struct kobject *kobj, struct kobj_attribute *attr, co
 static struct kobj_attribute reset_attribute =__ATTR(reset, 0660, reset_show, reset_store);
 
 static int show(struct seq_file *m, void *v) {
+    for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
+        if (!measurement_results[i] || !measurement_results_base[i]) {
+            printk(KERN_ERR "Could not allocate memory for measurement_results\n");
+            return -1;
+        }
+    }
+
     kernel_fpu_begin();
 
     long base_unroll_count = (basic_mode?0:unroll_count);
@@ -432,9 +460,17 @@ static int show(struct seq_file *m, void *v) {
         }
     } else {
         if (no_mem) {
-            measurement_template = (char*)&measurement_template_Intel_noMem;
+            if (n_programmable_counters >= 4) {
+                measurement_template = (char*)&measurement_template_Intel_noMem_4;
+            } else {
+                measurement_template = (char*)&measurement_template_Intel_noMem_2;
+            }
         } else {
-            measurement_template = (char*)&measurement_template_Intel;
+            if (n_programmable_counters >= 4) {
+                measurement_template = (char*)&measurement_template_Intel_4;
+            } else {
+                measurement_template = (char*)&measurement_template_Intel_2;
+            }
         }
     }
 
@@ -501,7 +537,7 @@ static const struct file_operations proc_file_fops = {
 
 static struct kobject* nb_kobject;
 
-static int __init nb_init (void) {
+static int __init nb_init(void) {
     pr_debug("Initializing nanoBench kernel module...\n");
 
     if (check_cpuid()) {
@@ -557,6 +593,7 @@ static int __init nb_init (void) {
     error |= sysfs_create_file(nb_kobject, &basic_mode_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &no_mem_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &r14_size_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &print_r14_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &verbose_attribute.attr);
 
     if (error) {
@@ -573,7 +610,7 @@ static int __init nb_init (void) {
     return 0;
 }
 
-static void __exit nb_exit (void) {
+static void __exit nb_exit(void) {
     kfree(code);
     kfree(code_init);
     kfree(code_one_time_init);
