@@ -28,13 +28,13 @@ The tool has the following command-line options:
 | `-seq <sequence>`            | Main access sequence. |
 | `-loop <n>`                  | Number of times the main access sequence is executed. `[Default: n=1]` |
 | `-seq_init <sequence>`       | Access sequence that is executed once in the beginning before the main sequence. |
-| `-level <n>`                 | Cache level `[Default: n=1]` |
+| `-level <n>`                 | Cache level. `[Default: n=1]` |
 | `-sets <sets>`               | Cache sets in which the access sequence will be executed. By default all cache sets are used, except number of sets of the higher level cache, which are needed for clearing the higher level cache. |
 | `-cBox <n>`                  | CBox in which the access sequence will be executed. `[Default: n=1]` |
-| `-noClearHL`                 | Do not clear higher level caches. |
-| `-noWbinvd`                  | Do not call wbinvd before each run. |
+| `-noClearHL`                 | Do not clear higher level caches between accesses to the same set in a lower level cache. |
+| `-noWbinvd`                  | Do not call `WBINVD` before each run. |
 | `-sim <policy>`              | Simulate the given policy instead of running the experiment on the hardware. For a list of available policies, see `cacheSim.py`. |
-| `-simAssoc <n>`              | Associativity of the simulated cache. `[Default: n=1]` |
+| `-simAssoc <n>`              | Associativity of the simulated cache. `[Default: n=8]` |
 
 ## hitMiss.py
 
@@ -42,7 +42,7 @@ Similar to `cacheSeq.py`, but only outputs whether the last access of a sequence
 
 ## cacheGraph.py
 
-Generates an HTML file with graph that shows the *ages* of all cache blocks after executing an access sequence. The *age* of a block B is the number of fresh blocks that need to be accessed before B is evicted.
+Generates an HTML file with a graph that shows the *ages* of all cache blocks after executing an access sequence. The *age* of a block B is the number of fresh blocks that need to be accessed before B is evicted.
 
 The tool supports all of the command-line options of `cacheSeq.py`, except the `-loop` option. In addition to that, the following options are supported:
 
@@ -54,7 +54,7 @@ The tool supports all of the command-line options of `cacheSeq.py`, except the `
 
 ## replPolicy.py
 
-Determines the replacement policy by generating random access sequences and comparing the number of hits on the actual hardware to the number of hits in a simulation of different policies. By default, a number of commonly used policies are simulated. With the `-allQLRUVariants` option, a more comprehensive list of more than 300 QLRU variants is tested.
+Determines the replacement policy by generating random access sequences and comparing the number of hits on the actual hardware to the number of hits in simulations of different policies. By default, a number of commonly used policies are simulated. With the `-allQLRUVariants` option, a more comprehensive list of more than 300 QLRU variants is tested.
 
 The tool outputs all results in the form of an HTML table.
 
@@ -64,7 +64,7 @@ It supports the following additional command-line parameters:
 
 | Option                       | Description |
 |------------------------------|-------------|
-| `-level <n>`                 | Cache level `[Default: n=1]` |
+| `-level <n>`                 | Cache level. `[Default: n=1]` |
 | `-sets <sets>`               | Cache sets for which the replacement policy will be tested. |
 | `-cBox <n>`                  | CBox for which the replacement policy will be tested. `[Default: n=0]` |
 | `-policies <policies>`       | Only consider the policies in the given comma-separated list |
@@ -79,7 +79,7 @@ If the replacement policy is a permutation policy (see [Measurement-based Modeli
 
 ## strideGraph.py
 
-Generates a graph that shows the number of core cycles (per access) when accessing memory areas of different sizes repeatedly using a given stride (which can be specified with the `-stride` option). An example can be seen [here](https://uops.info/cache/lat_CFL.html).
+Generates graphs that show the number of core cycles and the number of hits/misses (per access) when accessing memory areas of different sizes repeatedly using a given stride (which can be specified with the `-stride` option). An example can be seen [here](https://uops.info/cache/lat_CFL.html).
 
 ## cpuid.py
 
@@ -103,7 +103,7 @@ This file contains the implementations of the simulated policies used by some of
 
 # Prerequisites
 
-To use the tools in this folder, the nanoBench kernel module needs to be loaded. Instructions on how to do this, can be found in the main README on <https://github.com/andreas-abel/nanoBench>.
+To use the tools in this folder, the nanoBench kernel module needs to be loaded. Instructions on how to do this can be found in the main README on <https://github.com/andreas-abel/nanoBench>.
 
 nanoBench needs to be configured to use a physically contiguous memory area that is large enough for the access sequences that you want to test. This can be achieved with the `set-R14-size.sh` script in the main NanoBench folder.
 You can, e.g., call it as follows
