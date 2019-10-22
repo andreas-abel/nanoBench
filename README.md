@@ -3,7 +3,7 @@
 
 *nanoBench* is a Linux-based tool for running small microbenchmarks on recent Intel and AMD x86 CPUs. The microbenchmarks are evaluated using [hardware performance counters](https://en.wikipedia.org/wiki/Hardware_performance_counter). The reading of the performance counters is implemented in a way that incurs only minimal overhead.
 
-There are two variants of the tool: A user-space implementation and a kernel module. The kernel module makes it possible to benchmark privileged instructions, and it can allow for more accurate measurement results as it disables interrupts and preemptions during measurements. The disadvantage of the kernel module compared to the user-space variant is that it is quite risky to allow arbitrary code to be executed in kernel space. Therefore, the kernel module should not be used on a production system.
+There are two variants of the tool: A user-space implementation and a kernel module. The kernel module makes it possible to benchmark privileged instructions, to use uncore performance counters, and it can allow for more accurate measurement results as it disables interrupts and preemptions during measurements. The disadvantage of the kernel module compared to the user-space variant is that it is quite risky to allow arbitrary code to be executed in kernel space. Therefore, the kernel module should not be used on a production system.
 
 *nanoBench* is used for running the microbenchmarks for obtaining the latency, throughput, and port usage data that is available on [uops.info](http:www.uops.info).
 
@@ -31,7 +31,7 @@ To load the kernel module, run:
 
 ## Usage Examples
 
-The recommended way for using *nanoBench* is with the wrapper scripts `nanoBench.sh` (for the user-space variant) and `kernel-nanoBench.sh` (for the kernel module). The following examples work with both of these scripts.
+The recommended way for using *nanoBench* is with the wrapper scripts `nanoBench.sh` (for the user-space variant) and `kernel-nanoBench.sh` (for the kernel module). The following examples work with both of these scripts. For the kernel module, we also provide a Python wrapper: `kernelNanoBench.py`.
 
 For obtaining repeatable results, it can help to disable hyper-threading. This can be done with the `disable-HT.sh` script.
 
@@ -64,7 +64,7 @@ The config file contains the required information for configuring the programmab
 
 The assembler code sequence may use and modify any general-purpose or vector registers (unless the `-loop` or `-no_mem` options are used), including the stack pointer. There is no need to restore the registers to their original values at the end.
 
-R14, RDI, RSI, RSP, and RBP are initialized with addresses in the middle of dedicated memory areas (of 1 MB each), that can be freely modified by the assembler code.
+R14, RDI, RSI, RSP, and RBP are initialized with addresses in the middle of dedicated physically-contiguous  memory areas (of 1 MB each), that can be freely modified by the assembler code. When using the kernel module, the size of the memory area that R14 points to can be increased using the `set-R14-size.sh` script; more details on this can be found [here](tools/CacheAnalyzer#prerequisites).
 
 All other registers have initially undefined values. They can, however, be initialized as shown in the following example.
 
@@ -129,9 +129,11 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | Option                       | Description |
 |------------------------------|-------------|
 | `-asm <code>`                | Assembler code sequence (in Intel syntax) containing the code to be benchmarked. |
-| `-asm_init <code>`           | Assembler code sequence (in Intel syntax) that is executed once before executing the benchmark code. |
+| `-asm_init <code>`           | Assembler code sequence (in Intel syntax) that is executed once in the beginning of every benchmark run. |
+| `-asm_one_time_init <code>`  | Assembler code sequence (in Intel syntax) that is executed once before the first benchmark run. |
 | `-code <filename>`           | A binary file containing the code to be benchmarked as raw x86 machine code.  *This option cannot be used together with `-asm`.* |
-| `-code_init <filename>`      | A binary file containing code to be executed once before executing the benchmark code. *This option cannot be used together with `-asm_init`.* |
+| `-code_init <filename>`      | A binary file containing code to be executed once in the beginning of every benchmark run. *This option cannot be used together with `-asm_init`.* |
+| `-code_one_time_init <code>` | A binary file containing code to be executed once before the first benchmark run. *This option cannot be used together with `-asm_one_time_init`.*|
 | `-config <file>`             | File with performance counter event specifications. Details are described [below](#performance-counter-config-files).  |
 | `-n_measurements <n>`        | Number of times the measurements are repeated. `[Default: n=10]` |
 | `-unroll_count <n>`          | Number of copies of the benchmark code inside the inner loop. `[Default: n=1000]` |
@@ -154,10 +156,16 @@ The following parameters are only supported by `nanoBench.sh`.
 | `-os <n>`  | If n=1, performance events are counted when the processor is operating at privilege level 0.  `[Default: n=0]` |
 | `-debug`   | Enables the debug mode (see [below](#debug-mode)). |
 
+The following parameter is only supported by `kernel-nanoBench.sh`.
+
+| Option               | Description |
+|----------------------|-------------|
+| `-msr_config <file>` | File with performance counter event specifications for counters that can only be read with the `RDMSR` instruction, such as uncore counters. Details are described [below](#msr-config-files). |
+
 
 ## Performance Counter Config Files
 
-We provide provide performance counter configuration files for most recent Intel and AMD CPUs in the `configs` folder. These files can be adapted/reduced to the events you are interested in.
+We provide provide performance counter configuration files (for counters that can be read with the `RDPMC` instruction) for most recent Intel and AMD CPUs in the `configs` folder. These files can be adapted/reduced to the events you are interested in.
 
 The format of the entries in the configuration files is
 
@@ -165,12 +173,30 @@ The format of the entries in the configuration files is
 
 You can find details on the meanings of the different parts of the entries in chapters 18 and 19 of [Intel's System Programming Guide](https://software.intel.com/sites/default/files/managed/a4/60/325384-sdm-vol-3abcd.pdf).
 
+## MSR Performance Counter Config Files
+
+Some performance counters, such as the uncore counters on Intel CPUs, cannot be read with the `RDPMC` instruction, but only with the `RDMSR` instruction. The entries in the corresponding configuration files have the following format:
+
+    msr_...=...(.msr_...=...)* msr_... Name
+
+For example, the line
+
+    msr_0xE01=0x20000000.msr_700=0x408F34 msr_706 LLC_LOOKUP_CBO_0
+
+can be used to count the number of last-level cache lookups in C-Box 0 on a Skylake system. Details on this can be found in Intel's uncore performance monitoring reference manuals, e.g., [here](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/6th-gen-core-family-uncore-performance-monitoring-manual.pdf).
+
+## Pausing Performance Counting
+
+If the `-no_mem` option is used, nanoBench provides a feature to temporarily pause performance counting. This is enabled by including the *magic* byte sequences `0xF0b513b1C2813F04` (for stopping the counters), and `0xE0b513b1C2813F04` (for restarting them) in the code of the microbenchmark.
+
+Using this feature incurs a certain timing overhead that will be included in the measurement results. It is therefore, in particular, useful for microbenchmarks that do not measure the time, but e.g., cache hits or misses, such as the microbenchmarks generated by the tools in [tools/CacheAnalyzer](tools/CacheAnalyzer).
+
 ## Debug Mode
 
 If the debug mode is enabled, the [generated code](#generated-code) contains a breakpoint right before the line `m2 = read_perf_ctrs`, and *nanoBench* is run using *gdb*. This makes it possible to analyze the effect of the code to be benchmarked on registers and on the memory. The command `info all-registers` can, for example, be used to display the current values of all registers.
 
 ## Supported Platforms
 
-*nanoBench* should work with all Intel processors supporting architectural performance monitoring version ≥ 3, as well as with AMD Family 17h processors.
+*nanoBench* should work with all Intel processors supporting architectural performance monitoring version ≥ 2, as well as with AMD Family 17h processors.
 
 The code was developed and tested using Ubuntu 18.04.

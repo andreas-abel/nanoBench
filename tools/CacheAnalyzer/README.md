@@ -105,7 +105,7 @@ This file contains the implementations of the simulated policies used by some of
 
 To use the tools in this folder, the nanoBench kernel module needs to be loaded. Instructions on how to do this can be found in the main README on <https://github.com/andreas-abel/nanoBench>.
 
-nanoBench needs to be configured to use a physically contiguous memory area that is large enough for the access sequences that you want to test. This can be achieved with the `set-R14-size.sh` script in the main NanoBench folder.
+nanoBench needs to be configured to use a physically-contiguous memory area that is large enough for the access sequences that you want to test. This can be achieved with the `set-R14-size.sh` script in the main NanoBench folder.
 You can, e.g., call it as follows
 
     sudo ./set-R14-size.sh 1G
