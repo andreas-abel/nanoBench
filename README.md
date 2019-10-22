@@ -160,7 +160,7 @@ The following parameter is only supported by `kernel-nanoBench.sh`.
 
 | Option               | Description |
 |----------------------|-------------|
-| `-msr_config <file>` | File with performance counter event specifications for counters that can only be read with the `RDMSR` instruction, such as uncore counters. Details are described [below](#msr-config-files). |
+| `-msr_config <file>` | File with performance counter event specifications for counters that can only be read with the `RDMSR` instruction, such as uncore counters. Details are described [below](#msr-performance-counter-config-files). |
 
 
 ## Performance Counter Config Files
