@@ -64,7 +64,7 @@ The config file contains the required information for configuring the programmab
 
 The assembler code sequence may use and modify any general-purpose or vector registers (unless the `-loop` or `-no_mem` options are used), including the stack pointer. There is no need to restore the registers to their original values at the end.
 
-R14, RDI, RSI, RSP, and RBP are initialized with addresses in the middle of dedicated physically-contiguous  memory areas (of 1 MB each), that can be freely modified by the assembler code. When using the kernel module, the size of the memory area that R14 points to can be increased using the `set-R14-size.sh` script; more details on this can be found [here](tools/CacheAnalyzer#prerequisites).
+R14, RDI, RSI, RSP, and RBP are initialized with addresses in the middle of dedicated memory areas (of 1 MB each), that can be freely modified by the assembler code. When using the kernel module, the size of the memory area that R14 points to can be increased using the `set-R14-size.sh` script; more details on this can be found [here](tools/CacheAnalyzer#prerequisites).
 
 All other registers have initially undefined values. They can, however, be initialized as shown in the following example.
 

@@ -130,9 +130,12 @@ static ssize_t config_show(struct kobject *kobj, struct kobj_attribute *attr, ch
     ssize_t count = 0;
     for (int i=0; i<n_pfc_configs; i++) {
         if (is_Intel_CPU) {
-            count += sprintf(&(buf[count]), "%02lx.%02lx %s\n", pfc_configs[i].evt_num, pfc_configs[i].umask, pfc_configs[i].description);
+            count += snprintf(&(buf[count]), PAGE_SIZE-count, "%02lx.%02lx %s\n", pfc_configs[i].evt_num, pfc_configs[i].umask, pfc_configs[i].description);
         } else {
-            count += sprintf(&(buf[count]), "%03lx.%02lx %s\n", pfc_configs[i].evt_num, pfc_configs[i].umask, pfc_configs[i].description);
+            count += snprintf(&(buf[count]), PAGE_SIZE-count, "%03lx.%02lx %s\n", pfc_configs[i].evt_num, pfc_configs[i].umask, pfc_configs[i].description);
+        }
+        if (count > PAGE_SIZE) {
+            return PAGE_SIZE-1;
         }
     }
     return count;

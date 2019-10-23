@@ -142,7 +142,7 @@ void parse_counter_configs() {
             continue;
         }
 
-        pfc_configs[n_pfc_configs].invalid = 0;
+        pfc_configs[n_pfc_configs] = (struct pfc_config){0};
 
         char* config_str = strsep(&line, " \t");
 
