@@ -17,7 +17,7 @@ def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
       subprocess.check_call(['as', asmFile, '-o', objFile])
    except subprocess.CalledProcessError as e:
       sys.stderr.write("Error (assemble): " + str(e))
-      sys.stderr.write(asm)
+      sys.stderr.write(code)
       exit(1)
 
 
