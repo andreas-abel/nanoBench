@@ -109,6 +109,28 @@ AllRandPLRUVariants = {
    'PLRURand': PLRURandSim,
 }
 
+class LRU_PLRU4Sim(ReplPolicySim):
+   def __init__(self, assoc):
+      self.PLRUs = [PLRUSim(4, linearInit=True) for _ in range(0, assoc/4)]
+      self.PLRUOrdered = list(self.PLRUs) # from MRU to LRU
+
+   def acc(self, block):
+      hit = False
+      curPLRU = self.PLRUOrdered[-1]
+      for plru in self.PLRUs:
+         if block in plru.blocks:
+            curPLRU = plru
+            hit = True
+            break
+      else:
+         for plru in self.PLRUs:
+            if None in plru.blocks:
+               curPLRU = plru
+               break
+      curPLRU.acc(block)
+      self.PLRUOrdered = [curPLRU] + [plru for plru in self.PLRUOrdered if plru!=curPLRU]
+      return hit
+
 class QLRUSim(ReplPolicySim):
    def __init__(self, assoc, hitFunc, missFunc, replIdxFunc, updFunc, updOnMissOnly=False):
       super(QLRUSim, self).__init__(assoc)
@@ -259,6 +281,7 @@ CommonPolicies = {
    'LRU': LRUSim,
    'PLRU': PLRUSim,
    'PLRUl': PLRUlSim,
+   'LRU_PLRU4': LRU_PLRU4Sim,
    'MRU': MRUSim, # NHM
    'MRU_N': MRUNSim, # SNB
    'NRU': NRUSim,
@@ -297,7 +320,7 @@ def getAges(blocks, seq, policySimClass, assoc):
    for block in blocks:
       for i in count(0):
          curSeq = seq + ' ' + ' '.join('N' + str(n) for n in range(0,i)) + ' ' + block + '?'
-         if getHits(policySimClass(assoc), curSeq) == 0:
+         if getHits(curSeq, policySimClass, assoc, 1) == 0:
             ages[block] = i
             break
    return ages
@@ -321,7 +344,7 @@ def getGraph(blocks, seq, policySimClass, assoc, maxAge, nSets=1, nRep=1, agg="m
    return traces
 
 
-def getPermutations(policySimClass, assoc, maxAge=None):
+def getPermutations(policySimClass, assoc):
    # initial ages
    initBlocks = ['I' + str(i) for i in range(0, assoc)]
    seq = ' '.join(initBlocks)

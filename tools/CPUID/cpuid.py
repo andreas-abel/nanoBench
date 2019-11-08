@@ -168,12 +168,14 @@ VersionInfo = collections.namedtuple('VersionInfo', 'displ_family displ_model st
 def version_info(cpu):
    a, _, _, _ = cpu(0x01)
 
-   displ_family = (a >> 8) & 0xF
-   if (displ_family == 0x0F):
+   family_ID = (a >> 8) & 0xF
+
+   displ_family = family_ID
+   if (family_ID == 0x0F):
       displ_family += (a >> 20) & 0xFF
 
    displ_model = (a >> 4) & 0xF
-   if (displ_family == 0x06 or displ_family == 0x0F):
+   if (family_ID == 0x06 or family_ID == 0x0F):
       displ_model += (a >> 12) & 0xF0
 
    stepping = a & 0xF
@@ -211,6 +213,8 @@ def micro_arch(cpu):
          return 'CFL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x66)]:
       return 'CNL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x7D), (0x06, 0x7E)]:
+      return 'ICL'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x01), (0x17, 0x11)]:
       return 'ZEN'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x08), (0x17, 0x18)]:
@@ -491,7 +495,11 @@ def get_cache_info(cpu):
       L3Size = int(get_bits(d, 18, 31)*512)
       L3Assoc = 0
       d_15_12 = get_bits(d, 12, 15)
-      if d_15_12 == 0x8: L3Assoc = 16
+      if d_15_12 == 0x1: L3Assoc = 1
+      elif d_15_12 == 0x2: L3Assoc = 2
+      elif d_15_12 == 0x4: L3Assoc = 4
+      elif d_15_12 == 0x6: L3Assoc = 8
+      elif d_15_12 == 0x8: L3Assoc = 16
       elif d_15_12 == 0xA: L3Assoc = 32
       elif d_15_12 == 0xB: L3Assoc = 48
       elif d_15_12 == 0xC: L3Assoc = 64

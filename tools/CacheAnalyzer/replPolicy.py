@@ -64,6 +64,7 @@ def main():
    parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=3)
    parser.add_argument("-findCtrEx", help="Tries to find a small counterexample for each policy (only available for deterministic policies)", action='store_true')
    parser.add_argument("-policies", help="Comma-separated list of policies to consider (Default: all deterministic policies)")
+   parser.add_argument("-best", help="Find the best matching policy (Default: abort if no policy agrees with all results)", action='store_true')
    parser.add_argument("-randPolicies", help="Test randomized policies", action='store_true')
    parser.add_argument("-allQLRUVariants", help="Test all QLRU variants", action='store_true')
    parser.add_argument("-assoc", help="Override the associativity", type=int)
@@ -126,6 +127,7 @@ def main():
 
             if sim != actual:
                possiblePolicies.discard(p)
+               dists[p] += 1
                color = 'red'
                if args.findCtrEx and not p in counterExamples:
                   counterExamples[p] = findSmallCounterexample(p, ((args.initSeq + ' ') if args.initSeq else ''), args.level, args.sets, cBox, assoc, seq,
@@ -145,7 +147,7 @@ def main():
 
       html += ['</tr>']
 
-      if not args.randPolicies:
+      if not args.randPolicies and not args.best:
          print 'Possible policies: ' + ', '.join(possiblePolicies)
          if not possiblePolicies: break
 
@@ -160,7 +162,7 @@ def main():
    with open(args.output ,'w') as f:
       f.write('\n'.join(html))
 
-   if not args.randPolicies:
+   if not args.randPolicies and not args.best:
       print 'Possible policies: ' + ', '.join(possiblePolicies)
    else:
       for p, d in reversed(sorted(dists.items(), key=lambda d: d[1])):

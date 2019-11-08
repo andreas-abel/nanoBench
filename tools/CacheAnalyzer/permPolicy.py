@@ -14,6 +14,7 @@ import plotly.graph_objects as go
 
 from cacheLib import *
 from cacheGraph import *
+import cacheSim
 
 import logging
 log = logging.getLogger(__name__)
@@ -83,21 +84,27 @@ def main():
    parser.add_argument("-noInit", help="Do not fill sets with associativity many elements first", action='store_true')
    parser.add_argument("-maxAge", help="Maximum age", type=int)
    parser.add_argument("-cBox", help="cBox (default: 1)", type=int, default=1)
+   parser.add_argument("-sim", help="Simulate the given policy instead of running the experiment on the hardware")
+   parser.add_argument("-simAssoc", help="Associativity of the simulated cache (default: 8)", type=int, default=8)
    parser.add_argument("-logLevel", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)", default='WARNING')
    parser.add_argument("-output", help="Output file name", default='permPolicy.html')
    args = parser.parse_args()
 
    logging.basicConfig(stream=sys.stdout, format='%(message)s', level=logging.getLevelName(args.logLevel))
 
-   title = cpuid.cpu_name(cpuid.CPUID()) + ', Level: ' + str(args.level)
+   if not args.sim:
+      title = cpuid.cpu_name(cpuid.CPUID()) + ', Level: ' + str(args.level)
 
-   html = ['<html>', '<head>',  '<title>' + title + '</title>', '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>', '</head>', '<body>']
-   html += ['<h3>' + title + '</h3>']
-   getPermutations(args.level, html, cacheSets=args.sets, getInitialAges=(not args.noInit), maxAge=args.maxAge, cBox=args.cBox)
-   html += ['</body>', '</html>']
+      html = ['<html>', '<head>',  '<title>' + title + '</title>', '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>', '</head>', '<body>']
+      html += ['<h3>' + title + '</h3>']
+      getPermutations(args.level, html, cacheSets=args.sets, getInitialAges=(not args.noInit), maxAge=args.maxAge, cBox=args.cBox)
+      html += ['</body>', '</html>']
 
-   with open(args.output ,'w') as f:
-      f.write('\n'.join(html))
+      with open(args.output ,'w') as f:
+         f.write('\n'.join(html))
+   else:
+      policyClass = cacheSim.AllPolicies[args.sim]
+      cacheSim.getPermutations(policyClass, args.simAssoc)
 
 
 if __name__ == "__main__":

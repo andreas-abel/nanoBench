@@ -3,14 +3,16 @@ from itertools import count
 from collections import namedtuple
 
 import math
+import random
 import re
 import subprocess
 import sys
 
-import cpuid
-
 sys.path.append('../..')
 from kernelNanoBench import *
+
+sys.path.append('../CPUID')
+import cpuid
 
 import logging
 log = logging.getLogger(__name__)
@@ -21,26 +23,26 @@ def getEventConfig(event):
    if event == 'L1_HIT':
       if arch in ['Core', 'EnhancedCore']: return '40.0E ' + event # L1D_CACHE_LD.MES
       if arch in ['NHM', 'WSM']: return 'CB.01 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL']: return 'D1.01 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.01 ' + event
    if event == 'L1_MISS':
       if arch in ['Core', 'EnhancedCore']: return 'CB.01.CTR=0 ' + event
-      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL']: return 'D1.08 ' + event
+      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.08 ' + event
       if arch in ['ZEN+']: return '064.70 ' + event
    if event == 'L2_HIT':
       if arch in ['Core', 'EnhancedCore']: return '29.7E ' + event # L2_LD.THIS_CORE.ALL_INCL.MES
       if arch in ['NHM', 'WSM']: return 'CB.02 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL']: return 'D1.02 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.02 ' + event
       if arch in ['ZEN+']: return '064.70 ' + event
    if event == 'L2_MISS':
       if arch in ['Core', 'EnhancedCore']: return 'CB.04.CTR=0 ' + event
-      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL']: return 'D1.10 ' + event
+      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.10 ' + event
       if arch in ['ZEN+']: return '064.08 ' + event
    if event == 'L3_HIT':
       if arch in ['NHM', 'WSM']: return 'CB.04 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL']: return 'D1.04 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.04 ' + event
    if event == 'L3_MISS':
       if arch in ['NHM', 'WSM']: return 'CB.10 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL']: return 'D1.20 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.20 ' + event
    return ''
 
 def getDefaultCacheConfig():
@@ -49,7 +51,7 @@ def getDefaultCacheConfig():
 
 def getDefaultCacheMSRConfig():
    if 'Intel' in getCPUVendor() and 'L3' in getCpuidCacheInfo() and getCpuidCacheInfo()['L3']['complex']:
-      if getArch() in ['CNL']:
+      if getArch() in ['CNL', 'ICL']:
          dist = 8
          ctrOffset = 2
       else:
@@ -149,7 +151,7 @@ def getNCBoxUnits():
       try:
          subprocess.check_output(['modprobe', 'msr'])
          cbo_config = subprocess.check_output(['rdmsr', '0x396'])
-         if getArch() in ['CNL']:
+         if getArch() in ['CNL', 'ICL']:
             getNCBoxUnits.nCBoxUnits = int(cbo_config)
          else:
             getNCBoxUnits.nCBoxUnits = int(cbo_config) - 1
@@ -207,6 +209,10 @@ def getPointerChasingInit(addresses):
    if tuple(addresses) in pointerChasingInits:
       return pointerChasingInits[tuple(addresses)]
 
+   #addresses_tail = addresses[1:]
+   #random.shuffle(addresses_tail)
+   #adresses = [addresses[0]] + addresses_tail
+
    init = 'lea RAX, [R14+' + str(addresses[0]) + ']; '
    init += 'mov RBX, RAX; '
 
@@ -235,7 +241,7 @@ def getPointerChasingInit(addresses):
 
 ExperimentCode = namedtuple('ExperimentCode', 'code init oneTimeInit')
 
-def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False):
+def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False, afterEveryAcc=''):
    distinctAddrLists = set(tuple(l.addresses) for l in initAddressLists+codeAddressLists)
    if len(distinctAddrLists) > 1 and set.intersection(*list(set(l) for l in distinctAddrLists)):
       raise ValueError('same address in different lists')
@@ -272,7 +278,7 @@ def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False):
 
          if addressList.flush:
             for address in addresses:
-               codeList.append('clflush [R14 + ' + str(address) + ']; ')
+               codeList.append('clflush [R14 + ' + str(address) + ']; ' + afterEveryAcc)
          else:
             if len(addresses) == 1:
                codeList.append('mov RCX, [R14 + ' + str(addresses[0]) + ']; ')
@@ -281,7 +287,7 @@ def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False):
                   oneTimeInit.append(getPointerChasingInit(addresses))
                   alreadyAddedOneTimeInits.add(tuple(addresses))
 
-               codeList.append('lea RCX, [R14+' + str(addresses[0]) + ']; 1: mov RCX, [RCX]; jrcxz 2f; jmp 1b; 2: ')
+               codeList.append('lea RCX, [R14+' + str(addresses[0]) + ']; 1: mov RCX, [RCX]; ' + afterEveryAcc + 'jrcxz 2f; jmp 1b; 2: ')
 
       if not isInit and not pfcEnabled:
          codeList.append(PFC_START_ASM + '; ')
@@ -361,7 +367,7 @@ def getAddresses(level, wayID, cacheSetList, cBox=1, clearHL=True):
             if getCacheInfo(3).nSlices == getNCBoxUnits():
                L3SetToWayIDMap[cBox][L3Set][wayID] = next(iter(getNewAddressesInCBox(1, cBox, L3Set, L3SetToWayIDMap[cBox][L3Set].values())))
             else:
-               L3SetToWayIDMap[cBox][L3Set][wayID] = next(iter(findCongruentL3Addresses(1, L3SetToWayIDMap[cBox][L3Set].values())))
+               L3SetToWayIDMap[cBox][L3Set][wayID] = next(iter(findCongruentL3Addresses(1, L3Set, cBox, L3SetToWayIDMap[cBox][L3Set].values())))
          addresses.append(L3SetToWayIDMap[cBox][L3Set][wayID])
 
       return addresses
@@ -447,14 +453,16 @@ def printNB(nb_result):
 def findMinimalL3EvictionSet(cacheSet, cBox):
    setNanoBenchParameters(config='\n'.join([getEventConfig('L3_HIT'), getEventConfig('L3_MISS')]), msrConfig=None, nMeasurements=10, unrollCount=1, loopCount=10,
                            warmUpCount=None, initialWarmUpCount=None, aggregateFunction='med', basicMode=True, noMem=True, verbose=None)
-
    if not hasattr(findMinimalL3EvictionSet, 'evSetForCacheSet'):
       findMinimalL3EvictionSet.evSetForCacheSet = dict()
-   evSetForCacheSet = findMinimalL3EvictionSet.evSetForCacheSet
+   if not cBox in findMinimalL3EvictionSet.evSetForCacheSet:
+      findMinimalL3EvictionSet.evSetForCacheSet[cBox] = dict()
+   evSetForCacheSet = findMinimalL3EvictionSet.evSetForCacheSet[cBox]
 
    if cacheSet in evSetForCacheSet:
       return evSetForCacheSet[cacheSet]
 
+   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False)
    addresses = []
    curAddress = cacheSet*getCacheInfo(3).lineSize
 
@@ -468,7 +476,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox):
       if not getCBoxOfAddress(curAddress) == cBox: continue
 
       addresses += [curAddress]
-      ec = getCodeForAddressLists([AddressList(addresses,False,False)])
+      ec = getCodeForAddressLists([AddressList(addresses,False,False), clearHLAddrList])
 
       setNanoBenchParameters(config=getDefaultCacheConfig(), msrConfig='', nMeasurements=10, unrollCount=1, loopCount=100,
                              aggregateFunction='med', basicMode=True, noMem=True)
@@ -480,7 +488,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox):
    for i in reversed(range(0, len(addresses))):
       tmpAddresses = addresses[:i] + addresses[(i+1):]
 
-      ec = getCodeForAddressLists([AddressList(tmpAddresses,False,False)])
+      ec = getCodeForAddressLists([AddressList(tmpAddresses,False,False), clearHLAddrList])
       nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
 
       if nb['L3_HIT'] < len(tmpAddresses) - 0.9:
@@ -490,16 +498,20 @@ def findMinimalL3EvictionSet(cacheSet, cBox):
    return addresses
 
 
-def findCongruentL3Addresses(n, L3EvictionSet):
-   setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig=None, nMeasurements=10, unrollCount=1, loopCount=100,
-                           warmUpCount=None, initialWarmUpCount=None, aggregateFunction='med', basicMode=True, noMem=True, verbose=None)
+def findCongruentL3Addresses(n, cacheSet, cBox, L3EvictionSet):
+   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False)
+
    congrAddresses = []
    L3WaySize = getCacheInfo(3).waySize
 
    for newAddr in count(max(L3EvictionSet)+L3WaySize, L3WaySize):
-      tmpAddresses = L3EvictionSet[:getCacheInfo(3).assoc] + [newAddr]
+      if not getCBoxOfAddress(newAddr) == cBox: continue
 
-      ec = getCodeForAddressLists([AddressList(tmpAddresses,False,False)])
+      tmpAddresses = L3EvictionSet[:getCacheInfo(3).assoc] + [newAddr]
+      ec = getCodeForAddressLists([AddressList(tmpAddresses,False,False), clearHLAddrList])
+
+      setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig=None, nMeasurements=10, unrollCount=1, loopCount=100,
+                             aggregateFunction='med', basicMode=True, noMem=True, verbose=None)
       nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
 
       if nb['L3_HIT'] < len(tmpAddresses) - 0.9:
@@ -511,9 +523,17 @@ def findCongruentL3Addresses(n, L3EvictionSet):
 
 
 def findMaximalNonEvictingL3SetInCBox(start, stride, L3Assoc, cBox):
-   curAddress = start
+   clearHLAddresses = []
    addresses = []
 
+   curAddress = start
+   while len(clearHLAddresses) < 2*(getCacheInfo(1).assoc+getCacheInfo(2).assoc):
+      if getCBoxOfAddress(curAddress) != cBox:
+         clearHLAddresses.append(curAddress)
+      curAddress += stride
+   clearHLAddrList = AddressList(clearHLAddresses, True, False)
+
+   curAddress = start
    while len(addresses) < L3Assoc:
       if getCBoxOfAddress(curAddress) == cBox:
          addresses.append(curAddress)
@@ -527,7 +547,7 @@ def findMaximalNonEvictingL3SetInCBox(start, stride, L3Assoc, cBox):
          continue
 
       newAddresses = addresses + [curAddress]
-      ec = getCodeForAddressLists([AddressList(newAddresses,False,False)])
+      ec = getCodeForAddressLists([AddressList(newAddresses,False,False), clearHLAddrList])
 
       setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig='', nMeasurements=10, unrollCount=1, loopCount=10,
                              aggregateFunction='med', basicMode=True, noMem=True)

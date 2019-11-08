@@ -81,13 +81,9 @@ If the replacement policy is a permutation policy (see [Measurement-based Modeli
 
 Generates graphs that show the number of core cycles and the number of hits/misses (per access) when accessing memory areas of different sizes repeatedly using a given stride (which can be specified with the `-stride` option). An example can be seen [here](https://uops.info/cache/lat_CFL.html).
 
-## cpuid.py
-
-Obtains cache and TLB information using the `CPUID` instruction.
-
 ## cacheInfo.py
 
-Combines information from `cpuid.py` with information on the number of slices of the L3 cache that is obtained through measurements.
+Combines information obtained by executing the `CPUID` instruction with information on the number of slices of the L3 cache that is obtained through measurements.
 
 ## setDueling.py
 
