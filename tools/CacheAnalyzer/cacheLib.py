@@ -174,7 +174,7 @@ def getCBoxOfAddress(address):
       setNanoBenchParameters(config='', msrConfig=getDefaultCacheMSRConfig(), nMeasurements=10, unrollCount=1, loopCount=10, aggregateFunction='min',
                              basicMode=True, noMem=True)
 
-      ec = getCodeForAddressLists([AddressList([address],False,True)])
+      ec = getCodeForAddressLists([AddressList([address], False, True, False)])
       nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
 
       nCacheLookups = [nb['CACHE_LOOKUP_CBO_'+str(cBox)] for cBox in range(0, getNCBoxUnits())]
@@ -258,6 +258,14 @@ def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False, 
 
       pfcEnabled = True
       for addressList in addressLists:
+         if addressList.wbinvd:
+            if addressList.exclude and pfcEnabled:
+               codeList.append(PFC_STOP_ASM + '; ')
+            codeList.append('wbinvd; ')
+            if addressList.exclude and pfcEnabled:
+               codeList.append(PFC_START_ASM + '; ')
+            continue
+
          addresses = addressList.addresses
          if len(addresses) < 1: continue
 
@@ -399,7 +407,7 @@ def parseCacheSetsStr(level, clearHL, cacheSetsStr):
    return cacheSetList
 
 
-AddressList = namedtuple('AddressList', 'addresses exclude flush')
+AddressList = namedtuple('AddressList', 'addresses exclude flush wbinvd')
 
 # cacheSets=None means do access in all sets
 # in this case, the first nL1Sets many sets of L2 will be reserved for clearing L1
@@ -411,7 +419,7 @@ def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, clearHL=T
 
    clearHLAddrList = None
    if (clearHL and level > 1):
-      clearHLAddrList = AddressList(getClearHLAddresses(level, cacheSetList, cBox), True, False)
+      clearHLAddrList = AddressList(getClearHLAddresses(level, cacheSetList, cBox), True, False, False)
 
    initAddressLists = []
    seqAddressLists = []
@@ -420,6 +428,10 @@ def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, clearHL=T
    for seqString, addrLists in [(initSeq, initAddressLists), (seq, seqAddressLists)]:
       for seqEl in seqString.split():
          name = getBlockName(seqEl)
+         if name == '<wbinvd>':
+            addrLists.append(AddressList([], True, False, True))
+            continue
+
          wayID = nameToID.setdefault(name, len(nameToID))
          exclude = not '?' in seqEl
          flush = '!' in seqEl
@@ -428,7 +440,7 @@ def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, clearHL=T
 
          if clearHLAddrList is not None and not flush:
             addrLists.append(clearHLAddrList)
-         addrLists.append(AddressList(addresses, exclude, flush))
+         addrLists.append(AddressList(addresses, exclude, flush, False))
 
    ec = getCodeForAddressLists(seqAddressLists, initAddressLists, wbinvd)
 
@@ -462,7 +474,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox):
    if cacheSet in evSetForCacheSet:
       return evSetForCacheSet[cacheSet]
 
-   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False)
+   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False, False)
    addresses = []
    curAddress = cacheSet*getCacheInfo(3).lineSize
 
@@ -476,7 +488,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox):
       if not getCBoxOfAddress(curAddress) == cBox: continue
 
       addresses += [curAddress]
-      ec = getCodeForAddressLists([AddressList(addresses,False,False), clearHLAddrList])
+      ec = getCodeForAddressLists([AddressList(addresses, False, False, False), clearHLAddrList])
 
       setNanoBenchParameters(config=getDefaultCacheConfig(), msrConfig='', nMeasurements=10, unrollCount=1, loopCount=100,
                              aggregateFunction='med', basicMode=True, noMem=True)
@@ -488,7 +500,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox):
    for i in reversed(range(0, len(addresses))):
       tmpAddresses = addresses[:i] + addresses[(i+1):]
 
-      ec = getCodeForAddressLists([AddressList(tmpAddresses,False,False), clearHLAddrList])
+      ec = getCodeForAddressLists([AddressList(tmpAddresses, False, False, False), clearHLAddrList])
       nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
 
       if nb['L3_HIT'] < len(tmpAddresses) - 0.9:
@@ -499,7 +511,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox):
 
 
 def findCongruentL3Addresses(n, cacheSet, cBox, L3EvictionSet):
-   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False)
+   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False, False)
 
    congrAddresses = []
    L3WaySize = getCacheInfo(3).waySize
@@ -508,7 +520,7 @@ def findCongruentL3Addresses(n, cacheSet, cBox, L3EvictionSet):
       if not getCBoxOfAddress(newAddr) == cBox: continue
 
       tmpAddresses = L3EvictionSet[:getCacheInfo(3).assoc] + [newAddr]
-      ec = getCodeForAddressLists([AddressList(tmpAddresses,False,False), clearHLAddrList])
+      ec = getCodeForAddressLists([AddressList(tmpAddresses, False, False, False), clearHLAddrList])
 
       setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig=None, nMeasurements=10, unrollCount=1, loopCount=100,
                              aggregateFunction='med', basicMode=True, noMem=True, verbose=None)
@@ -531,7 +543,7 @@ def findMaximalNonEvictingL3SetInCBox(start, stride, L3Assoc, cBox):
       if getCBoxOfAddress(curAddress) != cBox:
          clearHLAddresses.append(curAddress)
       curAddress += stride
-   clearHLAddrList = AddressList(clearHLAddresses, True, False)
+   clearHLAddrList = AddressList(clearHLAddresses, True, False, False)
 
    curAddress = start
    while len(addresses) < L3Assoc:
@@ -547,7 +559,7 @@ def findMaximalNonEvictingL3SetInCBox(start, stride, L3Assoc, cBox):
          continue
 
       newAddresses = addresses + [curAddress]
-      ec = getCodeForAddressLists([AddressList(newAddresses,False,False), clearHLAddrList])
+      ec = getCodeForAddressLists([AddressList(newAddresses, False, False, False), clearHLAddrList])
 
       setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig='', nMeasurements=10, unrollCount=1, loopCount=10,
                              aggregateFunction='med', basicMode=True, noMem=True)

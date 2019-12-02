@@ -32,7 +32,7 @@ def main():
          xValues.append(str(x))
          addresses = range(0, x, args.stride)
          nAddresses.append(len(addresses))
-         ec = getCodeForAddressLists([AddressList(addresses,False,False)], wbinvd=True)
+         ec = getCodeForAddressLists([AddressList(addresses, False, False, False)], wbinvd=True)
          nbDicts.append(runNanoBench(code=ec.code, init=ec.init, oneTimeInit=ec.oneTimeInit))
       pt *= 2
 

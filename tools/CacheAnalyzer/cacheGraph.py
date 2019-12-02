@@ -53,6 +53,7 @@ def main():
       blocksStr = args.blocks
    else:
       blocksStr = args.seq
+   blocksStr = blocksStr.replace('<wbinvd>', '')
    blocks = list(OrderedDict.fromkeys(re.sub('[?!,;]', ' ', blocksStr).split()))
 
    html = ['<html>', '<head>', '<script src="https://cdn.plot.ly/plotly-latest.min.js">', '</script>', '</head>', '<body>']

@@ -19,7 +19,7 @@ The tool will make memory accesses to four different blocks in all of the specif
 
 Between every two accesses to the same set in a lower-level cache, the tool automatically adds enough accesses to the higher-level caches (that map to different sets and/or slices in the lower-level cache) to make sure that the corresponding lines are evicted from the higher-level cache and the access actually reaches the lower-level cache. These additional accesses are excluded from the performance counter measurements.
 
-By default, the `WBINVD` instruction is call before executing the access sequence. This can be disabled with the `-noWbinvd` option.
+By default, the `wbinvd` instruction is called before executing the access sequence. This can be disabled with the `-noWbinvd` option. It is also possible to execute the `wbinvd` instruction between specific elements of an access sequence by inserting `<wbinvd>` at the corresponding location in the access sequence.
 
 The tool has the following command-line options:
 
