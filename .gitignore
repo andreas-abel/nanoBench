@@ -2,6 +2,12 @@
 *.cmd
 *.o
 *.o.ur-safe
+*.mod
+*.pyc
+*.html
+*.asm
+*.s
+
 
 # Kernel ignore files/directories
 kernel/.cache.mk
