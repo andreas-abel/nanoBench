@@ -16,6 +16,7 @@ def main():
    parser.add_argument("-level", help="Cache level (Default: 3)", type=int, default=3)
    parser.add_argument("-nRuns", help="Maximum number of runs", type=int, default=25)
    parser.add_argument("-loop", help="Loop count", type=int, default=25)
+   parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=10)
    parser.add_argument("-output", help="Output file name", default='setDueling.html')
    parser.add_argument("-logLevel", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)", default='INFO')
    args = parser.parse_args()
@@ -24,6 +25,7 @@ def main():
 
    assoc = getCacheInfo(args.level).assoc
    nSets = getCacheInfo(args.level).nSets
+   lineSize = getCacheInfo(1).lineSize
    nCBoxes = max(1, getNCBoxUnits())
    seq = ' '.join('B' + str(i) + '?' for i in range(0, assoc*4/3))
 
@@ -31,21 +33,47 @@ def main():
    html = ['<html>', '<head>', '<title>' + title + '</title>', '<script src="https://cdn.plot.ly/plotly-latest.min.js">', '</script>', '</head>', '<body>']
    html += ['<h3>' + title + '</h3>']
 
-   allSets = range(0,nSets)
-
+   setsForCBox = {cBox: range(0,nSets) for cBox in range(0, nCBoxes)}
    yValuesForCBox = {cBox: [[] for s in range(0, nSets)] for cBox in range(0, nCBoxes)}
 
-   for i in range(0, args.nRuns):
+   i = -1
+   notChanged = -1
+   prevEc = ExperimentCode('', '', '')
+
+   while notChanged < 10:
+      i += 1
+      notChanged += 1
+
       for cBox in range(0, nCBoxes):
          yValuesList = yValuesForCBox[cBox]
-         for s in list(allSets) * 2 + list(reversed(allSets)) * 2:
-            if yValuesList[s] and max(yValuesList[s]) > 2 and min(yValuesList[s]) < assoc/2:
-               continue
 
-            log.info('CBox ' + str(cBox) + ', run ' + str(i) + ', set: ' + str(s))
+         curSets = setsForCBox[cBox]
+         random.shuffle(curSets)
+         prevSets = curSets[:]
 
-            nb = runCacheExperiment(args.level, seq, cacheSets=str(s), clearHL=True, loop=args.loop, wbinvd=False, cBox=cBox, nMeasurements=1, warmUpCount=0)
-            yValuesList[s].append(nb['L' + str(args.level) + '_HIT'])
+         for si, s in enumerate(prevSets):
+            codeSet = (s + random.randint(1, nSets - 100)) % nSets
+            codeOffset = lineSize * codeSet
+
+            ec = getCodeForCacheExperiment(args.level, seq, initSeq='', cacheSetList=[s], cBox=cBox, clearHL=True, wbinvd=True)
+            oneTimeInit = prevEc.oneTimeInit + 'mov R15, ' + str(args.loop*args.nMeasurements) + '; pLoop:' + prevEc.code + '; dec R15; jnz pLoop; ' + ec.oneTimeInit
+
+            nb = runCacheExperimentCode(ec.code, ec.init, oneTimeInit, loop=args.loop, warmUpCount=0, codeOffset=codeOffset, nMeasurements=args.nMeasurements, agg='med')
+            hits = nb['L' + str(args.level) + '_HIT']
+
+            yv = yValuesList[s]
+            yv.append(hits)
+            yv.sort()
+
+            yvStr = str(yv) if len(yv) <= 5 else '[%s, %s, ..., %s, %s]' % (yv[0], yv[1], yv[-2], yv[-1])
+            log.info('CBox ' + str(cBox) + ', run ' + str(i) + ', set: ' + str(si+1) + '/' + str(len(prevSets)) + ' (' + str(s) + '), ' + yvStr)
+
+            if len(yv) >= 4 and yv[-1]-yv[0] > .5 and abs(yv[0]-yv[1]) < .5 and abs(yv[-1]-yv[-2]) < .5: #max(yValuesList[s]) - min(yValuesList[s]) > 0.1: #max(yValuesList[s]) > 2 and min(yValuesList[s]) < assoc/2:
+               curSets.remove(s)
+               notChanged = 0
+
+            if yv[-1]-yv[0] < .5:
+               prevEc = ec
 
    for cBox in range(0, nCBoxes):
       yValues = [min(x) + (max(x)-min(x))/2 for x in yValuesForCBox[cBox] if x]
