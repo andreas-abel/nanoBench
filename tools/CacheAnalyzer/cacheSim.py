@@ -131,6 +131,12 @@ class LRU_PLRU4Sim(ReplPolicySim):
       self.PLRUOrdered = [curPLRU] + [plru for plru in self.PLRUOrdered if plru!=curPLRU]
       return hit
 
+   def flush(self, block):
+      for plru in self.PLRUs:
+         if block in plru.blocks:
+            plru.flush(block)
+
+
 class QLRUSim(ReplPolicySim):
    def __init__(self, assoc, hitFunc, missFunc, replIdxFunc, updFunc, updOnMissOnly=False):
       super(QLRUSim, self).__init__(assoc)
@@ -298,18 +304,41 @@ AllRandPolicies = dict(AllRandQLRUVariants.items() + AllRandPLRUVariants.items()
 AllPolicies = dict(AllDetPolicies.items() + AllRandPolicies.items())
 
 
-def getHits(seq, policySimClass, assoc, nSets):
-   hits = 0
-   policySims = [policySimClass(assoc) for _ in range(0, nSets)]
+def parseCacheSetsStrSim(cacheSetsStr):
+   if cacheSetsStr is None:
+      raise ValueError('no cache sets specified')
 
+   cacheSetList = []
+   for s in cacheSetsStr.split(','):
+      if '-' in s:
+         first, last = s.split('-')[:2]
+         cacheSetList += range(int(first), int(last)+1)
+      else:
+         cacheSetList.append(int(s))
+
+   return cacheSetList
+
+
+def getHits(seq, policySimClass, assoc, cacheSetStr):
+   cacheSetList = parseCacheSetsStrSim(cacheSetStr)
+   allUsedSets = getAllUsedCacheSets(cacheSetList, seq)
+   policySims = {s: policySimClass(assoc) for s in allUsedSets}
+
+   hits = 0
    for blockStr in seq.split():
       blockName = getBlockName(blockStr)
-      if '!' in blockStr:
-         for policySim in policySims:
-            policySim.flush(blockName)
-      else:
-         for policySim in policySims:
-            hit = policySim.acc(blockName)
+      if blockName == '<wbinvd>':
+         policySims = {s: policySimClass(assoc) for s in allUsedSets}
+         continue
+
+      overrideSet = getBlockSet(blockStr)
+      sets = [overrideSet] if overrideSet is not None else cacheSetList
+
+      for s in sets:
+         if '!' in blockStr:
+            policySims[s].flush(blockName)
+         else:
+            hit = policySims[s].acc(blockName)
             if '?' in blockStr:
                hits += int(hit)
    return hits
@@ -320,7 +349,7 @@ def getAges(blocks, seq, policySimClass, assoc):
    for block in blocks:
       for i in count(0):
          curSeq = seq + ' ' + ' '.join('N' + str(n) for n in range(0,i)) + ' ' + block + '?'
-         if getHits(curSeq, policySimClass, assoc, 1) == 0:
+         if getHits(curSeq, policySimClass, assoc, '0') == 0:
             ages[block] = i
             break
    return ages
@@ -332,7 +361,7 @@ def getGraph(blocks, seq, policySimClass, assoc, maxAge, nSets=1, nRep=1, agg="m
       trace = []
       for i in range(0, maxAge):
          curSeq = seq + ' ' + ' '.join('N' + str(n) for n in range(0,i)) + ' ' + block + '?'
-         hits = [getHits(curSeq, policySimClass, assoc, nSets) for _ in range(0, nRep)]
+         hits = [getHits(curSeq, policySimClass, assoc, '0-'+str(nSets-1)) for _ in range(0, nRep)]
          if agg == "med":
             aggValue = median(hits)
          elif agg == "min":

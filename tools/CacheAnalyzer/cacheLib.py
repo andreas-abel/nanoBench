@@ -383,9 +383,16 @@ def getAddresses(level, wayID, cacheSetList, cBox=1, clearHL=True):
    raise ValueError('invalid level')
 
 
-# removes ?s and !s
+# removes ?s and !s, and returns the part before the first '_'
 def getBlockName(blockStr):
-   return re.sub('[?!]', '', blockStr)
+   return re.sub('[?!]', '', blockStr.split('_')[0])
+
+
+# removes ?s and !s, and returns the part after the last '_' (as int); returns None if there is no '_'
+def getBlockSet(blockStr):
+   if not '_' in blockStr:
+      return None
+   return int(re.match('\d+', blockStr.split('_')[-1]).group())
 
 
 def parseCacheSetsStr(level, clearHL, cacheSetsStr):
@@ -399,7 +406,7 @@ def parseCacheSetsStr(level, clearHL, cacheSetsStr):
             cacheSetList.append(int(s))
    else:
       nSets = getCacheInfo(level).nSets
-      if level > 1 and clearHL:
+      if level > 1 and clearHL and not (level == 3 and getCacheInfo(3).nSlices is not None):
          nHLSets = getCacheInfo(level-1).nSets
          cacheSetList = range(nHLSets, nSets)
       else:
@@ -407,19 +414,34 @@ def parseCacheSetsStr(level, clearHL, cacheSetsStr):
    return cacheSetList
 
 
+def findCacheSetForCode(cacheSetList, level):
+   nSets = getCacheInfo(level).nSets
+   sortedCacheSetList = sorted(cacheSetList)
+   sortedCacheSetList += [sortedCacheSetList[0] + nSets]
+
+   maxDist = 1
+   bestSet = 0
+   for i in range(len(sortedCacheSetList)-1):
+      dist = sortedCacheSetList[i+1] - sortedCacheSetList[i]
+      if dist > maxDist:
+         maxDist = dist
+         bestSet = (sortedCacheSetList[i] + 1) % nSets
+
+   return bestSet
+
+
+def getAllUsedCacheSets(cacheSetList, seq, initSeq=''):
+   cacheSetOverrideList = [s for s in set(map(getBlockSet, initSeq.split()+seq.split())) if s is not None]
+   return sorted(set(cacheSetList + cacheSetOverrideList))
+
 AddressList = namedtuple('AddressList', 'addresses exclude flush wbinvd')
 
-# cacheSets=None means do access in all sets
-# in this case, the first nL1Sets many sets of L2 will be reserved for clearing L1
-# if wbinvd is set, wbinvd will be called before initSeq
-def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, clearHL=True, loop=1, wbinvd=False, nMeasurements=10, warmUpCount=1, agg='avg'):
-   lineSize = getCacheInfo(1).lineSize
-
-   cacheSetList = parseCacheSetsStr(level, clearHL, cacheSets)
+def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, clearHL, wbinvd):
+   allUsedSets = getAllUsedCacheSets(cacheSetList, seq, initSeq)
 
    clearHLAddrList = None
    if (clearHL and level > 1):
-      clearHLAddrList = AddressList(getClearHLAddresses(level, cacheSetList, cBox), True, False, False)
+      clearHLAddrList = AddressList(getClearHLAddresses(level, allUsedSets, cBox), True, False, False)
 
    initAddressLists = []
    seqAddressLists = []
@@ -432,29 +454,49 @@ def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, clearHL=T
             addrLists.append(AddressList([], True, False, True))
             continue
 
+         overrideSet = getBlockSet(seqEl)
+
          wayID = nameToID.setdefault(name, len(nameToID))
          exclude = not '?' in seqEl
          flush = '!' in seqEl
 
-         addresses = getAddresses(level, wayID, cacheSetList, cBox=cBox, clearHL=clearHL)
+         s = [overrideSet] if overrideSet is not None else cacheSetList
+         addresses = getAddresses(level, wayID, s, cBox=cBox, clearHL=clearHL)
 
          if clearHLAddrList is not None and not flush:
             addrLists.append(clearHLAddrList)
          addrLists.append(AddressList(addresses, exclude, flush, False))
 
-   ec = getCodeForAddressLists(seqAddressLists, initAddressLists, wbinvd)
-
    log.debug('\nInitAddresses: ' + str(initAddressLists))
    log.debug('\nSeqAddresses: ' + str(seqAddressLists))
+
+   return getCodeForAddressLists(seqAddressLists, initAddressLists, wbinvd)
+
+
+def runCacheExperimentCode(code, initCode, oneTimeInitCode, loop, warmUpCount, codeOffset, nMeasurements, agg):
+   resetNanoBench()
+   setNanoBenchParameters(config=getDefaultCacheConfig(), msrConfig=getDefaultCacheMSRConfig(), nMeasurements=nMeasurements, unrollCount=1, loopCount=loop,
+                          warmUpCount=warmUpCount, aggregateFunction=agg, basicMode=True, noMem=True, codeOffset=codeOffset, verbose=None)
+   return runNanoBench(code=code, init=initCode, oneTimeInit=oneTimeInitCode)
+
+
+# cacheSets=None means do access in all sets
+# in this case, the first nL1Sets many sets of L2 will be reserved for clearing L1
+# if wbinvd is set, wbinvd will be called before initSeq
+def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, clearHL=True, loop=1, wbinvd=False, nMeasurements=10, warmUpCount=1, codeSet=None,
+                       agg='avg'):
+   cacheSetList = parseCacheSetsStr(level, clearHL, cacheSets)
+   ec = getCodeForCacheExperiment(level, seq, initSeq=initSeq, cacheSetList=cacheSetList, cBox=cBox, clearHL=clearHL, wbinvd=wbinvd)
+
    log.debug('\nOneTimeInit: ' + ec.oneTimeInit)
    log.debug('\nInit: ' + ec.init)
    log.debug('\nCode: ' + ec.code)
 
-   resetNanoBench()
-   setNanoBenchParameters(config=getDefaultCacheConfig(), msrConfig=getDefaultCacheMSRConfig(), nMeasurements=nMeasurements, unrollCount=1, loopCount=loop,
-                           warmUpCount=warmUpCount, aggregateFunction=agg, basicMode=True, noMem=True, verbose=None)
+   lineSize = getCacheInfo(1).lineSize
+   allUsedSets = getAllUsedCacheSets(cacheSetList, seq, initSeq)
+   codeOffset = lineSize * (codeSet if codeSet is not None else findCacheSetForCode(allUsedSets, level))
 
-   return runNanoBench(code=ec.code, init=ec.init, oneTimeInit=ec.oneTimeInit)
+   return runCacheExperimentCode(ec.code, ec.init, ec.oneTimeInit, loop, warmUpCount, codeOffset, nMeasurements, agg)
 
 
 def printNB(nb_result):
@@ -603,7 +645,7 @@ def getAgesOfBlocks(blocks, level, seq, initSeq='', maxAge=None, cacheSets=None,
          newBlocks = getUnusedBlockNames(nNewBlocks, seq+initSeq, 'N')
          curSeq += ' '.join(newBlocks) + ' ' + block + '?'
 
-         nb = runCacheExperiment(level, curSeq, initSeq=initSeq, cacheSets=cacheSets, cBox=cBox, clearHL=clearHL, loop=0, wbinvd=wbinvd, nMeasurements=nMeasurements)
+         nb = runCacheExperiment(level, curSeq, initSeq=initSeq, cacheSets=cacheSets, cBox=cBox, clearHL=clearHL, loop=0, wbinvd=wbinvd, nMeasurements=nMeasurements, agg=agg)
          if returnNbResults: nbResults[block].append(nb)
 
          hitEvent = 'L' + str(level) + '_HIT'

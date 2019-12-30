@@ -33,9 +33,8 @@ def main():
 
    if args.sim:
       policyClass = cacheSim.AllPolicies[args.sim]
-      setCount = len(parseCacheSetsStr(args.level, (not args.noClearHL), args.sets))
       seq = args.seq_init + (' ' + args.seq) * args.loop
-      hits = cacheSim.getHits(seq, policyClass, args.simAssoc, setCount) / args.loop
+      hits = cacheSim.getHits(seq, policyClass, args.simAssoc, args.sets) / args.loop
       print 'Hits: ' + str(hits)
    else:
       nb = runCacheExperiment(args.level, args.seq, initSeq=args.seq_init, cacheSets=args.sets, cBox=args.cBox, clearHL=(not args.noClearHL), loop=args.loop,

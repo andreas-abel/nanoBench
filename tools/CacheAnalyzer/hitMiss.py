@@ -27,9 +27,9 @@ def main():
    logging.basicConfig(stream=sys.stdout, format='%(message)s', level=logging.getLevelName(args.logLevel))
 
    if args.sim:
-      policyClass = cacheSim.Policies[args.sim]
+      policyClass = cacheSim.AllPolicies[args.sim]
       seq = re.sub('[?!]', '', ' '.join([args.seq_init, args.seq])).strip() + '?'
-      hits = cacheSim.getHits(policyClass(args.simAssoc), seq)
+      hits = cacheSim.getHits(seq, policyClass, args.simAssoc, args.sets)
       if hits > 0:
          print 'HIT'
          exit(1)

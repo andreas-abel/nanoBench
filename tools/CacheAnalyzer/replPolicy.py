@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import argparse
 import random
+import sys
 
 from numpy import median
 
@@ -17,13 +18,11 @@ def getActualHits(seq, level, cacheSets, cBox, nMeasurements=10):
 
 
 def findSmallCounterexample(policy, initSeq, level, sets, cBox, assoc, seq, nMeasurements):
-   setCount = len(parseCacheSetsStr(level, True, sets))
-
    seqSplit = seq.split()
    for seqPrefix in [seqSplit[:i] for i in range(assoc+1, len(seqSplit)+1)]:
       seq = initSeq + ' '.join(seqPrefix)
       actual = getActualHits(seq, level, sets, cBox, nMeasurements)
-      sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, setCount)
+      sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, sets)
       print 'seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim)
       if sim != actual:
          break
@@ -32,7 +31,7 @@ def findSmallCounterexample(policy, initSeq, level, sets, cBox, assoc, seq, nMea
       tmpPrefix = seqPrefix[:i] + seqPrefix[(i+1):]
       seq = initSeq + ' '.join(tmpPrefix)
       actual = getActualHits(seq, level, sets, cBox, nMeasurements)
-      sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, setCount)
+      sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, sets)
       print 'seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim)
       if sim != actual:
          seqPrefix = tmpPrefix
@@ -62,6 +61,7 @@ def main():
    parser.add_argument("-sets", help="Cache sets (if not specified, all cache sets are used)")
    parser.add_argument("-cBox", help="cBox (default: 0)", type=int)
    parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=3)
+   parser.add_argument("-rep", help="Number of repetitions of each experiment (Default: 1)", type=int, default=1)
    parser.add_argument("-findCtrEx", help="Tries to find a small counterexample for each policy (only available for deterministic policies)", action='store_true')
    parser.add_argument("-policies", help="Comma-separated list of policies to consider (Default: all deterministic policies)")
    parser.add_argument("-best", help="Find the best matching policy (Default: abort if no policy agrees with all results)", action='store_true')
@@ -83,6 +83,8 @@ def main():
    elif args.allQLRUVariants:
       policies = sorted(set(cacheSim.CommonPolicies.keys())|set(cacheSim.AllDetQLRUVariants.keys()))
    elif args.randPolicies:
+      if args.rep > 1:
+         sys.exit('rep > 1 not supported for random policies')
       policies = sorted(cacheSim.AllRandPolicies.keys())
 
    if args.assoc:
@@ -93,8 +95,6 @@ def main():
    cBox = 0
    if args.cBox:
       cBox = args.cBox
-
-   setCount = len(parseCacheSetsStr(args.level, True, args.sets))
 
    title = cpuid.cpu_name(cpuid.CPUID()) + ', Level: ' + str(args.level) + (', CBox: ' + str(cBox) if args.cBox else '')
 
@@ -117,25 +117,27 @@ def main():
       print fullSeq
 
       html += ['<tr><td>' + fullSeq + '</td>']
-      actual = getActualHits(fullSeq, args.level, args.sets, cBox, args.nMeasurements)
-      html += ['<td>' + str(actual) + '</td>']
+      actualHits = set([getActualHits(fullSeq, args.level, args.sets, cBox, args.nMeasurements) for _ in range(0, args.rep)])
+      html += ['<td>' + ('{' if len(actualHits) > 1 else '') +  ', '.join(map(str, sorted(actualHits))) + ('}' if len(actualHits) > 1 else '') + '</td>']
 
       outp = ''
       for p in policies:
          if not args.randPolicies:
-            sim = cacheSim.getHits(fullSeq, cacheSim.AllPolicies[p], assoc, setCount)
+            sim = cacheSim.getHits(fullSeq, cacheSim.AllPolicies[p], assoc, args.sets)
 
-            if sim != actual:
+            if sim not in actualHits:
                possiblePolicies.discard(p)
                dists[p] += 1
                color = 'red'
                if args.findCtrEx and not p in counterExamples:
                   counterExamples[p] = findSmallCounterexample(p, ((args.initSeq + ' ') if args.initSeq else ''), args.level, args.sets, cBox, assoc, seq,
                                                                args.nMeasurements)
+            elif len(actualHits) > 1:
+               color = 'yellow'
             else:
                color = 'green'
          else:
-            sim = median(sum(cacheSim.getHits(fullSeq, cacheSim.AllPolicies[p], assoc, setCount) for _ in range(0, args.nMeasurements)))
+            sim = median(sum(cacheSim.getHits(fullSeq, cacheSim.AllPolicies[p], assoc, args.sets) for _ in range(0, args.nMeasurements)))
             dist = (sim - actual) ** 2
             dists[p] += dist
 
