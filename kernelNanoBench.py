@@ -53,7 +53,7 @@ paramDict = dict()
 # Assumes that no changes to the corresponding files in /sys/nb/ were made since the last call to setNanoBenchParameters().
 # Otherwise, reset() needs to be called first.
 def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConfigFile=None, nMeasurements=None, unrollCount=None, loopCount=None,
-                           warmUpCount=None, initialWarmUpCount=None, aggregateFunction=None, basicMode=None, noMem=None, verbose=None):
+                           warmUpCount=None, initialWarmUpCount=None, aggregateFunction=None, basicMode=None, noMem=None, codeOffset=0, verbose=None):
    if not ramdiskCreated: createRamdisk()
 
    if config is not None:
@@ -111,6 +111,11 @@ def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConf
       if paramDict.get('noMem', None) != noMem:
          writeFile('/sys/nb/no_mem', str(int(noMem)))
          paramDict['noMem'] = noMem
+
+   if codeOffset is not None:
+      if paramDict.get('codeOffset', None) != codeOffset:
+         writeFile('/sys/nb/code_offset', str(codeOffset))
+         paramDict['codeOffset'] = codeOffset
 
    if verbose is not None:
       if paramDict.get('verbose', None) != verbose:

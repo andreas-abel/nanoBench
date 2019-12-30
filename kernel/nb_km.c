@@ -15,6 +15,7 @@
 #include <linux/namei.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
+#include <linux/set_memory.h>
 #include <linux/seq_file.h>
 #include <../arch/x86/include/asm/fpu/api.h>
 
@@ -23,12 +24,18 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Andreas Abel");
 
+// 4 Mb is the maximum that kmalloc supports on my machines
+#define KMALLOC_MAX (4*1024*1024)
+
+char* runtime_code_base = NULL;
+
+size_t code_offset = 0;
 size_t code_memory_size = 0;
 size_t code_init_memory_size = 0;
 size_t code_one_time_init_memory_size = 0;
 size_t pfc_config_memory_size = 0;
 size_t msr_config_memory_size = 0;
-size_t runtime_code_memory_size = 0;
+size_t runtime_code_base_memory_size = 0;
 size_t runtime_one_time_init_code_memory_size = 0;
 
 void** r14_segments = NULL;
@@ -74,25 +81,11 @@ static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_
     return 0;
 }
 
-static void extend_runtime_code(void) {
-    size_t new_runtime_code_memory_size = get_required_runtime_code_length();
-    if (new_runtime_code_memory_size > runtime_code_memory_size) {
-        runtime_code_memory_size = new_runtime_code_memory_size;
-        vfree(runtime_code);
-        runtime_code = __vmalloc(runtime_code_memory_size, GFP_KERNEL, PAGE_KERNEL_EXEC);
-        if (!runtime_code) {
-            runtime_code_memory_size = 0;
-            pr_debug("failed to allocate executable memory\n");
-        }
-    }
-}
-
 static ssize_t code_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return 0;
 }
 static ssize_t code_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
     read_file_into_buffer(buf, &code, &code_length, &code_memory_size);
-    extend_runtime_code();
     return count;
 }
 static struct kobj_attribute code_attribute =__ATTR(code, 0660, code_show, code_store);
@@ -102,7 +95,6 @@ static ssize_t init_show(struct kobject *kobj, struct kobj_attribute *attr, char
 }
 static ssize_t init_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
     read_file_into_buffer(buf, &code_init, &code_init_length, &code_init_memory_size);
-    extend_runtime_code();
     return count;
 }
 static struct kobj_attribute code_init_attribute =__ATTR(init, 0660, init_show, init_store);
@@ -173,7 +165,6 @@ static ssize_t unroll_count_show(struct kobject *kobj, struct kobj_attribute *at
 }
 static ssize_t unroll_count_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
     sscanf(buf, "%ld", &unroll_count);
-    extend_runtime_code();
     return count;
 }
 static struct kobj_attribute unroll_count_attribute =__ATTR(unroll_count, 0660, unroll_count_show, unroll_count_store);
@@ -271,9 +262,6 @@ int cmpPtr(const void *a, const void *b) {
     else return 1;
 }
 
-// 4 Mb is the maximum that kmalloc supports on my machines
-#define R14_SEGMENT_SIZE (4*1024*1024)
-
 static ssize_t r14_size_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     if (n_r14_segments == 0 || !r14_segments[0]) return sprintf(buf, "0\n");
 
@@ -285,7 +273,7 @@ static ssize_t r14_size_show(struct kobject *kobj, struct kobj_attribute *attr, 
         void* cur_virt_addr = r14_segments[i];
         phys_addr_t cur_phys_addr = virt_to_phys(cur_virt_addr);
 
-        if ((cur_virt_addr - prev_virt_addr != R14_SEGMENT_SIZE) || (cur_phys_addr - prev_phys_addr != R14_SEGMENT_SIZE)) {
+        if ((cur_virt_addr - prev_virt_addr != KMALLOC_MAX) || (cur_phys_addr - prev_phys_addr != KMALLOC_MAX)) {
             pr_debug("No physically contiguous memory area of the requested size found.\n");
             pr_debug("Try rebooting your computer.\n");
             break;
@@ -296,7 +284,7 @@ static ssize_t r14_size_show(struct kobject *kobj, struct kobj_attribute *attr, 
     }
 
     phys_addr_t phys_addr = virt_to_phys(r14_segments[0]);
-    return sprintf(buf, "R14 size: %zu MB\nVirtual address: 0x%px\nPhysical address: %pa\n", i*R14_SEGMENT_SIZE/(1024*1024), r14_segments[0], &phys_addr);
+    return sprintf(buf, "R14 size: %zu MB\nVirtual address: 0x%px\nPhysical address: %pa\n", i*KMALLOC_MAX/(1024*1024), r14_segments[0], &phys_addr);
 }
 static ssize_t r14_size_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
     if (n_r14_segments > 0) {
@@ -309,12 +297,12 @@ static ssize_t r14_size_store(struct kobject *kobj, struct kobj_attribute *attr,
 
     size_t size_MB = 0;
     sscanf(buf, "%zu", &size_MB);
-    n_r14_segments = (size_MB*1024*1024 + (R14_SEGMENT_SIZE-1)) / R14_SEGMENT_SIZE;
+    n_r14_segments = (size_MB*1024*1024 + (KMALLOC_MAX-1)) / KMALLOC_MAX;
     vfree(r14_segments);
     r14_segments = vmalloc(n_r14_segments * sizeof(void*));
 
     for (size_t i=0; i<n_r14_segments; i++) {
-        r14_segments[i] = kmalloc(R14_SEGMENT_SIZE, GFP_KERNEL|__GFP_COMP);
+        r14_segments[i] = kmalloc(KMALLOC_MAX, GFP_KERNEL|__GFP_COMP);
     }
 
     sort(r14_segments, n_r14_segments, sizeof(void*), cmpPtr, NULL);
@@ -338,6 +326,15 @@ static ssize_t print_r14_store(struct kobject *kobj, struct kobj_attribute *attr
     return count;
 }
 static struct kobj_attribute print_r14_attribute =__ATTR(print_r14, 0660, print_r14_show, print_r14_store);
+
+static ssize_t code_offset_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%zu\n", code_offset);
+}
+static ssize_t code_offset_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%zu", &code_offset);
+    return count;
+}
+static struct kobj_attribute code_offset_attribute =__ATTR(code_offset, 0660, code_offset_show, code_offset_store);
 
 static ssize_t verbose_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%u\n", verbose);
@@ -372,6 +369,7 @@ static ssize_t reset_show(struct kobject *kobj, struct kobj_attribute *attr, cha
 
     code_init_length = 0;
     code_length = 0;
+    code_offset = 0;
     n_pfc_configs = 0;
     n_msr_configs = 0;
 
@@ -389,6 +387,13 @@ static int show(struct seq_file *m, void *v) {
             return -1;
         }
     }
+
+    size_t req_code_length = code_offset + get_required_runtime_code_length();
+    if (req_code_length > runtime_code_base_memory_size) {
+        printk(KERN_ERR "Maximum supported code size %zu kB; requested %zu kB\n", runtime_code_base_memory_size/1024, req_code_length/1024);
+        return -1;
+    }
+    runtime_code = runtime_code_base + code_offset;
 
     kernel_fpu_begin();
 
@@ -574,6 +579,15 @@ static int __init nb_init(void) {
     runtime_rsi += RUNTIME_R_SIZE/2;
     runtime_rsp += RUNTIME_R_SIZE/2;
 
+    runtime_code_base = kmalloc(KMALLOC_MAX, GFP_KERNEL);
+    if (!runtime_code_base) {
+        printk(KERN_ERR "Could not allocate memory for runtime_code\n");
+        return -1;
+    }
+    runtime_code_base_memory_size = KMALLOC_MAX;
+    set_memory_x((unsigned long)runtime_code_base, runtime_code_base_memory_size/PAGE_SIZE);
+    runtime_code = runtime_code_base;
+
     nb_kobject = kobject_create_and_add("nb", kernel_kobj->parent);
     if (!nb_kobject) {
         pr_debug("failed to create and add nb\n");
@@ -597,6 +611,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &no_mem_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &r14_size_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &print_r14_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &code_offset_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &verbose_attribute.attr);
 
     if (error) {
@@ -619,12 +634,16 @@ static void __exit nb_exit(void) {
     kfree(code_one_time_init);
     kfree(pfc_config_file_content);
     kfree(msr_config_file_content);
-    vfree(runtime_code);
     vfree(runtime_one_time_init_code);
     vfree(runtime_rbp - RUNTIME_R_SIZE/2);
     vfree(runtime_rdi - RUNTIME_R_SIZE/2);
     vfree(runtime_rsi - RUNTIME_R_SIZE/2);
     vfree(runtime_rsp - RUNTIME_R_SIZE/2);
+
+    if (runtime_code_base) {
+        set_memory_nx((unsigned long)runtime_code_base, runtime_code_base_memory_size/PAGE_SIZE);
+        kfree(runtime_code_base);
+    }
 
     if (n_r14_segments > 0) {
         for (int i=0; i<n_r14_segments; i++) {
