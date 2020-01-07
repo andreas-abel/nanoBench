@@ -38,6 +38,7 @@ def main():
    parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=10)
    parser.add_argument("-agg", help="Aggregate function", default='med')
    parser.add_argument("-cBox", help="cBox (default: 1)", type=int, default=1)
+   parser.add_argument("-slice", help="Slice (within the cBox) (default: 0)", type=int, default=0)
    parser.add_argument("-logLevel", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)", default='WARNING')
    parser.add_argument("-blocks", help="Blocks to consider (default: all blocks in seq)")
    parser.add_argument("-maxAge", help="Maximum age", type=int)
@@ -69,8 +70,9 @@ def main():
       title = 'Access Sequence: ' + args.seq.replace('?','').strip() + ' <n fresh blocks> <block>?'
       html.append(getPlotlyGraphDiv(title, '# of fresh blocks', 'Hits', traces))
    else:
-      _, nbDict = getAgesOfBlocks(blocks, args.level, args.seq, initSeq=args.seq_init, cacheSets=args.sets, cBox=args.cBox, clearHL=(not args.noClearHL),
-                               wbinvd=(not args.noWbinvd), returnNbResults=True, maxAge=args.maxAge, nMeasurements=args.nMeasurements, agg=args.agg)
+      _, nbDict = getAgesOfBlocks(blocks, args.level, args.seq, initSeq=args.seq_init, cacheSets=args.sets, cBox=args.cBox, cSlice=args.slice,
+                                  clearHL=(not args.noClearHL), wbinvd=(not args.noWbinvd), returnNbResults=True, maxAge=args.maxAge,
+                                  nMeasurements=args.nMeasurements, agg=args.agg)
       for event in sorted(e for e in nbDict.values()[0][0].keys() if 'HIT' in e or 'MISS' in e):
          traces = [(b, [nb[event] for nb in nbDict[b]]) for b in blocks]
          title = 'Access Sequence: ' + (args.seq_init + ' ' + args.seq).replace('?','').strip() + ' <n fresh blocks> <block>?'

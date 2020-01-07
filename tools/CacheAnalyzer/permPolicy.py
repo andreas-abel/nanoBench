@@ -20,7 +20,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=None, cBox=1):
+def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=None, cBox=1, cSlice=0):
    assoc = getCacheInfo(level).assoc
    if not maxAge:
       maxAge=2*assoc
@@ -32,7 +32,8 @@ def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=Non
       initBlocks = ['I' + str(i) for i in range(0, assoc)]
       seq = ' '.join(initBlocks)
 
-      initAges, nbDict = getAgesOfBlocks(initBlocks, level, seq, cacheSets=cacheSets, clearHL=True, wbinvd=True, returnNbResults=True, maxAge=maxAge, cBox=cBox)
+      initAges, nbDict = getAgesOfBlocks(initBlocks, level, seq, cacheSets=cacheSets, clearHL=True, wbinvd=True, returnNbResults=True, maxAge=maxAge,
+                                         cBox=cBox, cSlice=cSlice)
 
       accSeqStr = 'Access sequence: <wbinvd> ' + seq
       print accSeqStr
@@ -47,7 +48,8 @@ def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=Non
    blocks = ['B' + str(i) for i in range(0, assoc)]
    baseSeq = ' '.join(initBlocks + blocks)
 
-   ages, nbDict = getAgesOfBlocks(blocks, level, baseSeq, cacheSets=cacheSets, clearHL=True, wbinvd=True, returnNbResults=True, maxAge=maxAge, cBox=cBox)
+   ages, nbDict = getAgesOfBlocks(blocks, level, baseSeq, cacheSets=cacheSets, clearHL=True, wbinvd=True, returnNbResults=True, maxAge=maxAge,
+                                  cBox=cBox, cSlice=cSlice)
 
    accSeqStr = 'Access sequence: <wbinvd> ' + baseSeq
    print accSeqStr
@@ -61,7 +63,8 @@ def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=Non
 
    for permI, permBlock in enumerate(blocksSortedByAge):
       seq = baseSeq + ' ' + permBlock
-      permAges, nbDict = getAgesOfBlocks(blocks, level, seq, cacheSets=cacheSets, clearHL=True, wbinvd=True, returnNbResults=True, maxAge=maxAge, cBox=cBox)
+      permAges, nbDict = getAgesOfBlocks(blocks, level, seq, cacheSets=cacheSets, clearHL=True, wbinvd=True, returnNbResults=True, maxAge=maxAge,
+                                         cBox=cBox, cSlice=cSlice)
 
       accSeqStr = 'Access sequence: <wbinvd> ' + seq
       traces = [(b, [nb[event] for nb in nbDict[b]]) for b in blocks]
@@ -84,6 +87,7 @@ def main():
    parser.add_argument("-noInit", help="Do not fill sets with associativity many elements first", action='store_true')
    parser.add_argument("-maxAge", help="Maximum age", type=int)
    parser.add_argument("-cBox", help="cBox (default: 1)", type=int, default=1)
+   parser.add_argument("-slice", help="Slice (within the cBox) (default: 0)", type=int, default=0)
    parser.add_argument("-sim", help="Simulate the given policy instead of running the experiment on the hardware")
    parser.add_argument("-simAssoc", help="Associativity of the simulated cache (default: 8)", type=int, default=8)
    parser.add_argument("-logLevel", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)", default='WARNING')
@@ -97,7 +101,7 @@ def main():
 
       html = ['<html>', '<head>',  '<title>' + title + '</title>', '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>', '</head>', '<body>']
       html += ['<h3>' + title + '</h3>']
-      getPermutations(args.level, html, cacheSets=args.sets, getInitialAges=(not args.noInit), maxAge=args.maxAge, cBox=args.cBox)
+      getPermutations(args.level, html, cacheSets=args.sets, getInitialAges=(not args.noInit), maxAge=args.maxAge, cBox=args.cBox, cSlice=args.slice)
       html += ['</body>', '</html>']
 
       with open(args.output ,'w') as f:

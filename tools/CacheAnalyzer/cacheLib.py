@@ -282,7 +282,7 @@ def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False, 
                pfcEnabled = True
 
          # use multiple lfence instructions to make sure that the block is actually in the cache and not still in a fill buffer
-         codeList.append('lfence; ' * 10)
+         codeList.append('lfence; ' * 25)
 
          if addressList.flush:
             for address in addresses:
@@ -353,7 +353,7 @@ def getClearHLAddresses(level, cacheSetList, cBox=1):
       return clearAddresses
 
 L3SetToWayIDMap = dict()
-def getAddresses(level, wayID, cacheSetList, cBox=1, clearHL=True):
+def getAddresses(level, wayID, cacheSetList, cBox=1, cSlice=0, clearHL=True):
    lineSize = getCacheInfo(1).lineSize
 
    if level <= 2 or (level == 3 and getCacheInfo(3).nSlices is None):
@@ -363,20 +363,22 @@ def getAddresses(level, wayID, cacheSetList, cBox=1, clearHL=True):
    elif level == 3:
       if not cBox in L3SetToWayIDMap:
          L3SetToWayIDMap[cBox] = dict()
+      if not cSlice in L3SetToWayIDMap[cBox]:
+         L3SetToWayIDMap[cBox][cSlice] = dict()
 
       addresses = []
       for L3Set in cacheSetList:
-         if not L3Set in L3SetToWayIDMap[cBox]:
-            L3SetToWayIDMap[cBox][L3Set] = dict()
+         if not L3Set in L3SetToWayIDMap[cBox][cSlice]:
+            L3SetToWayIDMap[cBox][cSlice][L3Set] = dict()
             if getCacheInfo(3).nSlices != getNCBoxUnits():
-               for i, addr in enumerate(findMinimalL3EvictionSet(L3Set, cBox)):
-                  L3SetToWayIDMap[cBox][L3Set][i] = addr
-         if not wayID in L3SetToWayIDMap[cBox][L3Set]:
+               for i, addr in enumerate(findMinimalL3EvictionSet(L3Set, cBox, cSlice)):
+                  L3SetToWayIDMap[cBox][cSlice][L3Set][i] = addr
+         if not wayID in L3SetToWayIDMap[cBox][cSlice][L3Set]:
             if getCacheInfo(3).nSlices == getNCBoxUnits():
-               L3SetToWayIDMap[cBox][L3Set][wayID] = next(iter(getNewAddressesInCBox(1, cBox, L3Set, L3SetToWayIDMap[cBox][L3Set].values())))
+               L3SetToWayIDMap[cBox][cSlice][L3Set][wayID] = next(iter(getNewAddressesInCBox(1, cBox, L3Set, L3SetToWayIDMap[cBox][cSlice][L3Set].values())))
             else:
-               L3SetToWayIDMap[cBox][L3Set][wayID] = next(iter(findCongruentL3Addresses(1, L3Set, cBox, L3SetToWayIDMap[cBox][L3Set].values())))
-         addresses.append(L3SetToWayIDMap[cBox][L3Set][wayID])
+               L3SetToWayIDMap[cBox][cSlice][L3Set][wayID] = next(iter(findCongruentL3Addresses(1, L3Set, cBox, L3SetToWayIDMap[cBox][cSlice][L3Set].values())))
+         addresses.append(L3SetToWayIDMap[cBox][cSlice][L3Set][wayID])
 
       return addresses
 
@@ -436,7 +438,7 @@ def getAllUsedCacheSets(cacheSetList, seq, initSeq=''):
 
 AddressList = namedtuple('AddressList', 'addresses exclude flush wbinvd')
 
-def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, clearHL, wbinvd):
+def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, cSlice, clearHL, wbinvd):
    allUsedSets = getAllUsedCacheSets(cacheSetList, seq, initSeq)
 
    clearHLAddrList = None
@@ -461,7 +463,7 @@ def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, clearHL, 
          flush = '!' in seqEl
 
          s = [overrideSet] if overrideSet is not None else cacheSetList
-         addresses = getAddresses(level, wayID, s, cBox=cBox, clearHL=clearHL)
+         addresses = getAddresses(level, wayID, s, cBox=cBox, cSlice=cSlice, clearHL=clearHL)
 
          if clearHLAddrList is not None and not flush:
             addrLists.append(clearHLAddrList)
@@ -482,11 +484,12 @@ def runCacheExperimentCode(code, initCode, oneTimeInitCode, loop, warmUpCount, c
 
 # cacheSets=None means do access in all sets
 # in this case, the first nL1Sets many sets of L2 will be reserved for clearing L1
+# cSlice refers to the nth slice within a given cBox; the assigment of numbers to slices is arbitrary
 # if wbinvd is set, wbinvd will be called before initSeq
-def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, clearHL=True, loop=1, wbinvd=False, nMeasurements=10, warmUpCount=1, codeSet=None,
-                       agg='avg'):
+def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, cSlice=0, clearHL=True, loop=1, wbinvd=False, nMeasurements=10, warmUpCount=1,
+                       codeSet=None, agg='avg'):
    cacheSetList = parseCacheSetsStr(level, clearHL, cacheSets)
-   ec = getCodeForCacheExperiment(level, seq, initSeq=initSeq, cacheSetList=cacheSetList, cBox=cBox, clearHL=clearHL, wbinvd=wbinvd)
+   ec = getCodeForCacheExperiment(level, seq, initSeq=initSeq, cacheSetList=cacheSetList, cBox=cBox, cSlice=cSlice, clearHL=clearHL, wbinvd=wbinvd)
 
    log.debug('\nOneTimeInit: ' + ec.oneTimeInit)
    log.debug('\nInit: ' + ec.init)
@@ -504,71 +507,69 @@ def printNB(nb_result):
       print r[0] + ': ' + str(r[1])
 
 
-def findMinimalL3EvictionSet(cacheSet, cBox):
-   setNanoBenchParameters(config='\n'.join([getEventConfig('L3_HIT'), getEventConfig('L3_MISS')]), msrConfig=None, nMeasurements=10, unrollCount=1, loopCount=10,
-                           warmUpCount=None, initialWarmUpCount=None, aggregateFunction='med', basicMode=True, noMem=True, verbose=None)
+def hasL3Conflicts(addresses, clearHLAddrList, codeOffset):
+   addrList = AddressList(addresses, False, False, False)
+   ec = getCodeForAddressLists([clearHLAddrList, addrList], initAddressLists=[addrList], wbinvd=True)
+   setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig='', nMeasurements=5, unrollCount=1, loopCount=100,
+                          aggregateFunction='med', basicMode=True, noMem=True, codeOffset=codeOffset)
+   nb = runNanoBench(code=ec.code, init=ec.init, oneTimeInit=ec.oneTimeInit)
+
+   return (nb['L3_HIT'] < len(addresses) - .9)
+
+
+def findMinimalL3EvictionSet(cacheSet, cBox, cSlice):
    if not hasattr(findMinimalL3EvictionSet, 'evSetForCacheSet'):
       findMinimalL3EvictionSet.evSetForCacheSet = dict()
    if not cBox in findMinimalL3EvictionSet.evSetForCacheSet:
       findMinimalL3EvictionSet.evSetForCacheSet[cBox] = dict()
-   evSetForCacheSet = findMinimalL3EvictionSet.evSetForCacheSet[cBox]
+   if not cSlice in findMinimalL3EvictionSet.evSetForCacheSet[cBox]:
+      findMinimalL3EvictionSet.evSetForCacheSet[cBox][cSlice] = dict()
 
-   if cacheSet in evSetForCacheSet:
-      return evSetForCacheSet[cacheSet]
+   if cacheSet in findMinimalL3EvictionSet.evSetForCacheSet[cBox][cSlice]:
+      return findMinimalL3EvictionSet.evSetForCacheSet[cBox][cSlice][cacheSet]
+
+   evSetsForOtherSlices = [findMinimalL3EvictionSet(cacheSet, cBox, s) for s in range(0, cSlice)]
+
+   lineSize = getCacheInfo(1).lineSize
+   L3Assoc = getCacheInfo(3).assoc
+   L3WaySize = getCacheInfo(3).waySize
 
    clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False, False)
+   codeOffset = lineSize * (cacheSet+10)
+
    addresses = []
-   curAddress = cacheSet*getCacheInfo(3).lineSize
+   for curAddr in count(cacheSet * lineSize, L3WaySize):
+      if any(curAddr in otherEvSet for otherEvSet in evSetsForOtherSlices): continue
+      if not getCBoxOfAddress(curAddr) == cBox: continue
+      if any(hasL3Conflicts(otherEvSet[:-1]+[curAddr], clearHLAddrList, codeOffset) for otherEvSet in evSetsForOtherSlices): continue
 
-   while len(addresses) < getCacheInfo(3).assoc:
-      curAddress += getCacheInfo(3).waySize
-      if getCBoxOfAddress(curAddress) == cBox:
-         addresses.append(curAddress)
-
-   while True:
-      curAddress += getCacheInfo(3).waySize
-      if not getCBoxOfAddress(curAddress) == cBox: continue
-
-      addresses += [curAddress]
-      ec = getCodeForAddressLists([AddressList(addresses, False, False, False), clearHLAddrList])
-
-      setNanoBenchParameters(config=getDefaultCacheConfig(), msrConfig='', nMeasurements=10, unrollCount=1, loopCount=100,
-                             aggregateFunction='med', basicMode=True, noMem=True)
-      nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
-
-      if nb['L3_HIT'] < len(addresses) - .9:
+      addresses.append(curAddr)
+      if len(addresses) > L3Assoc and hasL3Conflicts(addresses, clearHLAddrList, codeOffset):
          break
 
    for i in reversed(range(0, len(addresses))):
+      if len(addresses) <= L3Assoc+1:
+            break
       tmpAddresses = addresses[:i] + addresses[(i+1):]
-
-      ec = getCodeForAddressLists([AddressList(tmpAddresses, False, False, False), clearHLAddrList])
-      nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
-
-      if nb['L3_HIT'] < len(tmpAddresses) - 0.9:
+      if hasL3Conflicts(tmpAddresses, clearHLAddrList, codeOffset):
          addresses = tmpAddresses
 
-   evSetForCacheSet[cacheSet] = addresses
+   findMinimalL3EvictionSet.evSetForCacheSet[cBox][cSlice][cacheSet] = addresses
    return addresses
 
 
 def findCongruentL3Addresses(n, cacheSet, cBox, L3EvictionSet):
    clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False, False)
-
-   congrAddresses = []
+   codeOffset = getCacheInfo(1).lineSize * (cacheSet+10)
    L3WaySize = getCacheInfo(3).waySize
 
+   congrAddresses = []
    for newAddr in count(max(L3EvictionSet)+L3WaySize, L3WaySize):
       if not getCBoxOfAddress(newAddr) == cBox: continue
 
       tmpAddresses = L3EvictionSet[:getCacheInfo(3).assoc] + [newAddr]
-      ec = getCodeForAddressLists([AddressList(tmpAddresses, False, False, False), clearHLAddrList])
 
-      setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig=None, nMeasurements=10, unrollCount=1, loopCount=100,
-                             aggregateFunction='med', basicMode=True, noMem=True, verbose=None)
-      nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
-
-      if nb['L3_HIT'] < len(tmpAddresses) - 0.9:
+      if hasL3Conflicts(tmpAddresses, clearHLAddrList, codeOffset):
          congrAddresses.append(newAddr)
 
       if len(congrAddresses) >= n: break
@@ -601,13 +602,8 @@ def findMaximalNonEvictingL3SetInCBox(start, stride, L3Assoc, cBox):
          continue
 
       newAddresses = addresses + [curAddress]
-      ec = getCodeForAddressLists([AddressList(newAddresses, False, False, False), clearHLAddrList])
 
-      setNanoBenchParameters(config=getEventConfig('L3_HIT'), msrConfig='', nMeasurements=10, unrollCount=1, loopCount=10,
-                             aggregateFunction='med', basicMode=True, noMem=True)
-      nb = runNanoBench(code=ec.code, oneTimeInit=ec.oneTimeInit)
-
-      if nb['L3_HIT'] > len(newAddresses) - .9:
+      if not hasL3Conflicts(newAddresses, clearHLAddrList, start+getCacheInfo(1).lineSize):
          addresses = newAddresses
          notAdded = 0
       else:
@@ -628,7 +624,7 @@ def getUnusedBlockNames(n, usedBlockNames, prefix=''):
 
 # Returns a dict with the age of each block, i.e., how many fresh blocks need to be accessed until the block is evicted
 # if returnNbResults is True, the function returns additionally all measurment results (as the second component of a tuple)
-def getAgesOfBlocks(blocks, level, seq, initSeq='', maxAge=None, cacheSets=None, cBox=1, clearHL=True,  wbinvd=False, returnNbResults=False, nMeasurements=10, agg='avg'):
+def getAgesOfBlocks(blocks, level, seq, initSeq='', maxAge=None, cacheSets=None, cBox=1, cSlice=0, clearHL=True,  wbinvd=False, returnNbResults=False, nMeasurements=10, agg='avg'):
    ages = dict()
    if returnNbResults: nbResults = dict()
 
@@ -645,7 +641,8 @@ def getAgesOfBlocks(blocks, level, seq, initSeq='', maxAge=None, cacheSets=None,
          newBlocks = getUnusedBlockNames(nNewBlocks, seq+initSeq, 'N')
          curSeq += ' '.join(newBlocks) + ' ' + block + '?'
 
-         nb = runCacheExperiment(level, curSeq, initSeq=initSeq, cacheSets=cacheSets, cBox=cBox, clearHL=clearHL, loop=0, wbinvd=wbinvd, nMeasurements=nMeasurements, agg=agg)
+         nb = runCacheExperiment(level, curSeq, initSeq=initSeq, cacheSets=cacheSets, cBox=cBox, cSlice=cSlice, clearHL=clearHL, loop=0, wbinvd=wbinvd,
+                                 nMeasurements=nMeasurements, agg=agg)
          if returnNbResults: nbResults[block].append(nb)
 
          hitEvent = 'L' + str(level) + '_HIT'

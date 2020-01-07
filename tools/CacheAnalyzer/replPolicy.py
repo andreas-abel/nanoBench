@@ -12,16 +12,16 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def getActualHits(seq, level, cacheSets, cBox, nMeasurements=10):
-   nb = runCacheExperiment(level, seq, cacheSets=cacheSets, cBox=cBox, clearHL=True, loop=1, wbinvd=True, nMeasurements=nMeasurements, agg='med')
+def getActualHits(seq, level, cacheSets, cBox, cSlice, nMeasurements=10):
+   nb = runCacheExperiment(level, seq, cacheSets=cacheSets, cBox=cBox, cSlice=cSlice, clearHL=True, loop=1, wbinvd=True, nMeasurements=nMeasurements, agg='med')
    return int(nb['L' + str(level) + '_HIT']+0.1)
 
 
-def findSmallCounterexample(policy, initSeq, level, sets, cBox, assoc, seq, nMeasurements):
+def findSmallCounterexample(policy, initSeq, level, sets, cBox, cSlice, assoc, seq, nMeasurements):
    seqSplit = seq.split()
    for seqPrefix in [seqSplit[:i] for i in range(assoc+1, len(seqSplit)+1)]:
       seq = initSeq + ' '.join(seqPrefix)
-      actual = getActualHits(seq, level, sets, cBox, nMeasurements)
+      actual = getActualHits(seq, level, sets, cBox, cSlice, nMeasurements)
       sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, sets)
       print 'seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim)
       if sim != actual:
@@ -30,7 +30,7 @@ def findSmallCounterexample(policy, initSeq, level, sets, cBox, assoc, seq, nMea
    for i in reversed(range(0, len(seqPrefix)-1)):
       tmpPrefix = seqPrefix[:i] + seqPrefix[(i+1):]
       seq = initSeq + ' '.join(tmpPrefix)
-      actual = getActualHits(seq, level, sets, cBox, nMeasurements)
+      actual = getActualHits(seq, level, sets, cBox, cSlice, nMeasurements)
       sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, sets)
       print 'seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim)
       if sim != actual:
@@ -60,6 +60,7 @@ def main():
    parser.add_argument("-level", help="Cache level (Default: 1)", type=int, default=1)
    parser.add_argument("-sets", help="Cache sets (if not specified, all cache sets are used)")
    parser.add_argument("-cBox", help="cBox (default: 0)", type=int)
+   parser.add_argument("-slice", help="Slice (within the cBox) (default: 0)", type=int, default=0)
    parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=3)
    parser.add_argument("-rep", help="Number of repetitions of each experiment (Default: 1)", type=int, default=1)
    parser.add_argument("-findCtrEx", help="Tries to find a small counterexample for each policy (only available for deterministic policies)", action='store_true')
@@ -117,7 +118,7 @@ def main():
       print fullSeq
 
       html += ['<tr><td>' + fullSeq + '</td>']
-      actualHits = set([getActualHits(fullSeq, args.level, args.sets, cBox, args.nMeasurements) for _ in range(0, args.rep)])
+      actualHits = set([getActualHits(fullSeq, args.level, args.sets, cBox, args.slice, args.nMeasurements) for _ in range(0, args.rep)])
       html += ['<td>' + ('{' if len(actualHits) > 1 else '') +  ', '.join(map(str, sorted(actualHits))) + ('}' if len(actualHits) > 1 else '') + '</td>']
 
       outp = ''
@@ -130,8 +131,8 @@ def main():
                dists[p] += 1
                color = 'red'
                if args.findCtrEx and not p in counterExamples:
-                  counterExamples[p] = findSmallCounterexample(p, ((args.initSeq + ' ') if args.initSeq else ''), args.level, args.sets, cBox, assoc, seq,
-                                                               args.nMeasurements)
+                  counterExamples[p] = findSmallCounterexample(p, ((args.initSeq + ' ') if args.initSeq else ''), args.level, args.sets, cBox, args.slice,
+                                                               assoc, seq, args.nMeasurements)
             elif len(actualHits) > 1:
                color = 'yellow'
             else:
