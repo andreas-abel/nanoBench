@@ -21,6 +21,7 @@ def main():
    parser.add_argument("-cBox", help="cBox (default: 1)", type=int, default=1) # use 1 as default, as, e.g., on SNB, box 0 only has 15 ways instead of 16
    parser.add_argument("-slice", help="Slice (within the cBox) (default: 0)", type=int, default=0)
    parser.add_argument("-noClearHL", help="Do not clear higher levels", action='store_true')
+   parser.add_argument("-noUseOtherCBoxes", help="Do not use other CBoxes for clearing higher levels", action='store_true')
    parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=10)
    parser.add_argument("-agg", help="Aggregate function", default='med')
    parser.add_argument("-loop", help="Loop count (Default: 1)", type=int, default=1)
@@ -39,7 +40,7 @@ def main():
       print 'Hits: ' + str(hits)
    else:
       nb = runCacheExperiment(args.level, args.seq, initSeq=args.seq_init, cacheSets=args.sets, cBox=args.cBox, cSlice=args.slice, clearHL=(not args.noClearHL),
-                              loop=args.loop, wbinvd=(not args.noWbinvd), nMeasurements=args.nMeasurements, agg=args.agg)
+                              doNotUseOtherCBoxes=args.noUseOtherCBoxes, loop=args.loop, wbinvd=(not args.noWbinvd), nMeasurements=args.nMeasurements, agg=args.agg)
       printNB(nb)
 
 

@@ -303,12 +303,12 @@ def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False, 
    return ExperimentCode(''.join(code), ''.join(init), ''.join(oneTimeInit))
 
 
-def getClearHLAddresses(level, cacheSetList, cBox=1):
+def getClearHLAddresses(level, cacheSetList, cBox, doNotUseOtherCBoxes):
    lineSize = getCacheInfo(1).lineSize
 
    if level == 1:
       return []
-   elif (level == 2) or (level == 3 and getCacheInfo(3).nSlices is None):
+   elif (level == 2) or (level == 3 and (getCacheInfo(3).nSlices is None or doNotUseOtherCBoxes)):
       nSets = getCacheInfo(level).nSets
       if not all(nSets > getCacheInfo(lLevel).nSets for lLevel in range(1, level)):
          raise ValueError('L' + str(level) + ' way size must be greater than lower level way sizes')
@@ -397,7 +397,7 @@ def getBlockSet(blockStr):
    return int(re.match('\d+', blockStr.split('_')[-1]).group())
 
 
-def parseCacheSetsStr(level, clearHL, cacheSetsStr):
+def parseCacheSetsStr(level, clearHL, cacheSetsStr, doNotUseOtherCBoxes=False):
    cacheSetList = []
    if cacheSetsStr is not None:
       for s in cacheSetsStr.split(','):
@@ -408,7 +408,7 @@ def parseCacheSetsStr(level, clearHL, cacheSetsStr):
             cacheSetList.append(int(s))
    else:
       nSets = getCacheInfo(level).nSets
-      if level > 1 and clearHL and not (level == 3 and getCacheInfo(3).nSlices is not None):
+      if level > 1 and clearHL and not (level == 3 and getCacheInfo(3).nSlices is not None and not doNotUseOtherCBoxes):
          nHLSets = getCacheInfo(level-1).nSets
          cacheSetList = range(nHLSets, nSets)
       else:
@@ -434,16 +434,18 @@ def findCacheSetForCode(cacheSetList, level):
 
 def getAllUsedCacheSets(cacheSetList, seq, initSeq=''):
    cacheSetOverrideList = [s for s in set(map(getBlockSet, initSeq.split()+seq.split())) if s is not None]
+   if any(s in cacheSetList for s in cacheSetOverrideList):
+      raise ValueError('overridden cache sets must not also be in cacheSetList')
    return sorted(set(cacheSetList + cacheSetOverrideList))
 
 AddressList = namedtuple('AddressList', 'addresses exclude flush wbinvd')
 
-def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, cSlice, clearHL, wbinvd):
+def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, cSlice, clearHL, doNotUseOtherCBoxes, wbinvd):
    allUsedSets = getAllUsedCacheSets(cacheSetList, seq, initSeq)
 
    clearHLAddrList = None
    if (clearHL and level > 1):
-      clearHLAddrList = AddressList(getClearHLAddresses(level, allUsedSets, cBox), True, False, False)
+      clearHLAddrList = AddressList(getClearHLAddresses(level, allUsedSets, cBox, doNotUseOtherCBoxes), True, False, False)
 
    initAddressLists = []
    seqAddressLists = []
@@ -485,11 +487,13 @@ def runCacheExperimentCode(code, initCode, oneTimeInitCode, loop, warmUpCount, c
 # cacheSets=None means do access in all sets
 # in this case, the first nL1Sets many sets of L2 will be reserved for clearing L1
 # cSlice refers to the nth slice within a given cBox; the assigment of numbers to slices is arbitrary
+# doNotUseOtherCBoxes determines whether accesses to clear higher levels will go to other CBoxes
 # if wbinvd is set, wbinvd will be called before initSeq
-def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, cSlice=0, clearHL=True, loop=1, wbinvd=False, nMeasurements=10, warmUpCount=1,
-                       codeSet=None, agg='avg'):
-   cacheSetList = parseCacheSetsStr(level, clearHL, cacheSets)
-   ec = getCodeForCacheExperiment(level, seq, initSeq=initSeq, cacheSetList=cacheSetList, cBox=cBox, cSlice=cSlice, clearHL=clearHL, wbinvd=wbinvd)
+def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, cSlice=0, clearHL=True, doNotUseOtherCBoxes=False, loop=1, wbinvd=False,
+                       nMeasurements=10, warmUpCount=1, codeSet=None, agg='avg'):
+   cacheSetList = parseCacheSetsStr(level, clearHL, cacheSets, doNotUseOtherCBoxes)
+   ec = getCodeForCacheExperiment(level, seq, initSeq=initSeq, cacheSetList=cacheSetList, cBox=cBox, cSlice=cSlice, clearHL=clearHL,
+                                  doNotUseOtherCBoxes=doNotUseOtherCBoxes, wbinvd=wbinvd)
 
    log.debug('\nOneTimeInit: ' + ec.oneTimeInit)
    log.debug('\nInit: ' + ec.init)
@@ -534,7 +538,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox, cSlice):
    L3Assoc = getCacheInfo(3).assoc
    L3WaySize = getCacheInfo(3).waySize
 
-   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False, False)
+   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox, False), True, False, False)
    codeOffset = lineSize * (cacheSet+10)
 
    addresses = []
@@ -559,7 +563,7 @@ def findMinimalL3EvictionSet(cacheSet, cBox, cSlice):
 
 
 def findCongruentL3Addresses(n, cacheSet, cBox, L3EvictionSet):
-   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox), True, False, False)
+   clearHLAddrList = AddressList(getClearHLAddresses(3, [cacheSet], cBox, False), True, False, False)
    codeOffset = getCacheInfo(1).lineSize * (cacheSet+10)
    L3WaySize = getCacheInfo(3).waySize
 
