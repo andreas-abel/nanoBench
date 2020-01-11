@@ -353,7 +353,7 @@ def getClearHLAddresses(level, cacheSetList, cBox, doNotUseOtherCBoxes):
       return clearAddresses
 
 L3SetToWayIDMap = dict()
-def getAddresses(level, wayID, cacheSetList, cBox=1, cSlice=0, clearHL=True):
+def getAddresses(level, wayID, cacheSetList, cBox=1, cSlice=0):
    lineSize = getCacheInfo(1).lineSize
 
    if level <= 2 or (level == 3 and getCacheInfo(3).nSlices is None):
@@ -465,7 +465,7 @@ def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, cSlice, c
          flush = '!' in seqEl
 
          s = [overrideSet] if overrideSet is not None else cacheSetList
-         addresses = getAddresses(level, wayID, s, cBox=cBox, cSlice=cSlice, clearHL=clearHL)
+         addresses = getAddresses(level, wayID, s, cBox=cBox, cSlice=cSlice)
 
          if clearHLAddrList is not None and not flush:
             addrLists.append(clearHLAddrList)
