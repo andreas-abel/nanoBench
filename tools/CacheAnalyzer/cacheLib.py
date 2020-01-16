@@ -303,8 +303,11 @@ def getCodeForAddressLists(codeAddressLists, initAddressLists=[], wbinvd=False, 
    return ExperimentCode(''.join(code), ''.join(init), ''.join(oneTimeInit))
 
 
-def getClearHLAddresses(level, cacheSetList, cBox, doNotUseOtherCBoxes):
+def getClearHLAddresses(level, cacheSetList, cBox, doNotUseOtherCBoxes, nClearAddresses=None):
    lineSize = getCacheInfo(1).lineSize
+
+   if nClearAddresses is None:
+      nClearAddresses = 2 * sum(getCacheInfo(hLevel).assoc for hLevel in range(1, level))
 
    if level == 1:
       return []
@@ -314,8 +317,6 @@ def getClearHLAddresses(level, cacheSetList, cBox, doNotUseOtherCBoxes):
          raise ValueError('L' + str(level) + ' way size must be greater than lower level way sizes')
 
       nHLSets = getCacheInfo(level-1).nSets
-      nClearAddresses = 2*sum(getCacheInfo(hLevel).assoc for hLevel in range(1, level))
-
       HLSets = set(cs % nHLSets for cs in cacheSetList)
       addrForClearingHL = []
 
@@ -346,9 +347,9 @@ def getClearHLAddresses(level, cacheSetList, cBox, doNotUseOtherCBoxes):
 
       clearAddresses = []
       for L3Set in cacheSetList:
-         if not L3Set in clearL2Map[cBox]:
-            clearL2Map[cBox][L3Set] = getNewAddressesNotInCBox(2*(getCacheInfo(1).assoc+getCacheInfo(2).assoc), cBox, L3Set, [])
-         clearAddresses += clearL2Map[cBox][L3Set]
+         if not L3Set in clearL2Map[cBox] or len(clearL2Map[cBox][L3Set]) < nClearAddresses:
+            clearL2Map[cBox][L3Set] = getNewAddressesNotInCBox(nClearAddresses, cBox, L3Set, [])
+         clearAddresses += clearL2Map[cBox][L3Set][:nClearAddresses]
 
       return clearAddresses
 
@@ -440,12 +441,12 @@ def getAllUsedCacheSets(cacheSetList, seq, initSeq=''):
 
 AddressList = namedtuple('AddressList', 'addresses exclude flush wbinvd')
 
-def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, cSlice, clearHL, doNotUseOtherCBoxes, wbinvd):
+def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, cSlice, clearHL, doNotUseOtherCBoxes, wbinvd, nClearAddresses=None):
    allUsedSets = getAllUsedCacheSets(cacheSetList, seq, initSeq)
 
    clearHLAddrList = None
    if (clearHL and level > 1):
-      clearHLAddrList = AddressList(getClearHLAddresses(level, allUsedSets, cBox, doNotUseOtherCBoxes), True, False, False)
+      clearHLAddrList = AddressList(getClearHLAddresses(level, allUsedSets, cBox, doNotUseOtherCBoxes, nClearAddresses), True, False, False)
 
    initAddressLists = []
    seqAddressLists = []
@@ -490,10 +491,10 @@ def runCacheExperimentCode(code, initCode, oneTimeInitCode, loop, warmUpCount, c
 # doNotUseOtherCBoxes determines whether accesses to clear higher levels will go to other CBoxes
 # if wbinvd is set, wbinvd will be called before initSeq
 def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, cSlice=0, clearHL=True, doNotUseOtherCBoxes=False, loop=1, wbinvd=False,
-                       nMeasurements=10, warmUpCount=1, codeSet=None, agg='avg'):
+                       nMeasurements=10, warmUpCount=1, codeSet=None, agg='avg', nClearAddresses=None):
    cacheSetList = parseCacheSetsStr(level, clearHL, cacheSets, doNotUseOtherCBoxes)
    ec = getCodeForCacheExperiment(level, seq, initSeq=initSeq, cacheSetList=cacheSetList, cBox=cBox, cSlice=cSlice, clearHL=clearHL,
-                                  doNotUseOtherCBoxes=doNotUseOtherCBoxes, wbinvd=wbinvd)
+                                  doNotUseOtherCBoxes=doNotUseOtherCBoxes, wbinvd=wbinvd, nClearAddresses=nClearAddresses)
 
    log.debug('\nOneTimeInit: ' + ec.oneTimeInit)
    log.debug('\nInit: ' + ec.init)

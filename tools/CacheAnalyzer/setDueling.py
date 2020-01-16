@@ -35,8 +35,8 @@ def main():
 
    seqLength = (args.length if args.length is not None else assoc*4/3)
    seq = ' '.join('B' + str(i) + '?' for i in range(0, seqLength))
-   hitSeq = ' '.join('B' + str(i) + '?' for i in range(0, assoc))
-   missSeq = ' '.join('B' + str(i) + '?' for i in range(0, 3*assoc))
+   hitSeq = ' '.join('B' + str(i) for i in range(0, assoc))
+   missSeq = ' '.join('B' + str(i) for i in range(0, 3*assoc))
 
    title = cpuid.cpu_name(cpuid.CPUID()) + ', L3 Hits'
    html = ['<html>', '<head>', '<title>' + title + '</title>', '<script src="https://cdn.plot.ly/plotly-latest.min.js">', '</script>', '</head>', '<body>']
