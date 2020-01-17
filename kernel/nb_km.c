@@ -15,9 +15,16 @@
 #include <linux/namei.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
-#include <linux/set_memory.h>
 #include <linux/seq_file.h>
+#include <linux/version.h>
+#include <linux/vmalloc.h>
 #include <../arch/x86/include/asm/fpu/api.h>
+
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(4,12,0)
+#include <asm/cacheflush.h>
+#else
+#include <linux/set_memory.h>
+#endif
 
 #include "../common/nanoBench.h"
 
@@ -52,7 +59,12 @@ static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_
     struct path p;
     struct kstat ks;
     kern_path(file_name, 0, &p);
-    if (vfs_getattr(&p, &ks, 0, 0)) {
+
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(4,11,0)
+	if (vfs_getattr(&p, &ks)) {
+#else
+	if (vfs_getattr(&p, &ks, 0, 0)) {
+#endif
         pr_debug("Error getting file attributes\n");
         return -1;
     }
