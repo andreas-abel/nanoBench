@@ -629,7 +629,7 @@ def getUnusedBlockNames(n, usedBlockNames, prefix=''):
 
 # Returns a dict with the age of each block, i.e., how many fresh blocks need to be accessed until the block is evicted
 # if returnNbResults is True, the function returns additionally all measurment results (as the second component of a tuple)
-def getAgesOfBlocks(blocks, level, seq, initSeq='', maxAge=None, cacheSets=None, cBox=1, cSlice=0, clearHL=True,  wbinvd=False, returnNbResults=False, nMeasurements=10, agg='avg'):
+def getAgesOfBlocks(blocks, level, seq, initSeq='', maxAge=None, cacheSets=None, cBox=1, cSlice=0, clearHL=True, wbinvd=False, returnNbResults=False, nMeasurements=10, agg='avg'):
    ages = dict()
    if returnNbResults: nbResults = dict()
 
