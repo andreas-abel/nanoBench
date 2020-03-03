@@ -14,8 +14,8 @@ log = logging.getLogger(__name__)
 def main():
    parser = argparse.ArgumentParser(description='Tests if the L3 cache uses set dueling')
    parser.add_argument("-nRuns", help="Maximum number of runs", type=int, default=25)
-   parser.add_argument("-loop", help="Loop count", type=int, default=25)
-   parser.add_argument("-length", help="Length of the acc. seq. (Default: associativity*4/3)", type=int)
+   parser.add_argument("-loop", help="Loop count", type=int, default=10)
+   parser.add_argument("-length", help="Length of the acc. seq. (Default: associativity+1)", type=int)
    parser.add_argument("-noClearHL", help="Do not clear higher levels", action='store_true')
    parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=10)
    parser.add_argument("-output", help="Output file name", default='setDueling.html')
@@ -33,7 +33,7 @@ def main():
    if getCacheInfo(3).nSlices:
       nSlicesPerCBox = getCacheInfo(3).nSlices / getCacheInfo(3).nCboxes
 
-   seqLength = (args.length if args.length is not None else assoc*4/3)
+   seqLength = (args.length if args.length is not None else assoc+1)
    seq = ' '.join('B' + str(i) + '?' for i in range(0, seqLength))
    hitSeq = ' '.join('B' + str(i) for i in range(0, assoc))
    missSeq = ' '.join('B' + str(i) for i in range(0, 3*assoc))
