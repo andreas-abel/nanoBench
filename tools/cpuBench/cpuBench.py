@@ -72,7 +72,7 @@ def getAddrReg(instrNode, opNode):
 # registers that are not used as implicit registers should come first; RAX (and parts of it) should come last, as some instructions have special encodings for that
 # prefer low registers to high registers
 def sortRegs(regsList):
-   return sorted(regsList, key=lambda r: (not any(i.isdigit() for i in r), 'H' in r, 'A' in r, map(int, re.findall('\d+',r)), r))
+   return sorted(regsList, key=lambda r: (not any(i.isdigit() for i in r), 'P' in r, 'I' in r, 'H' in r, 'A' in r, map(int, re.findall('\d+',r)), r))
 
 
 # Initialize registers and memory
@@ -371,9 +371,10 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
             reg = sortRegs(regsList)[0];
             if not useDistinctRegs:
                for oReg in opRegDict.values():
-                  if oReg in regsList:
-                     reg = oReg;
-                     break
+                  for reg2 in regsList:
+                     if getCanonicalReg(oReg) == getCanonicalReg(reg2):
+                        reg = reg2
+                        break
 
             opRegDict[opI] = reg
          if operandNode.attrib.get('w', '0') == '1':
@@ -597,16 +598,16 @@ def getIndependentInstructions(instrNode, useDistinctRegs, doNotReadRegs = None,
 
 # Returns True iff there are two non-suppressed operands that can use the same register
 def hasCommonRegister(instrNode):
-   for opNode1 in instrNode.iter('operand'):
+   if 'GATHER' in instrNode.attrib['category'] or 'SCATTER' in instrNode.attrib['category']:
+      return False
+   for opNode1 in instrNode.findall('./operand[@type="reg"]'):
       if opNode1.attrib.get('suppressed', '0') == '1': continue
-      if not opNode1.attrib['type'] == 'reg': continue
-      regs1 = opNode1.text.split(",")
-      for opNode2 in instrNode.iter('operand'):
+      regs1 = set(map(getCanonicalReg, opNode1.text.split(",")))
+      for opNode2 in instrNode.findall('./operand[@type="reg"]'):
          if opNode1 == opNode2: continue
          if opNode2.attrib.get('suppressed', '0') == '1': continue
-         if not opNode2.attrib['type'] == 'reg': continue
-         regs2 = opNode2.text.split(",")
-         if set(regs1).intersection(set(regs2)):
+         regs2 = set(map(getCanonicalReg, opNode2.text.split(",")))
+         if regs1.intersection(regs2):
             return True
    return False
 
@@ -1759,21 +1760,26 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
          else:
             if len(regs2) == 1:
                reg2 = sortRegs(regs2)[0]
-               otherRegs = filter(lambda x: (x in GPRegs and regTo64(x)!=regTo64(reg2)) or (x not in GPRegs and x[1:]!=reg2[1:]), regs1)
+               otherRegs = filter(lambda x: getCanonicalReg(x) != getCanonicalReg(reg2), regs1)
                if otherRegs:
                   reg1 = sortRegs(otherRegs)[0]
                else:
                   reg1 = sortRegs(regs1)[0]
             else:
                reg1 = sortRegs(regs1)[0]
-               if not useDistinctRegs and reg1 in regs2:
-                  reg2 = reg1
+               reg2 = sortRegs(regs2)[0]
+               if not useDistinctRegs:
+                  if reg1 in regs2:
+                     reg2 = reg1
+                  else:
+                     for r in regs2:
+                        if getCanonicalReg(r) == getCanonicalReg(reg1):
+                           reg2 = r
+                           break
                else:
-                  otherRegs = filter(lambda x: (x in GPRegs and regTo64(x)!=regTo64(reg1)) or (x not in GPRegs and x[1:]!=reg1[1:]), regs2)
+                  otherRegs = filter(lambda x: getCanonicalReg(x) != getCanonicalReg(reg1), regs2)
                   if otherRegs:
                      reg2 = sortRegs(otherRegs)[0]
-                  else:
-                     reg2 = sortRegs(regs2)[0]
 
          instrI = getInstrInstanceFromNode(instrNode, useDistinctRegs=useDistinctRegs, opRegDict={startNodeIdx:reg1, targetNodeIdx:reg2})
 
@@ -2119,16 +2125,6 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
       archNode = instrNode.find('./architecture[@name="' + arch + '"]')
       measurementNode = archNode.find('./measurement')
 
-      canUseSameRegForDifferentOpnds = False
-      if not 'GATHER' in instrNode.attrib['category'] and not 'SCATTER' in instrNode.attrib['category']:
-         for opNode1 in instrNode.findall('./operand[@type="reg"]'):
-            for opNode2 in instrNode.findall('./operand[@type="reg"]'):
-               if opNode2 == opNode1: continue
-               if opNode1.attrib.get('suppressed', '') == '1' or opNode2.attrib.get('suppressed', '') == '1': continue
-               if opNode1.text == opNode2.text:
-                  canUseSameRegForDifferentOpnds = True
-                  break
-
       overallMaxLat = 0
 
       htmlHead = []
@@ -2146,7 +2142,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
                maxLatDistinctRegs = 0
 
                configI = 0
-               for useDistinctRegs in ([True, False] if canUseSameRegForDifferentOpnds else [True]):
+               for useDistinctRegs in ([True, False] if hasCommonRegister(instrNode) else [True]):
                   latConfigLists = getLatConfigLists(instrNode, opNode1, opNode2, useDistinctRegs, addr_mem, tpDict)
                   if latConfigLists is None: continue
 
@@ -2616,6 +2612,7 @@ def main():
          tpDictNoInteriteration = {instrNodeDict[k.attrib['string']]:v for k,v in pTpDictNoInteriteration.items()}
    else:
       for i, instrNode in enumerate(instrNodeList):
+         #if not 'MOVZX_NOREX' in instrNode.attrib['string']: continue
          print 'Measuring throughput for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Throughput and Uops' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>\n<hr>\n']
