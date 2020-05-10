@@ -414,7 +414,7 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
 
          if 'R' in agen: address.append('RIP')
          if 'B' in agen: address.append('R14')
-         if 'I' in agen: address.append('2*R13')
+         if 'I' in agen: address.append('2*R14')
          if 'D' in agen: address.append('8')
 
          asm += ' [' + '+'.join(address) + ']'
@@ -1708,13 +1708,13 @@ class LatConfigList:
 
 LatResult = namedtuple('LatResult', ['minLat','maxLat','lat_sameReg','isUpperBound'])
 
-def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_mem, tpDict):
+def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem, tpDict):
    cRep = min(100, 2 + 2 * int(math.ceil(tpDict[instrNode].TP_single / 2))) # must be a multiple of 2
 
    if 'DIV' in instrNode.attrib['iclass'] or 'SQRT' in instrNode.attrib['iclass']:
       if not useDistinctRegs: return None
       if targetNode.attrib['type'] == 'flags': return None
-      if addr_mem == 'mem': return None
+      if addrMem == 'mem': return None
       if startNode.attrib.get('opmask', '') == '1' or targetNode.attrib.get('opmask', '') == '1': return None
       if instrNode.attrib.get('mask', '') == '1' and (startNode == targetNode): return None
       return getDivLatConfigLists(instrNode, startNode, targetNode, cRep)
@@ -1943,7 +1943,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
          chainInstr = 'TEST ' + targetNode.attrib['memory-prefix'] + ' [' + getAddrReg(instrNode, targetNode) + '], 1'
          configList.isUpperBound = True
          configList.append(LatConfig(instrI, chainInstrs=chainInstr, chainLatency=1))
-   elif startNode.attrib['type'] == 'mem':
+   elif startNode.attrib['type'] in ['agen', 'mem']:
       #################
       # mem -> ...
       #################
@@ -1952,7 +1952,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
          return None
 
       addrReg = getAddrReg(instrNode, startNode)
-      memWidth = int(startNode.attrib['width'])
+      memWidth = int(startNode.attrib.get('width', 0))
 
       if targetNode.attrib['type'] == 'reg':
          #################
@@ -1972,7 +1972,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
          if reg in GPRegs:
             instrI = getInstrInstanceFromNode(instrNode, [addrReg, 'R12'], [addrReg, 'R12'], useDistinctRegs, {targetNodeIdx:reg})
 
-            if addr_mem == 'addr':
+            if addrMem == 'addr':
                # addr -> reg
                chainInstrs = 'MOVSX ' + regTo64(reg) + ', ' + regToSize(reg, min(32, regSize)) + ';'
                chainInstrs += 'XOR {}, {};'.format(addrReg, regTo64(reg)) * cRep + ('TEST R13, R13;' if instrReadsFlags else '') # cRep is a multiple of 2
@@ -1991,7 +1991,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
          elif 'MM' in reg:
             instrI = getInstrInstanceFromNode(instrNode, ['R12'], ['R12'], useDistinctRegs, {targetNodeIdx:reg})
 
-            if addr_mem == 'addr':
+            if addrMem == 'addr':
                # addr -> reg
                configList.isUpperBound = True
                chainInstrs = 'MOVQ R12, {};'.format(getCanonicalReg(reg))
@@ -2000,7 +2000,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
                chainInstrs += 'XOR {}, {};'.format(addrReg, 'R12') * cRep + ('TEST R13, R13;' if instrReadsFlags else '') # cRep is a multiple of 2
                chainLatency = 1 + basicLatency['XOR'] * cRep
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
-            elif addr_mem == 'addr_VSIB':
+            elif addrMem == 'addr_VSIB':
                # addr_VSIB -> reg
                configList.isUpperBound = True
                chainInstrs = 'VANDPD {0}14, {0}14, {0}{1};'.format(startNode.attrib['VSIB'], reg[3:]) * cRep
@@ -2020,7 +2020,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
 
             instrI = getInstrInstanceFromNode(instrNode, [addrReg, 'R12'], [addrReg, 'R12'], useDistinctRegs)
 
-            if addr_mem == 'addr':
+            if addrMem == 'addr':
                # addr -> flag
                chainInstr = 'CMOV' + flag[0] + ' ' + addrReg + ', ' + addrReg
                chainLatency = basicLatency['CMOV' + flag[0]]
@@ -2045,7 +2045,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addr_me
          if startNode == targetNode:
             instrI = getInstrInstanceFromNode(instrNode, [addrReg, 'R12'], [addrReg, 'R12'], useDistinctRegs=useDistinctRegs)
 
-            if addr_mem == 'addr':
+            if addrMem == 'addr':
                # addr -> mem
                configList.isUpperBound = True
                chainInstrs = 'MOV ' + regToSize('R12', min(64, memWidth)) + ', [' + addrReg + '];'
@@ -2137,13 +2137,19 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
             opNode2Idx = int(opNode2.attrib['idx'])
             latencyNode = None
 
-            for addr_mem in (['addr', 'mem']+(['addr_VSIB'] if 'VSIB' in opNode1.attrib else []) if opNode1.attrib['type']=='mem' else ['']):
+            addrMemList = ['']
+            if opNode1.attrib['type']=='mem':
+               addrMemList = ['addr', 'mem']+(['addr_VSIB'] if 'VSIB' in opNode1.attrib else [])
+            elif opNode1.attrib['type']=='agen' and ('B' in instrNode.attrib['agen'] or 'I' in instrNode.attrib['agen']):
+               addrMemList = ['addr']
+
+            for addrMem in addrMemList:
                minLatDistinctRegs = 0
                maxLatDistinctRegs = 0
 
                configI = 0
                for useDistinctRegs in ([True, False] if hasCommonRegister(instrNode) else [True]):
-                  latConfigLists = getLatConfigLists(instrNode, opNode1, opNode2, useDistinctRegs, addr_mem, tpDict)
+                  latConfigLists = getLatConfigLists(instrNode, opNode1, opNode2, useDistinctRegs, addrMem, tpDict)
                   if latConfigLists is None: continue
 
                   minLat = sys.maxint
@@ -2303,7 +2309,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
                      latencyNode.attrib['start_op'] = str(opNode1.attrib['idx'])
                      latencyNode.attrib['target_op'] = str(opNode2.attrib['idx'])
 
-                  suffix = ('_'+addr_mem if addr_mem else '') + ('_same_reg' if not useDistinctRegs else '')
+                  suffix = ('_'+addrMem if addrMem else '') + ('_same_reg' if not useDistinctRegs else '')
                   if minLat == maxLat:
                      latencyNode.attrib['cycles'+suffix] = str(minLat)
                      if minLatIsUpperBound:
@@ -2316,7 +2322,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
                      if maxLatIsUpperBound:
                         latencyNode.attrib['max_cycles'+suffix+'_is_upper_bound'] = '1'
 
-                  summaryLine = latencyNodeToStr(latencyNode, not useDistinctRegs, addr_mem)
+                  summaryLine = latencyNodeToStr(latencyNode, not useDistinctRegs, addrMem)
 
                   h2ID = 'lat' + str(opNode1Idx) + '->' + str(opNode2Idx) + suffix
                   htmlHead.append('<a href="#' + h2ID + '"><h3>' + summaryLine + '</h3></a>')
@@ -2658,6 +2664,7 @@ def main():
          latencyDict = {instrNodeDict[k.attrib['string']]:v for k,v in pickle.load(f).items()}
    elif not useIACA or iacaVersion == '2.1':
       for i, instrNode in enumerate(instrNodeList):
+         #if not 'LEA' in instrNode.attrib['string']: continue
          print 'Measuring latencies for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Latency' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>\n<hr>\n']
