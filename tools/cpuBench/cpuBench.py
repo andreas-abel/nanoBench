@@ -2117,10 +2117,15 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
             inputOpnds.append(opNode)
          if opNode.attrib.get('w', '0') == '1':
             outputOpnds.append(opNode)
-            if opNode.attrib['type'] == 'mem' and opNode.attrib.get('r', '0') == '0':
+            if opNode.attrib.get('r', '0') == '1':
+               continue
+            if opNode.attrib['type'] == 'mem':
                inputOpnds.append(opNode) # address of memory write
-            if opNode.attrib['type'] == 'reg' and opNode.attrib.get('conditionalWrite', '0') == '1':
-               inputOpnds.append(opNode)
+            elif opNode.attrib['type'] == 'reg':
+               if opNode.attrib.get('conditionalWrite', '0') == '1':
+                  inputOpnds.append(opNode)
+               elif opNode.attrib.get('width', '') in ['8', '16'] and opNode.text.split(',')[0] in GPRegs:
+                  inputOpnds.append(opNode)
 
       archNode = instrNode.find('./architecture[@name="' + arch + '"]')
       measurementNode = archNode.find('./measurement')
