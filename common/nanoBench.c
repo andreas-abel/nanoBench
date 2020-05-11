@@ -16,6 +16,7 @@ long unroll_count = UNROLL_COUNT_DEFAULT;
 long loop_count = LOOP_COUNT_DEFAULT;
 long warm_up_count = WARM_UP_COUNT_DEFAULT;
 long initial_warm_up_count = INITIAL_WARM_UP_COUNT_DEFAULT;
+size_t alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
 
 int no_mem = NO_MEM_DEFAULT;
 int basic_mode = BASIC_MODE_DEFAULT;
@@ -408,7 +409,7 @@ void configure_MSRs(struct msr_config config) {
 }
 
 size_t get_required_runtime_code_length() {
-    size_t req_code_length = code_length;
+    size_t req_code_length = code_length + alignment_offset + 64;
     for (size_t i=0; i+7<code_length; i++) {
         if (starts_with_magic_bytes(&code[i], MAGIC_BYTES_CODE_PFC_START) || starts_with_magic_bytes(&code[i], MAGIC_BYTES_CODE_PFC_STOP)) {
             req_code_length += 100;
@@ -417,12 +418,25 @@ size_t get_required_runtime_code_length() {
     return code_init_length + 2*unroll_count*req_code_length + 10000;
 }
 
+size_t get_distance_to_code(char* measurement_template, size_t templateI) {
+    size_t dist = 0;
+    while (!starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_CODE)) {
+        if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC_START)) {
+            templateI += 8;
+        } else {
+            templateI++;
+            dist++;
+        }
+    }
+    return dist;
+}
+
 void create_runtime_code(char* measurement_template, long local_unroll_count, long local_loop_count) {
     size_t templateI = 0;
     size_t codeI = 0;
     long unrollI = 0;
     size_t rcI = 0;
-    size_t rcI_loop_start = 0;
+    size_t rcI_code_start = 0;
     size_t magic_bytes_pfc_start_I = 0;
     size_t magic_bytes_code_I = 0;
 
@@ -443,6 +457,18 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             templateI += 8;
             memcpy(&runtime_code[rcI], code_init, code_init_length);
             rcI += code_init_length;
+
+            if (local_loop_count > 0) {
+                runtime_code[rcI++] = '\x49'; runtime_code[rcI++] = '\xC7'; runtime_code[rcI++] = '\xC7';
+                *(int32_t*)(&runtime_code[rcI]) = (int32_t)local_loop_count; rcI += 4; // mov R15, local_loop_count
+            }
+
+            size_t dist = get_distance_to_code(measurement_template, templateI);
+            size_t nFill = (64 - ((uintptr_t)&runtime_code[rcI+dist] % 64)) % 64;
+            nFill += alignment_offset;
+            for (size_t i=0; i<nFill; i++) {
+                runtime_code[rcI++] = '\x90';
+            }
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC_START)) {
             magic_bytes_pfc_start_I = templateI;
             templateI += 8;
@@ -451,11 +477,7 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             templateI += 8;
 
             if (unrollI == 0 && codeI == 0) {
-                if (local_loop_count > 0) {
-                    runtime_code[rcI++] = '\x49'; runtime_code[rcI++] = '\xC7'; runtime_code[rcI++] = '\xC7';
-                    *(int32_t*)(&runtime_code[rcI]) = (int32_t)local_loop_count; rcI += 4; // mov R15, local_loop_count
-                    rcI_loop_start = rcI;
-                }
+                rcI_code_start = rcI;
             }
 
             if (!code_contains_magic_bytes) {
@@ -488,7 +510,7 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                 if (local_loop_count > 0) {
                     runtime_code[rcI++] = '\x49'; runtime_code[rcI++] = '\xFF'; runtime_code[rcI++] = '\xCF'; // dec R15
                     runtime_code[rcI++] = '\x0F'; runtime_code[rcI++] = '\x85';
-                    *(int32_t*)(&runtime_code[rcI]) = (int32_t)(rcI_loop_start-rcI-4); rcI += 4; // jnz loop_start
+                    *(int32_t*)(&runtime_code[rcI]) = (int32_t)(rcI_code_start-rcI-4); rcI += 4; // jnz loop_start
                 }
 
                 if (debug) {

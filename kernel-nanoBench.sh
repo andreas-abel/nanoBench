@@ -83,6 +83,9 @@ while [ "$1" ]; do
     elif [[ "$1" == -initial* ]]; then
         echo "$2" > /sys/nb/initial_warm_up
         shift 2
+    elif [[ "$1" == -al* ]]; then
+        echo "$2" > /sys/nb/alignment_offset
+        shift 2
     elif [[ "$1" == -min* ]]; then
         echo "min" > /sys/nb/agg
         shift
@@ -105,6 +108,7 @@ while [ "$1" ]; do
         echo "  -loop_count <n>:            Number of iterations of the inner loop."
         echo "  -warm_up_count <n>:         Number of runs before the first measurement gets recorded."
         echo "  -initial_warm_up_count <n>: Number of runs before any measurement is performed."
+        echo "  -alignment_offset <n>:      Alignment offset."
         echo "  -avg:                       Selects the arithmetic mean as the aggregate function."
         echo "  -median:                    Selects the median as the aggregate function."
         echo "  -min:                       Selects the minimum as the aggregate function."

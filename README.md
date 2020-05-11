@@ -140,6 +140,7 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | `-loop_count <n>`            | Number of iterations of the inner loop. If n>0, the code to be benchmarked **must not modify R15**, as this register contains the loop counter. If n=0, the instructions for the loop are omitted; the loop body is then executed once. `[Default: n=0]` |
 | `-warm_up_count <n>`         | Number of runs of the generated benchmark code sequence (in each invocation of `run(...)`) before the first measurement result gets recorded . This can, for example, be useful for excluding outliers due to cold caches.   `[Default: n=5]` |
 | `-initial_warm_up_count <n>` | Number of runs of the benchmark code sequence before the first invocation of `run(...)`. This can be useful for benchmarking instructions that require a warm-up period before they can execute at full speed, like [AVX2 instructions on some microarchitectures](https://www.agner.org/optimize/blog/read.php?i=415).  `[Default: n=0]` |
+| `-alignment_offset <n>`      | By default, the code to be benchmarked is aligned to 64 bytes. This parameter allows to specify an additional offset. `[Default: n=0]` |
 | `-avg`                       | Selects the arithmetic mean (excluding the top and bottom 20% of the values) as the aggregate function. `[This is the default]` |
 | `-median`                    | Selects the median as the aggregate function. |
 | `-min`                       | Selects the minimum as the aggregate function. |

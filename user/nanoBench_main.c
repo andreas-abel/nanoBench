@@ -33,6 +33,7 @@ void print_usage() {
     printf("  -loop_count <n>:                Number of iterations of the inner loop.\n");
     printf("  -warm_up_count <n>:             Number of runs before the first measurement gets recorded.\n");
     printf("  -initial_warm_up_count <n>:     Number of runs before any measurement is performed.\n");
+    printf("  -alignment_offset <n>:          Alignment offset.\n");
     printf("  -avg:                           Selects the arithmetic mean as the aggregate function.\n");
     printf("  -median:                        Selects the median as the aggregate function.\n");
     printf("  -min:                           Selects the minimum as the aggregate function.\n");
@@ -75,6 +76,7 @@ int main(int argc, char **argv) {
         {"loop_count", required_argument, 0, 'l'},
         {"warm_up_count", required_argument, 0, 'w'},
         {"initial_warm_up_count", required_argument, 0, 'a'},
+        {"alignment_offset", required_argument, 0, 'm'},
         {"avg", no_argument, &aggregate_function, AVG_20_80},
         {"median", no_argument, &aggregate_function, MED},
         {"min", no_argument, &aggregate_function, MIN},
@@ -124,6 +126,9 @@ int main(int argc, char **argv) {
                 break;
             case 'a':
                 initial_warm_up_count = atol(optarg);
+                break;
+            case 'm':
+                alignment_offset = (size_t)atol(optarg);
                 break;
             case 'p':
                 cpu = atol(optarg);

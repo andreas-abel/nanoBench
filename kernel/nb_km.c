@@ -233,6 +233,15 @@ static ssize_t initial_warm_up_store(struct kobject *kobj, struct kobj_attribute
 }
 static struct kobj_attribute initial_warm_up_attribute =__ATTR(initial_warm_up, 0660, initial_warm_up_show, initial_warm_up_store);
 
+static ssize_t alignment_offset_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%zu\n", alignment_offset);
+}
+static ssize_t alignment_offset_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%zu", &alignment_offset);
+    return count;
+}
+static struct kobj_attribute alignment_offset_attribute =__ATTR(alignment_offset, 0660, alignment_offset_show, alignment_offset_store);
+
 static ssize_t basic_mode_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%u\n", basic_mode);
 }
@@ -618,6 +627,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &n_measurements_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &warm_up_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &initial_warm_up_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &alignment_offset_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &agg_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &basic_mode_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &no_mem_attribute.attr);

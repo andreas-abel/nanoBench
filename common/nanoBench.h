@@ -1,5 +1,5 @@
 // nanoBench
-//   
+//
 // Copyright (C) 2019 Andreas Abel
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of version 3 of the GNU Affero General Public License.
@@ -12,7 +12,7 @@
 #ifndef NANOBENCH_H
 #define NANOBENCH_H
 
-#ifdef __KERNEL__    
+#ifdef __KERNEL__
     #include <linux/module.h>
     #include <linux/sort.h>
 #else
@@ -21,7 +21,7 @@
     #include <stdint.h>
     #include <stdio.h>
     #include <stdlib.h>
-    #include <string.h>    
+    #include <string.h>
 #endif
 
 #include <cpuid.h>
@@ -91,12 +91,16 @@ extern long warm_up_count;
 extern long initial_warm_up_count;
 #define INITIAL_WARM_UP_COUNT_DEFAULT 0;
 
+// By default, the code to be benchmarked is aligned to 64 bytes. This parameter allows to specify an offset to this alignment.
+extern size_t alignment_offset;
+#define ALIGNMENT_OFFSET_DEFAULT 0;
+
 // If enabled, the temporary performance counter values are stored in registers instead of in memory;
 // the code to be measured must then not use registers R8-R13
 extern int no_mem;
 #define NO_MEM_DEFAULT 0;
 
-// If disabled, the first measurement is performed with 2*unroll_count and the second with unroll_count; the reported result is the difference between the two 
+// If disabled, the first measurement is performed with 2*unroll_count and the second with unroll_count; the reported result is the difference between the two
 // measurements.
 // If enabled, the first measurement is performed with unroll_count and the second with an empty measurement body; the reported result is the difference
 // between the two measurements.
@@ -129,7 +133,7 @@ struct pfc_config {
     unsigned long cmask;
     unsigned int any;
     unsigned int edge;
-    unsigned int inv;    
+    unsigned int inv;
     unsigned long msr_3f6h;
     unsigned long msr_pf;
     unsigned long msr_rsp0;
@@ -290,7 +294,7 @@ void one_time_init_template(void);
         "mov rsi, "STRINGIFY(MAGIC_BYTES_RUNTIME_RSI)"\n" \
         "mov rsp, "STRINGIFY(MAGIC_BYTES_RUNTIME_RSP)"\n" \
         ".att_syntax noprefix");
-    
+
 #define RESTORE_REGS_FLAGS()                              \
     asm volatile(                                         \
         ".intel_syntax noprefix\n"                        \
