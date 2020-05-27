@@ -22,6 +22,10 @@
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(4,12,0)
 #include <asm/cacheflush.h>
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+#include <linux/kallsyms.h>
+int (*set_memory_x)(unsigned long,  int) = 0;
+int (*set_memory_nx)(unsigned long, int) = 0;
 #else
 #include <linux/set_memory.h>
 #endif
@@ -568,7 +572,10 @@ static struct kobject* nb_kobject;
 
 static int __init nb_init(void) {
     pr_debug("Initializing nanoBench kernel module...\n");
-
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+    set_memory_x = (void*)kallsyms_lookup_name("set_memory_x");
+    set_memory_nx = (void*)kallsyms_lookup_name("set_memory_nx");
+    #endif
     if (check_cpuid()) {
         return -1;
     }
