@@ -270,6 +270,8 @@ static ssize_t agg_show(struct kobject *kobj, struct kobj_attribute *attr, char 
 static ssize_t agg_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
     if (!strncmp(buf, "min", 3)) {
         aggregate_function = MIN;
+    } else if (!strncmp(buf, "max", 3)) {
+        aggregate_function = MAX;
     } else if (!strncmp(buf, "med", 3)) {
         aggregate_function = MED;
     } else {

@@ -80,6 +80,7 @@ int main(int argc, char **argv) {
         {"avg", no_argument, &aggregate_function, AVG_20_80},
         {"median", no_argument, &aggregate_function, MED},
         {"min", no_argument, &aggregate_function, MIN},
+        {"max", no_argument, &aggregate_function, MAX},
         {"basic_mode", no_argument, &basic_mode, 1},
         {"no_mem", no_argument, &no_mem, 1},
         {"verbose", no_argument, &verbose, 1},

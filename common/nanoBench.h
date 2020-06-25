@@ -107,7 +107,7 @@ extern int no_mem;
 extern int basic_mode;
 #define BASIC_MODE_DEFAULT 0;
 
-enum agg_enum {AVG_20_80, MIN, MED};
+enum agg_enum {AVG_20_80, MIN, MAX, MED};
 extern int aggregate_function;
 #define AGGREGATE_FUNCTION_DEFAULT AVG_20_80;
 

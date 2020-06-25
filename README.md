@@ -144,6 +144,7 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | `-avg`                       | Selects the arithmetic mean (excluding the top and bottom 20% of the values) as the aggregate function. `[This is the default]` |
 | `-median`                    | Selects the median as the aggregate function. |
 | `-min`                       | Selects the minimum as the aggregate function. |
+| `-max`                       | Selects the maximum as the aggregate function. |
 | `-basic_mode`                | The effect of this option is described in the [Generated Code](#generated-code) section. |
 | `-no_mem`                    | If this option is enabled, the code for `read_perf_ctrs` does not make any memory accesses and stores all performance counter values in registers. This can, for example, be useful for benchmarks that require that the state of the data caches does not change after the execution of `code_init`. *If this option is used, the code to be benchmarked must not modify registers* ***R8-R11 (Intel)*** *and* ***R8-R13 (AMD).*** *Furthermore, `read_perf_ctrs` will modify* ***RAX, RCX, and RDX***. |
 | `-cpu <n>`                   | Pins the measurement thread to CPU n. `[Default: Pin the thread to the CPU it is currently running on.]` |
