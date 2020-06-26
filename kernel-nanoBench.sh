@@ -2,7 +2,7 @@
 
 if [ "$EUID" -ne 0 ]; then
     echo "Error: nanoBench requires root privileges"
-    echo "Try \"sudo ./nb_km-asm.sh ...\""
+    echo "Try \"sudo ./kernel-nanoBench.sh ...\""
     exit 1
 fi
 
@@ -89,6 +89,9 @@ while [ "$1" ]; do
     elif [[ "$1" == -min* ]]; then
         echo "min" > /sys/nb/agg
         shift
+    elif [[ "$1" == -max* ]]; then
+        echo "max" > /sys/nb/agg
+        shift
     elif [[ "$1" == -med* ]]; then
         echo "med" > /sys/nb/agg
         shift
@@ -112,6 +115,7 @@ while [ "$1" ]; do
         echo "  -avg:                       Selects the arithmetic mean as the aggregate function."
         echo "  -median:                    Selects the median as the aggregate function."
         echo "  -min:                       Selects the minimum as the aggregate function."
+        echo "  -max:                       Selects the maximum as the aggregate function."
         echo "  -basic_mode:                Enables basic mode."
         echo "  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses."
         echo "  -cpu <n>:                   Pins the measurement thread to CPU n."

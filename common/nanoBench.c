@@ -659,6 +659,14 @@ int64_t get_aggregate_value_100(int64_t* values, size_t length) {
             }
         }
         return min * 100;
+    } else if (aggregate_function == MAX)  {
+        int64_t max = values[0];
+        for (int i=0; i<length; i++) {
+            if (values[i] > max) {
+                max = values[i];
+            }
+        }
+        return max * 100;
     } else {
         qsort(values, length, sizeof(int64_t), cmpInt64);
 
