@@ -37,8 +37,8 @@ instrNodeList = [] # list of all XML instruction nodes that are not filtered out
 instrNodeDict = {} # dict from instrNode.attrib['string'] to instrNode
 
 globalDoNotWriteRegs = {'R13', 'R13D', 'R13W', 'R13B', 'R14', 'R14D', 'R14W', 'R14B', 'R15', 'R15D', 'R15W', 'R15B', 'SP', 'SPL', 'ESP', 'RSP', 'XMM13', 'YMM13', 'ZMM13', 'XMM14', 'YMM14', 'ZMM14', 'XMM15', 'YMM15', 'ZMM15', 'MM15', 'IP', 'DR4', 'DR5', 'DR6', 'DR7', 'RBP', 'EBP', 'BP', 'K0'} #ToDo
-#R14: reserved for memory addresses
-#R13: can be written in init; will not be overwritten by other code
+#R14: reserved for memory addresses (base)
+#R13: reserved for memory addresses (index)
 #R15: loop counter
 
 specialRegs = {'ES', 'CS', 'SS', 'DS', 'FS', 'GS', 'IP', 'EIP', 'FSBASEy', 'GDTR', 'GSBASEy', 'IDTR', 'IP', 'LDTR', 'MSRS', 'MXCSR', 'RFLAGS', 'RIP',
@@ -60,7 +60,6 @@ def isIntelCPU():
    return not isAMDCPU()
 
 
-
 def getAddrReg(instrNode, opNode):
    if opNode.attrib.get('suppressed', '0') == '1':
       return opNode.attrib['base']
@@ -69,6 +68,14 @@ def getAddrReg(instrNode, opNode):
    else:
       return 'R14'
 
+def getIndexReg(instrNode, opNode):
+   if opNode.attrib.get('VSIB', '0') != '0':
+      return opNode.attrib.get('VSIB') + '14'
+   elif instrNode.attrib.get('rex', '1') == '0':
+      return 'RSI'
+   else:
+      return 'R13'
+
 # registers that are not used as implicit registers should come first; RAX (and parts of it) should come last, as some instructions have special encodings for that
 # prefer low registers to high registers
 def sortRegs(regsList):
@@ -76,7 +83,7 @@ def sortRegs(regsList):
 
 
 # Initialize registers and memory
-def getRegMemInit(instrNode, opRegDict, memOffset):
+def getRegMemInit(instrNode, opRegDict, memOffset, useIndexedAddr):
    iform = instrNode.attrib['iform']
    iclass = instrNode.attrib['iclass']
 
@@ -124,12 +131,17 @@ def getRegMemInit(instrNode, opRegDict, memOffset):
             elif 'MM' in regPrefix:
                init += ['PXOR '+reg+', '+reg]
          elif opNode.attrib['type'] == 'mem':
-            if 'VSIB' in opNode.attrib:
-               vsibReg = opNode.attrib['VSIB'] + '14'
-               init += ['VXORPS ' + vsibReg + ', ' + vsibReg + ', ' + vsibReg]
             if xtype.startswith('f'):
                init += ['MOV RAX, 0x4000000040000000']
                for i in range(0, int(opNode.attrib['width'])/8, 8): init += ['MOV [R14+' + str(i+memOffset) + '], RAX']
+
+      for opNode in instrNode.findall('./operand[@type="mem"]'):
+         if opNode.attrib.get('suppressed', '0') == '1': continue
+         if 'VSIB' in opNode.attrib:
+            vsibReg = getIndexReg(instrNode, opNode)
+            init += ['VXORPS ' + vsibReg + ', ' + vsibReg + ', ' + vsibReg]
+         elif useIndexedAddr:
+            init += ['XOR {0}, {0}'.format(getIndexReg(instrNode, opNode))]
 
    return init
 
@@ -144,7 +156,6 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
    nExperiments += 1
 
    instrCode = re.sub(';+', '; ', instrCode.strip('; '))
-   if debugOutput: print 'instr: ' + instrCode
    codeObjFile = '/tmp/ramdisk/code.o'
    assemble(instrCode, codeObjFile, asmFile='/tmp/ramdisk/code.s')
    localHtmlReports.append('<li>Code: <pre>' + getMachineCode(codeObjFile) + '</pre></li>\n')
@@ -178,6 +189,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
       nanoBenchCmd += ' -asm_init &quot;' + initCode + '&quot;'
 
    localHtmlReports.append('<li><a href="javascript:;" onclick="this.outerHTML = \'<pre>' + nanoBenchCmd + '</pre>\'">Show nanoBench command</a></li>\n')
+   if debugOutput: print nanoBenchCmd
 
    setNanoBenchParameters(unrollCount=unrollCount, loopCount=loopCount, warmUpCount=warmUpCount, basicMode=basicMode)
 
@@ -313,7 +325,8 @@ def configurePFCs(events):
 
 InstrInstance = namedtuple('InstrInstance', ['instrNode', 'asm', 'readRegs', 'writtenRegs', 'opRegDict', 'regMemInit'])
 
-def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None, useDistinctRegs=True, opRegDict=None, memOffset=0, immediate=2, computeRegMemInit=True):
+def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None, useDistinctRegs=True, opRegDict=None, memOffset=0, immediate=2,
+                             computeRegMemInit=True, useIndexedAddr=False):
    if not doNotWriteRegs: doNotWriteRegs = []
    if not doNotReadRegs: doNotReadRegs = []
    if not opRegDict: opRegDict = {}
@@ -394,14 +407,12 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
          if asmprefix != '':
             asm += ' '
 
-         address = ''
-         if operandNode.attrib.get('VSIB', '0') != "0":
-            address = 'R14+' + operandNode.attrib.get('VSIB') + '14'
-            readRegs.add('R14')
-            readRegs.add(operandNode.attrib.get('VSIB') + '14')
-         else:
-            address = getAddrReg(instrNode, operandNode)
-            readRegs.add(address)
+         address = getAddrReg(instrNode, operandNode)
+         readRegs.add(address)
+         if useIndexedAddr or operandNode.attrib.get('VSIB', '0') != '0':
+            indexReg = getIndexReg(instrNode, operandNode)
+            address += '+' + indexReg
+            readRegs.add(indexReg)
 
          asm += '[' + address + ('+'+str(memOffset) if memOffset else '') + ']'
 
@@ -444,7 +455,7 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
       asm = asm + '; 1: '
 
    regMemInit = []
-   if computeRegMemInit: regMemInit = getRegMemInit(instrNode, opRegDict, memOffset)
+   if computeRegMemInit: regMemInit = getRegMemInit(instrNode, opRegDict, memOffset, useIndexedAddr)
    return InstrInstance(instrNode, asm, readRegs, writtenRegs, opRegDict, regMemInit)
 
 def createIacaAsmFile(fileName, prefixInstr, prefixRep, instr):
@@ -465,7 +476,7 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
    writtenRegs = instrInstance.writtenRegs
 
    if debugOutput: print '  instr: ' + instr + 'rR: ' + str(readRegs) + ', wR: ' + str(writtenRegs)
-   blockInstrsList = getIndependentInstructions(blockInstrNode, True, writtenRegs|readRegs, writtenRegs|readRegs, 64)
+   blockInstrsList = getIndependentInstructions(blockInstrNode, True, False, writtenRegs|readRegs, writtenRegs|readRegs, 64)
    if debugOutput: print '  bIL: ' + str(blockInstrsList)
 
    htmlReports.append('<hr><h3>With blocking instructions for port' +
@@ -552,7 +563,7 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
 
 # Takes an instrNode and returns a list [instrI, instrI', ...] s.t. instrI(')* are the results of
 # calls to getInstrInstanceFromNode for instrNode and there are no read-after-writes of the same regs/memory locations. The length of the list is limited by maxTPRep.
-def getIndependentInstructions(instrNode, useDistinctRegs, doNotReadRegs = None, doNotWriteRegs = None, initialOffset = 0, immediate = 2):
+def getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr, doNotReadRegs=None, doNotWriteRegs=None, initialOffset=0, immediate=2):
    if not doNotReadRegs: doNotReadRegs = set()
    if not doNotWriteRegs: doNotWriteRegs = set()
    doNotReadRegs |= specialRegs
@@ -573,7 +584,7 @@ def getIndependentInstructions(instrNode, useDistinctRegs, doNotReadRegs = None,
    offset = initialOffset
 
    for _ in range(maxTPRep):
-      instrI = getInstrInstanceFromNode(instrNode, doNotWriteRegs, doNotReadRegs, useDistinctRegs, {}, offset, immediate=immediate)
+      instrI = getInstrInstanceFromNode(instrNode, doNotWriteRegs, doNotReadRegs, useDistinctRegs, {}, offset, immediate=immediate, useIndexedAddr=useIndexedAddr)
       if not instrI:
          break
 
@@ -591,7 +602,7 @@ def getIndependentInstructions(instrNode, useDistinctRegs, doNotReadRegs = None,
       doNotReadRegs = doNotReadRegs | instrI.writtenRegs
 
    if not independentInstructions:
-      instrI = getInstrInstanceFromNode(instrNode, useDistinctRegs=False, immediate=immediate)
+      instrI = getInstrInstanceFromNode(instrNode, useDistinctRegs=False, immediate=immediate, useIndexedAddr=useIndexedAddr)
       independentInstructions.append(instrI)
 
    return independentInstructions
@@ -609,6 +620,12 @@ def hasCommonRegister(instrNode):
          regs2 = set(map(getCanonicalReg, opNode2.text.split(",")))
          if regs1.intersection(regs2):
             return True
+   return False
+
+def hasExplicitNonVSIBMemOperand(instrNode):
+   for opNode in instrNode.findall('./operand[@type="mem"]'):
+      if opNode.attrib.get('suppressed', '') != '1' and opNode.attrib.get('VSIB', '0') == '0':
+         return True
    return False
 
 def getThroughputIacaNoInteriteration(instrNode, htmlReports):
@@ -642,7 +659,7 @@ class TPConfig:
       self.preInstrNodes = ([] if preInstrNodes is None else preInstrNodes)
       self.note = note
 
-def getTPConfigs(instrNode, useDistinctRegs=True, computeIndepAndDepBreakingInstrs=True):
+def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeIndepAndDepBreakingInstrs=True):
    iform = instrNode.attrib['iform']
    iclass = instrNode.attrib['iclass']
 
@@ -652,7 +669,7 @@ def getTPConfigs(instrNode, useDistinctRegs=True, computeIndepAndDepBreakingInst
    independentInstrs = []
    depBreakingInstrs = ''
    if computeIndepAndDepBreakingInstrs:
-      independentInstrs = getIndependentInstructions(instrNode, useDistinctRegs)
+      independentInstrs = getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr)
       depBreakingInstrs = getDependencyBreakingInstrsForSuppressedOperands(instrNode)
 
    # instructions with multiple configs
@@ -662,7 +679,7 @@ def getTPConfigs(instrNode, useDistinctRegs=True, computeIndepAndDepBreakingInst
          if instrNode.attrib['string'].replace('I8', str(immediate)) in instrNodeDict:
             continue
          config = TPConfig(note='With immediate = ' + str(immediate))
-         config.independentInstrs = getIndependentInstructions(instrNode, useDistinctRegs, immediate=immediate)
+         config.independentInstrs = getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr, immediate=immediate)
          config.depBreakingInstrs = depBreakingInstrs
          configs.append(config)
       return configs
@@ -708,7 +725,7 @@ def getTPConfigs(instrNode, useDistinctRegs=True, computeIndepAndDepBreakingInst
    if iclass == 'FXRSTOR64': config.init = ['FXSAVE64 [R14]']
 
    if iform in ['IN_AL_IMMb', 'IN_OeAX_IMMb', 'OUT_IMMb_AL', 'OUT_IMMb_OeAX']:
-      config.independentInstrs = getIndependentInstructions(instrNode, useDistinctRegs, immediate=0x80)
+      config.independentInstrs = getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr, immediate=0x80)
 
    if iform in ['IN_AL_DX', 'IN_OeAX_DX', 'OUT_DX_AL', 'OUT_DX_OeAX'] or instrNode.attrib['category'] in ['IOSTRINGOP']:
       config.init = ['mov DX, 0x80']
@@ -905,8 +922,8 @@ TPResult = namedtuple('TPResult', ['TP', 'TP_noDepBreaking_noLoop', 'TP_single',
 
 # returns TPResult
 # port usages are averages (when no ports are blocked by other instructions)
-def getThroughputAndUops(instrNode, useDistinctRegs, htmlReports):
-   configs = getTPConfigs(instrNode, useDistinctRegs)
+def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports):
+   configs = getTPConfigs(instrNode, useDistinctRegs, useIndexedAddr)
 
    minTP = sys.maxint
    minTP_noDepBreaking_noLoop = sys.maxint
@@ -1199,7 +1216,7 @@ def getDependencyBreakingInstrs(instrNode, opRegDict, ignoreOperand = None):
       if not (opNode.attrib.get('r', '') == '1' or opNode.attrib.get('conditionalWrite', '') == '1'): continue
 
       if not any(('flag_'+f in opNode.attrib) for f in STATUSFLAGS_noAF): continue
-      depBreakingInstrs[opNode] = 'TEST R13, R13'
+      depBreakingInstrs[opNode] = 'TEST R15, R15'
 
    return depBreakingInstrs
 
@@ -1237,7 +1254,7 @@ def getDependencyBreakingInstrsForSuppressedOperands(instrNode):
          # on some CPUs, instructions that write flags conditionally also read the flags
          if not (opNode.attrib.get('r', '') == '1' or opNode.attrib.get('conditionalWrite', '') == '1'): continue
          if not any(('flag_'+f in opNode.attrib) for f in STATUSFLAGS_noAF): continue
-         depBreakingInstrs += ['TEST R13, R13']
+         depBreakingInstrs += ['TEST R15, R15']
 
    return ';'.join(depBreakingInstrs)
 
@@ -1858,10 +1875,10 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
 
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
             elif 'MM' in reg:
-               instrI = getInstrInstanceFromNode(instrNode, ['R13', 'R15'], ['R13', 'R15'], True, {startNodeIdx:reg})
+               instrI = getInstrInstanceFromNode(instrNode, ['R12', 'R15'], ['R12', 'R15'], True, {startNodeIdx:reg})
                configList.isUpperBound = True
-               for chainInstrI in getAllChainInstrsFromRegToReg(instrNode, 'R13', reg):
-                  chainInstrs = 'CMOV' + flag[0] + ' R13, R15; ' + chainInstrI.asm
+               for chainInstrI in getAllChainInstrsFromRegToReg(instrNode, 'R12', reg):
+                  chainInstrs = 'CMOV' + flag[0] + ' R12, R15; ' + chainInstrI.asm
                   chainLatency = basicLatency['CMOV' + flag[0]] + 1
                   configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
       elif targetNode.attrib['type'] == 'mem':
@@ -1952,6 +1969,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          return None
 
       addrReg = getAddrReg(instrNode, startNode)
+      indexReg = getIndexReg(instrNode, startNode)
       memWidth = int(startNode.attrib.get('width', 0))
 
       if targetNode.attrib['type'] == 'reg':
@@ -1969,13 +1987,15 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                print 'read from suppressed mem to non-GPR reg not yet supported'
                return None
 
-         if reg in GPRegs:
-            instrI = getInstrInstanceFromNode(instrNode, [addrReg, 'R12'], [addrReg, 'R12'], useDistinctRegs, {targetNodeIdx:reg})
+         instrI = getInstrInstanceFromNode(instrNode, [addrReg, indexReg, 'R12'], [addrReg, indexReg, 'R12'], useDistinctRegs, {targetNodeIdx:reg},
+                                           useIndexedAddr=(addrMem=='addr_index'))
 
-            if addrMem == 'addr':
+         if reg in GPRegs:
+            if addrMem in ['addr', 'addr_index']:
                # addr -> reg
+               chainReg = (addrReg if addrMem == 'addr' else indexReg)
                chainInstrs = 'MOVSX ' + regTo64(reg) + ', ' + regToSize(reg, min(32, regSize)) + ';'
-               chainInstrs += 'XOR {}, {};'.format(addrReg, regTo64(reg)) * cRep + ('TEST R13, R13;' if instrReadsFlags else '') # cRep is a multiple of 2
+               chainInstrs += 'XOR {}, {};'.format(chainReg, regTo64(reg)) * cRep + ('TEST R15, R15;' if instrReadsFlags else '') # cRep is a multiple of 2
                chainLatency = basicLatency['MOVSX'] + basicLatency['XOR'] * cRep
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
             else:
@@ -1989,15 +2009,14 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(regSize)] >= 12) # 0 if CPU supports zero-latency store forwarding
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
          elif 'MM' in reg:
-            instrI = getInstrInstanceFromNode(instrNode, ['R12'], ['R12'], useDistinctRegs, {targetNodeIdx:reg})
-
-            if addrMem == 'addr':
+            if addrMem in ['addr', 'addr_index']:
                # addr -> reg
                configList.isUpperBound = True
+               chainReg = (addrReg if addrMem == 'addr' else indexReg)
                chainInstrs = 'MOVQ R12, {};'.format(getCanonicalReg(reg))
                if isAVXInstr(instrNode):
                   chainInstrs = 'V' + chainInstrs
-               chainInstrs += 'XOR {}, {};'.format(addrReg, 'R12') * cRep + ('TEST R13, R13;' if instrReadsFlags else '') # cRep is a multiple of 2
+               chainInstrs += 'XOR {}, {};'.format(chainReg, 'R12') * cRep + ('TEST R15, R15;' if instrReadsFlags else '') # cRep is a multiple of 2
                chainLatency = 1 + basicLatency['XOR'] * cRep
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
             elif addrMem == 'addr_VSIB':
@@ -2018,11 +2037,13 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
             if not ('flag_'+flag) in targetNode.attrib: continue
             if not 'w' in targetNode.attrib[('flag_'+flag)]: continue
 
-            instrI = getInstrInstanceFromNode(instrNode, [addrReg, 'R12'], [addrReg, 'R12'], useDistinctRegs)
+            instrI = getInstrInstanceFromNode(instrNode, [addrReg, indexReg, 'R12'], [addrReg, indexReg, 'R12'], useDistinctRegs,
+                                              useIndexedAddr=(addrMem=='addr_index'))
 
-            if addrMem == 'addr':
+            if addrMem in ['addr', 'addr_index']:
                # addr -> flag
-               chainInstr = 'CMOV' + flag[0] + ' ' + addrReg + ', ' + addrReg
+               chainReg = (addrReg if addrMem == 'addr' else indexReg)
+               chainInstr = 'CMOV' + flag[0] + ' ' + chainReg + ', ' + chainReg
                chainLatency = basicLatency['CMOV' + flag[0]]
                configList.append(LatConfig(instrI, chainInstrs=chainInstr, chainLatency=chainLatency))
             else:
@@ -2043,14 +2064,17 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          # mem -> mem
          #################
          if startNode == targetNode:
-            instrI = getInstrInstanceFromNode(instrNode, [addrReg, 'R12'], [addrReg, 'R12'], useDistinctRegs=useDistinctRegs)
+            instrI = getInstrInstanceFromNode(instrNode, [addrReg, indexReg, 'R12'], [addrReg, indexReg, 'R12'], useDistinctRegs=useDistinctRegs,
+                                              useIndexedAddr=(addrMem=='addr_index'))
 
-            if addrMem == 'addr':
+            if addrMem in ['addr', 'addr_index']:
                # addr -> mem
                configList.isUpperBound = True
-               chainInstrs = 'MOV ' + regToSize('R12', min(64, memWidth)) + ', [' + addrReg + '];'
+               chainReg = (addrReg if addrMem == 'addr' else indexReg)
+               memStr = addrReg + ('+'+indexReg if addrMem == 'addr_index' else '')
+               chainInstrs = 'MOV ' + regToSize('R12', min(64, memWidth)) + ', [' + memStr + '];'
                chainInstrs += ('MOVSX R12, ' + regToSize('R12', min(32, memWidth)) + ';') * cRep
-               chainInstrs += 'XOR ' + addrReg + ', R12; XOR ' + addrReg + ', R12;' + ('TEST R13, R13;' if instrReadsFlags else '')
+               chainInstrs += 'XOR ' + chainReg + ', R12; XOR ' + chainReg + ', R12;' + ('TEST R15, R15;' if instrReadsFlags else '')
                chainLatency = basicLatency['MOVSX'] * cRep + 2*basicLatency['XOR']
                chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(min(64, memWidth))] >= 12) # 0 if CPU supports zero-latency store forwarding
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
@@ -2144,9 +2168,18 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
 
             addrMemList = ['']
             if opNode1.attrib['type']=='mem':
-               addrMemList = ['addr', 'mem']+(['addr_VSIB'] if 'VSIB' in opNode1.attrib else [])
-            elif opNode1.attrib['type']=='agen' and ('B' in instrNode.attrib['agen'] or 'I' in instrNode.attrib['agen']):
                addrMemList = ['addr']
+               if 'VSIB' in opNode1.attrib:
+                  addrMemList.append('addr_VSIB')
+               elif opNode1.attrib.get('suppressed', '') != '1':
+                  addrMemList.append('addr_index')
+               addrMemList.append('mem') # mem added last; order is relevant for html output
+            elif opNode1.attrib['type']=='agen' and ('B' in instrNode.attrib['agen'] or 'I' in instrNode.attrib['agen']):
+               addrMemList = []
+               if 'B' in instrNode.attrib['agen']:
+                  addrMemList.append('addr')
+               if 'I' in instrNode.attrib['agen']:
+                  addrMemList.append('addr_index')
 
             for addrMem in addrMemList:
                minLatDistinctRegs = 0
@@ -2613,17 +2646,19 @@ def main():
 
    tpDict = {}
    tpDictSameReg = {}
+   tpDictIndexedAddr = {}
    tpDictNoInteriteration = {}
 
    if args.tpInput is not None:
       with open(args.tpInput, 'rb') as f:
-         pTpDict, pTpDictSameReg, pTpDictNoInteriteration = pickle.load(f)
+         pTpDict, pTpDictSameReg, pTpDictIndexedAddr, pTpDictNoInteriteration = pickle.load(f)
          tpDict = {instrNodeDict[k.attrib['string']]:v for k,v in pTpDict.items()}
          tpDictSameReg = {instrNodeDict[k.attrib['string']]:v for k,v in pTpDictSameReg.items()}
+         tpDictIndexedAddr = {instrNodeDict[k.attrib['string']]:v for k,v in pTpDictIndexedAddr.items()}
          tpDictNoInteriteration = {instrNodeDict[k.attrib['string']]:v for k,v in pTpDictNoInteriteration.items()}
    else:
       for i, instrNode in enumerate(instrNodeList):
-         #if not 'MOVZX_NOREX' in instrNode.attrib['string']: continue
+         #if not 'MOV_NOREX' in instrNode.attrib['string']: continue
          print 'Measuring throughput for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Throughput and Uops' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>\n<hr>\n']
@@ -2631,7 +2666,10 @@ def main():
          hasCommonReg = hasCommonRegister(instrNode)
          if hasCommonReg: htmlReports.append('<h2 id="distinctRegs">With different registers for different operands</h2>\n')
 
-         tpResult = getThroughputAndUops(instrNode, True, htmlReports)
+         hasExplMemOp = hasExplicitNonVSIBMemOperand(instrNode)
+         if hasExplMemOp: htmlReports.append('<h2 id="nonIndexedAddr">With a non-indexed addressing mode</h2>\n')
+
+         tpResult = getThroughputAndUops(instrNode, True, False, htmlReports)
          print instrNode.attrib['string'] + " - tp: " + str(tpResult)
 
          if tpResult:
@@ -2639,9 +2677,15 @@ def main():
 
          if hasCommonReg:
             htmlReports.append('<hr><h2 id="sameReg">With the same register for for different operands</h2>\n')
-            tpResultSameReg = getThroughputAndUops(instrNode, False, htmlReports)
+            tpResultSameReg = getThroughputAndUops(instrNode, False, False, htmlReports)
             if tpResultSameReg:
                tpDictSameReg[instrNode] = tpResultSameReg
+
+         if hasExplMemOp:
+            htmlReports.append('<hr><h2 id="indexedAddr">With an indexed addressing mode</h2>\n')
+            tpResultIndexed = getThroughputAndUops(instrNode, True, True, htmlReports)
+            if tpResultIndexed:
+               tpDictIndexedAddr[instrNode] = tpResultIndexed
 
          if useIACA and iacaVersion in ['2.1', '2.2']:
             htmlReports.append('<hr><h2 id="noInteriteration">With the -no_interiteration flag</h2>\n')
@@ -2650,7 +2694,7 @@ def main():
 
          if tpResult: writeHtmlFile('html-tp/'+arch, instrNode, instrNode.attrib['string'], ''.join(htmlReports))
       with open('tp_' + arch + '.pickle', 'wb') as f:
-         pickle.dump((tpDict, tpDictSameReg, tpDictNoInteriteration), f)
+         pickle.dump((tpDict, tpDictSameReg, tpDictIndexedAddr, tpDictNoInteriteration), f)
 
    num_ports = len(tpDict.values()[0].unblocked_ports)
 
@@ -2669,7 +2713,7 @@ def main():
          latencyDict = {instrNodeDict[k.attrib['string']]:v for k,v in pickle.load(f).items()}
    elif not useIACA or iacaVersion == '2.1':
       for i, instrNode in enumerate(instrNodeList):
-         #if not 'LEA' in instrNode.attrib['string']: continue
+         #if not 'ADC' in instrNode.attrib['string']: continue
          print 'Measuring latencies for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Latency' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>\n<hr>\n']
@@ -2692,6 +2736,7 @@ def main():
    # the elements of this set are sets of ports that either have the same functional units, or that cannot be used independently
    portCombinationsResultDict = {}
    portCombinationsResultDictSameReg = {}
+   portCombinationsResultDictIndexedAddr = {}
 
    if not args.noPorts:
       # iforms of instructions that are potentially zero-latency instructions
@@ -2791,7 +2836,7 @@ def main():
 
       for i, instrNode in enumerate(instrNodeList):
          if not instrNode in tpDict:
-            # don't iterate over the keys of unblocked_ports_dict directly because of the ordering
+            # don't iterate over the keys of tpDict directly because of the ordering
             continue
 
          print 'Measuring port usage for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
@@ -2799,96 +2844,104 @@ def main():
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Port Usage' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>']
 
          for useDistinctRegs in ([True, False] if instrNode in tpDictSameReg else [True]):
+            for useIndexedAddr in ([False, True] if useDistinctRegs and (instrNode in tpDictIndexedAddr) else [False]):
+               tpResult = None
 
-            tpResult = None
+               if not useDistinctRegs:
+                  tp1 = tpDict[instrNode]
+                  tp2 = tpDictSameReg[instrNode]
+                  if (tp1.uops == tp2.uops and tp1.fused_uops == tp2.fused_uops): continue
+                  tpResult = tp2
+                  htmlReports.append('<hr><h2>With the same register for different operands</h2>')
+               elif useIndexedAddr:
+                  tpResult = tpDictIndexedAddr[instrNode]
+                  htmlReports.append('<hr><h2>With an indexed addressing mode</h2>')
+               else:
+                  tpResult = tpDict[instrNode]
 
-            if useDistinctRegs:
-               tpResult = tpDict[instrNode]
-            else:
-               if tpDict[instrNode].uops == tpDictSameReg[instrNode].uops: continue
-               tpResult = tpDictSameReg[instrNode]
-               htmlReports.append('<h2>With the same register for different operands</h2>')
+               rem_uops = max(tpResult.uops, int(sum(x for p, x in tpResult.unblocked_ports.items() if x>0) + .2))
 
-            rem_uops = max(tpResult.uops, int(sum(x for p, x in tpResult.unblocked_ports.items() if x>0) + .2))
+               if not useIACA and tpResult.config.preInstrNodes:
+                  rem_uops -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops for preInstrNode in tpResult.config.preInstrNodes)
 
-            if not useIACA and tpResult.config.preInstrNodes:
-               rem_uops -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops for preInstrNode in tpResult.config.preInstrNodes)
+               # use abs because on, e.g., IVB port usages might be smaller in the second half of the experiments if replays happen
+               used_ports = {p for p, x in tpResult.unblocked_ports.items() if abs(x)>0.05}
+               if debugOutput: print instrNode.attrib['string'] + ' - used ports: ' + str(used_ports) + ', dict: ' + str(tpResult.unblocked_ports)
 
-            # use abs because on, e.g., IVB port usages might be smaller in the second half of the experiments if replays happen
-            used_ports = {p for p, x in tpResult.unblocked_ports.items() if abs(x)>0.05}
-            if debugOutput: print instrNode.attrib['string'] + ' - used ports: ' + str(used_ports) + ', dict: ' + str(tpResult.unblocked_ports)
+               if not isAVXInstr(instrNode):
+                  blockingInstrs = blockingInstructionsDictNonAVX
+                  sortedPortCombinations = sortedPortCombinationsNonAVX
+               else:
+                  blockingInstrs = blockingInstructionsDictNonSSE
+                  sortedPortCombinations = sortedPortCombinationsNonSSE
 
-            if not isAVXInstr(instrNode):
-               blockingInstrs = blockingInstructionsDictNonAVX
-               sortedPortCombinations = sortedPortCombinationsNonAVX
-            else:
-               blockingInstrs = blockingInstructionsDictNonSSE
-               sortedPortCombinations = sortedPortCombinationsNonSSE
+               uopsCombinationList = []
 
-            uopsCombinationList = []
+               if not used_ports:
+                  htmlReports.append('No uops')
+               elif (rem_uops == 1) and (not tpResult.config.preInstrNodes) and (not tpResult.ILD_stalls > 0):
+                  # one uop instruction
+                  uopsCombinationList = [(frozenset(used_ports), 1)]
+                  htmlReports.append('<hr>Port usage: 1*' + ('p' if isIntelCPU() else 'FP') + ''.join(str(p) for p in used_ports))
+               elif rem_uops > 0 and not isAMDCPU():
+                  for combination in sortedPortCombinations:
+                     if not combination.intersection(used_ports): continue
 
-            if not used_ports:
-               htmlReports.append('No uops')
-            elif (rem_uops == 1) and (not tpResult.config.preInstrNodes) and (not tpResult.ILD_stalls > 0):
-               # one uop instruction
-               uopsCombinationList = [(frozenset(used_ports), 1)]
-               htmlReports.append('<hr>Port usage: 1*' + ('p' if isIntelCPU() else 'FP') + ''.join(str(p) for p in used_ports))
-            elif rem_uops > 0 and not isAMDCPU():
-               for combination in sortedPortCombinations:
-                  if not combination.intersection(used_ports): continue
+                     prevUopsOnCombination = 0
+                     for prev_combination, prev_uops in uopsCombinationList:
+                        if prev_combination.issubset(combination):
+                           prevUopsOnCombination += prev_uops
 
-                  prevUopsOnCombination = 0
-                  for prev_combination, prev_uops in uopsCombinationList:
-                     if prev_combination.issubset(combination):
-                        prevUopsOnCombination += prev_uops
+                     if not useIACA:
+                        if tpResult.config.preInstrNodes:
+                           for preInstrNode in tpResult.config.preInstrNodes:
+                              for pre_comb, pre_uops in portCombinationsResultDict[instrNodeDict[preInstrNode.attrib['string']]]:
+                                 if pre_comb.issubset(combination):
+                                    prevUopsOnCombination += pre_uops
 
-                  if not useIACA:
-                     if tpResult.config.preInstrNodes:
-                        for preInstrNode in tpResult.config.preInstrNodes:
-                           for pre_comb, pre_uops in portCombinationsResultDict[instrNodeDict[preInstrNode.attrib['string']]]:
-                              if pre_comb.issubset(combination):
-                                 prevUopsOnCombination += pre_uops
+                     nPortsInComb = sum(len(str(x)) for x in combination)
+                     blockInstrRep = max(2 * nPortsInComb * max(1,int(tpDict[instrNode].TP_single)), nPortsInComb * tpDict[instrNode].uops, 10)
+                     blockInstrRep = min(blockInstrRep, 100)
+                     uopsOnBlockedPorts = getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockingInstrs[combination], blockInstrRep, combination, tpResult.config, htmlReports)
+                     if uopsOnBlockedPorts is None:
+                        print 'no uops on blocked ports: ' + str(combination)
+                        continue
 
-                  nPortsInComb = sum(len(str(x)) for x in combination)
-                  blockInstrRep = max(2 * nPortsInComb * max(1,int(tpDict[instrNode].TP_single)), nPortsInComb * tpDict[instrNode].uops, 10)
-                  blockInstrRep = min(blockInstrRep, 100)
-                  uopsOnBlockedPorts = getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockingInstrs[combination], blockInstrRep, combination, tpResult.config, htmlReports)
-                  if uopsOnBlockedPorts is None:
-                     print 'no uops on blocked ports: ' + str(combination)
-                     continue
+                     uopsOnBlockedPorts -= prevUopsOnCombination
 
-                  uopsOnBlockedPorts -= prevUopsOnCombination
+                     if rem_uops < uopsOnBlockedPorts:
+                        print 'More uops on ports than total uops, combination: ' + str(combination) + ', ' + str(uopsOnBlockedPorts)
 
-                  if rem_uops < uopsOnBlockedPorts:
-                     print 'More uops on ports than total uops, combination: ' + str(combination) + ', ' + str(uopsOnBlockedPorts)
+                     if uopsOnBlockedPorts <= 0: continue
 
-                  if uopsOnBlockedPorts <= 0: continue
+                     if combination == {storeDataPort} and instrNode.attrib.get('locked', '') == '1':
+                        # for instructions with a lock prefix, the blocking instrs don't seem to be sufficient for actually blocking the store data port, which
+                        # seems to lead to replays of the store data uops
+                        uopsOnBlockedPorts = 1
 
-                  if combination == {storeDataPort} and instrNode.attrib.get('locked', '') == '1':
-                     # for instructions with a lock prefix, the blocking instrs don't seem to be sufficient for actually blocking the store data port, which
-                     # seems to lead to replays of the store data uops
-                     uopsOnBlockedPorts = 1
+                     uopsCombinationList.append((combination, uopsOnBlockedPorts))
 
-                  uopsCombinationList.append((combination, uopsOnBlockedPorts))
+                     htmlReports.append('<strong>&#8680; ' +
+                                        ((str(uopsOnBlockedPorts) + ' &mu;ops') if (uopsOnBlockedPorts > 1) else 'One &mu;op') +
+                                        ' that can only use port' +
+                                        ('s {' if len(combination)>1 else ' ') +
+                                        str(list(combination))[1:-1] +
+                                        ('}' if len(combination)>1 else '') + '</strong>')
 
-                  htmlReports.append('<strong>&#8680; ' +
-                                     ((str(uopsOnBlockedPorts) + ' &mu;ops') if (uopsOnBlockedPorts > 1) else 'One &mu;op') +
-                                     ' that can only use port' +
-                                     ('s {' if len(combination)>1 else ' ') +
-                                     str(list(combination))[1:-1] +
-                                     ('}' if len(combination)>1 else '') + '</strong>')
+                     rem_uops -= uopsOnBlockedPorts
+                     if rem_uops <= 0: break
 
-                  rem_uops -= uopsOnBlockedPorts
-                  if rem_uops <= 0: break
+               # on ICL, some combinations (e.g. {4,9}) are treated as one port (49) above, as there is only a single counter for both ports
+               # we split these combinations now, as, e.g., the call to getTP_LP requires them to be separate
+               uopsCombinationList = [(frozenset(''.join(map(str,comb))), uops) for comb, uops in uopsCombinationList]
 
-            # on ICL, some combinations (e.g. {4,9}) are treated as one port (49) above, as there is only a single counter for both ports
-            # we split these combinations now, as, e.g., the call to getTP_LP requires them to be separate
-            uopsCombinationList = [(frozenset(''.join(map(str,comb))), uops) for comb, uops in uopsCombinationList]
+               if not useDistinctRegs:
+                  portCombinationsResultDictSameReg[instrNode] = uopsCombinationList
+               elif useIndexedAddr:
+                  portCombinationsResultDictIndexedAddr[instrNode] = uopsCombinationList
+               else:
+                  portCombinationsResultDict[instrNode] = uopsCombinationList
 
-            if useDistinctRegs:
-               portCombinationsResultDict[instrNode] = uopsCombinationList
-            else:
-               portCombinationsResultDictSameReg[instrNode] = uopsCombinationList
 
          writeHtmlFile('html-ports/'+arch, instrNode, instrNode.attrib['string'], ''.join(htmlReports))
 
@@ -2905,13 +2958,18 @@ def main():
       else:
          resultNode = archNode.find('./measurement')
 
-      tpResult_dr = tpDict[instrNode]
-      tpResult_sr = tpDictSameReg.get(instrNode, tpResult_dr)
+      applicableResults = [(tpDict[instrNode], portCombinationsResultDict.get(instrNode, None), '')]
+      for otherTPDict, otherPCDict, suffix in [(tpDictSameReg, portCombinationsResultDictSameReg, '_same_reg'),
+                                               (tpDictIndexedAddr, portCombinationsResultDictIndexedAddr, '_indexed')]:
+         if instrNode in otherTPDict:
+            t1 = tpDict[instrNode]
+            t2 = otherTPDict[instrNode]
+            p1 = portCombinationsResultDict.get(instrNode, None)
+            p2 = otherPCDict.get(instrNode, None)
+            if (t1.uops != t2.uops or t1.fused_uops != t2.fused_uops or ((p2 is not None) and (p1 != p2))):
+               applicableResults.append((t2, p2, suffix))
 
-      for tpResult in ([tpResult_dr, tpResult_sr] if tpResult_dr.uops != tpResult_sr.uops else [tpResult_dr]):
-         suffix = ('' if tpResult == tpResult_dr else '_same_reg')
-         curPortCombinationsResultDict = (portCombinationsResultDict if tpResult == tpResult_dr else portCombinationsResultDictSameReg)
-
+      for tpResult, portUsageList, suffix in applicableResults:
          uops = tpResult.uops
          uopsFused = tpResult.fused_uops
          if useIACA:
@@ -2937,10 +2995,7 @@ def main():
 
          portPrefix = ('p' if isIntelCPU() else 'FP')
          computePortStr = lambda lst: '+'.join(str(uops)+'*'+portPrefix+''.join(str(p) for p in sorted(c)) for c, uops in sorted(lst, key=lambda x: sorted(x[0])))
-         if instrNode in curPortCombinationsResultDict:
-            portUsageList = curPortCombinationsResultDict[instrNode]
-            if not portUsageList: continue
-
+         if portUsageList:
             resultNode.attrib['ports'+suffix] = computePortStr(portUsageList)
 
             portUsageWithDivList = list(portUsageList)

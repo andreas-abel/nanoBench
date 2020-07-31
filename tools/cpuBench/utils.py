@@ -109,7 +109,7 @@ def latencyNodeToStr(latNode, sameReg, addr_mem):
       ret += ', with the same register for different operands'
    if addr_mem == 'addr':
       ret += ' (address, base register)'
-   elif addr_mem == 'addr_VSIB':
+   elif addr_mem in ['addr_index', 'addr_VSIB']:
       ret += ' (address, index register)'
    elif addr_mem == 'mem':
       ret += ' (memory)'
@@ -144,7 +144,7 @@ def getLatencyTableEntry(measurementNode):
 
    for latNode in measurementNode.findall('./latency'):
       for sameReg in [False, True]:
-         for addr_mem in ['', 'addr', 'mem']:
+         for addr_mem in ['', 'addr', 'addr_index', 'addr_VSIB', 'mem']:
             suffix = ('_'+addr_mem if addr_mem else '') + ('_same_reg' if sameReg else '')
             if 'cycles'+suffix in latNode.attrib:
                cycles = int(latNode.attrib['cycles'+suffix])
