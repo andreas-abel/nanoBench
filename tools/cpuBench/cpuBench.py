@@ -257,6 +257,11 @@ def getEventConfig(event):
       if arch in ['ZEN+', 'ZEN2']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'C2.02'
+   if event == 'UOPS_MITE':
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return '79.04'
+   if event == 'UOPS_MS':
+      if arch in ['NHM', 'WSM']: return 'D1.02'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return '79.30'
    if event == 'UOPS_PORT0':
       if arch in ['CON', 'WOL']: return 'A1.01.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.01'
@@ -918,7 +923,7 @@ def fancyRound(cycles):
    return round(cycles, 2)
 
 
-TPResult = namedtuple('TPResult', ['TP', 'TP_noDepBreaking_noLoop', 'TP_single', 'uops', 'fused_uops', 'divCycles', 'ILD_stalls', 'dec0', 'config', 'unblocked_ports'])
+TPResult = namedtuple('TPResult', ['TP', 'TP_noDepBreaking_noLoop', 'TP_single', 'uops', 'fused_uops', 'uops_MITE', 'uops_MS', 'divCycles', 'ILD_stalls', 'dec0', 'config', 'unblocked_ports'])
 
 # returns TPResult
 # port usages are averages (when no ports are blocked by other instructions)
@@ -994,13 +999,15 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                else:
                   divCycles = 0
 
-      return TPResult(minTP, minTP_noDepBreaking_noLoop, minTP_single, unfused_uops, fused_uops, divCycles, 0, False, config, ports_dict)
+      return TPResult(minTP, minTP_noDepBreaking_noLoop, minTP_single, unfused_uops, fused_uops, None, None, divCycles, 0, False, config, ports_dict)
    else:
       hasMemWriteOperand = len(instrNode.findall('./operand[@type="mem"][@r="1"][@w="1"]'))>0
-      uops = 0
-      uopsFused = 0
-      divCycles = 0
-      ILD_stalls = 0
+      uops = None
+      uopsFused = None
+      uopsMITE = None
+      uopsMS = None
+      divCycles = None
+      ILD_stalls = None
       dec0 = False
       ports_dict = {}
       for config in configs:
@@ -1009,7 +1016,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
          instrIList = config.independentInstrs
          for ic in sorted(set([1, min(4, len(instrIList)), min(8, len(instrIList)), len(instrIList)])):
             if len(instrIList) > 1: htmlReports.append('<h3 style="margin-left: 25px">With ' + str(ic) + ' independent instruction' + ('s' if ic>1 else '') + '</h3>\n')
-            htmlReports.append('<div style="margin-left: 50px">')
+            htmlReports.append('<div style="margin-left: 50px">\n')
 
             for useDepBreakingInstrs in ([False, True] if config.depBreakingInstrs else [False]):
                if useDepBreakingInstrs:
@@ -1049,10 +1056,10 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
 
                   invalid = False
                   if any('PORT' in e for e in result):
-                     maxPortUops = max(v/(len(e)-9) for e,v in result.items() if e.startswith('UOPS_PORT'))
+                     maxPortUops = max(v/(len(e)-9) for e,v in result.items() if e.startswith('UOPS_PORT') and not '4' in e)
                      if maxPortUops * .98 > result['Core cycles']:
                         print 'More uops on ports than cycles, uops: {}, cycles: {}'.format(maxPortUops, result['Core cycles'])
-                        invalid = True
+                        #invalid = True
 
                   if not invalid:
                      minTP = min(minTP, cycles)
@@ -1067,9 +1074,15 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                         # We ignore BASE instructions, as they sometimes wrongly count floating point uops
                         ports_dict = {int(p[23:]): i for p, i in result.items() if 'FpuPipeAssignment.Total' in p}
 
-                     uops = int(result['UOPS']+.1)
+                     uops = int(result['UOPS']+.2)
                      if 'RETIRE_SLOTS' in result:
-                        uopsFused = int(result['RETIRE_SLOTS']+.1)
+                        uopsFused = int(result['RETIRE_SLOTS']+.2)
+
+                     if 'UOPS_MITE' in result:
+                        uopsMITE = int(result['UOPS_MITE']+.2)
+
+                     if 'UOPS_MS' in result:
+                        uopsMS = int(result['UOPS_MS']+.2)
 
                      if 'ILD_STALL.LCP' in result:
                         ILD_stalls = int(result['ILD_STALL.LCP'])
@@ -1078,14 +1091,32 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                         dec0 = (int(round(result['INST_DECODED.DEC0'])) > 0)
 
                      if 'DIV_CYCLES' in result:
-                        divCycles = int(result['DIV_CYCLES']+.1)
+                        divCycles = int(result['DIV_CYCLES']+.2)
 
                      minConfig = config
 
             htmlReports.append('</div>')
 
       if minTP < sys.maxint:
-         return TPResult(minTP, minTP_noDepBreaking_noLoop, minTP_single, uops, uopsFused, divCycles, ILD_stalls, dec0, minConfig, ports_dict)
+         return TPResult(minTP, minTP_noDepBreaking_noLoop, minTP_single, uops, uopsFused, uopsMITE, uopsMS, divCycles, ILD_stalls, dec0, minConfig, ports_dict)
+
+
+def canMacroFuse(flagInstrNode, branchInstrNode, htmlReports):
+   flagInstrInstance = getInstrInstanceFromNode(flagInstrNode)
+   branchInstrInstance = getInstrInstanceFromNode(branchInstrNode)
+
+   init = flagInstrInstance.regMemInit
+   code = flagInstrInstance.asm + ';' + branchInstrInstance.asm
+
+   htmlReports.append('<div style="margin-left: 25px">\n')
+   htmlReports.append('<h3>With ' + branchInstrNode.attrib['string'] + '</h3>\n')
+   htmlReports.append('<ul>\n')
+   result = runExperiment(None, code, init=init, unrollCount=100, basicMode=True, htmlReports=htmlReports)
+   htmlReports.append('</ul>\n')
+   htmlReports.append('</div>\n')
+
+   uops = int(result['RETIRE_SLOTS']+.1)
+   return (uops == 1)
 
 
 basicLatency = {}
@@ -2605,8 +2636,8 @@ def main():
       if arch in ['ZEN+', 'ZEN2']:
          configurePFCs(['UOPS','FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3', 'DIV_CYCLES'])
       else:
-         configurePFCs(['UOPS', 'RETIRE_SLOTS', 'UOPS_PORT0', 'UOPS_PORT1', 'UOPS_PORT2', 'UOPS_PORT3', 'UOPS_PORT4', 'UOPS_PORT5', 'UOPS_PORT6', 'UOPS_PORT7',
-                        'UOPS_PORT23', 'UOPS_PORT49', 'UOPS_PORT78', 'DIV_CYCLES', 'ILD_STALL.LCP', 'INST_DECODED.DEC0'])
+         configurePFCs(['UOPS', 'RETIRE_SLOTS', 'UOPS_MITE', 'UOPS_MS', 'UOPS_PORT0', 'UOPS_PORT1', 'UOPS_PORT2', 'UOPS_PORT3', 'UOPS_PORT4', 'UOPS_PORT5',
+                        'UOPS_PORT6', 'UOPS_PORT7', 'UOPS_PORT23', 'UOPS_PORT49', 'UOPS_PORT78', 'DIV_CYCLES', 'ILD_STALL.LCP', 'INST_DECODED.DEC0'])
 
    try:
       subprocess.check_output('mkdir -p /tmp/ramdisk; sudo mount -t tmpfs -o size=100M none /tmp/ramdisk/', shell=True)
@@ -2630,6 +2661,8 @@ def main():
       instrRequiringPreInstr = [x for x in instrNodeList if 'DIV' in x.attrib['iclass'] or 'SQRT' in x.attrib['iclass'] or getPreInstr(x)[0]]
    instrNodeList.sort(key=lambda x: (x in instrRequiringPreInstr, x.attrib['string']))
 
+   condBrInstr = [i for i in instrNodeList if i.attrib['category'] == 'COND_BR' and i.attrib['isa-set'] == 'I86' and not 'LOOP' in i.attrib['iclass']]
+
    for instrNode in instrNodeList:
       archNode = instrNode.find('./architecture[@name="' + arch + '"]')
       if archNode is None:
@@ -2648,6 +2681,7 @@ def main():
    tpDictSameReg = {}
    tpDictIndexedAddr = {}
    tpDictNoInteriteration = {}
+   macroFusionDict = {}
 
    if args.tpInput is not None:
       with open(args.tpInput, 'rb') as f:
@@ -2686,6 +2720,15 @@ def main():
             tpResultIndexed = getThroughputAndUops(instrNode, True, True, htmlReports)
             if tpResultIndexed:
                tpDictIndexedAddr[instrNode] = tpResultIndexed
+
+         # Macro-Fusion
+         if tpResult.fused_uops == 1 and (instrNode.find('./operand[@type="flags"][@w="1"]') is not None):
+            htmlReports.append('<hr><h2 id="macroFusion">Tests for macro-fusion</h2>\n')
+            fusibleInstrList = []
+            for brInstr in condBrInstr:
+               if canMacroFuse(instrNode, brInstr, htmlReports):
+                  fusibleInstrList.append(brInstr)
+            if fusibleInstrList: macroFusionDict[instrNode] = fusibleInstrList
 
          if useIACA and iacaVersion in ['2.1', '2.2']:
             htmlReports.append('<hr><h2 id="noInteriteration">With the -no_interiteration flag</h2>\n')
@@ -2966,7 +3009,7 @@ def main():
             t2 = otherTPDict[instrNode]
             p1 = portCombinationsResultDict.get(instrNode, None)
             p2 = otherPCDict.get(instrNode, None)
-            if (t1.uops != t2.uops or t1.fused_uops != t2.fused_uops or ((p2 is not None) and (p1 != p2))):
+            if (t1.uops != t2.uops or t1.fused_uops != t2.fused_uops or t1.uops_MITE != t2.uops_MITE or ((p2 is not None) and (p1 != p2))):
                applicableResults.append((t2, p2, suffix))
 
       for tpResult, portUsageList, suffix in applicableResults:
@@ -2978,10 +3021,17 @@ def main():
          else:
             if tpResult.config.preInstrNodes:
                uops -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops for preInstrNode in tpResult.config.preInstrNodes)
-               uopsFused -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].fused_uops for preInstrNode in tpResult.config.preInstrNodes)
-            if uopsFused > 0:
+               if uopsFused is not None:
+                  uopsFused -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].fused_uops for preInstrNode in tpResult.config.preInstrNodes)
+            if uopsFused:
                resultNode.attrib['uops_retire_slots'+suffix] = str(uopsFused)
          resultNode.attrib['uops'+suffix] = str(uops)
+
+         if tpResult.uops_MITE is not None:
+            resultNode.attrib['uops_MITE'+suffix] = str(tpResult.uops_MITE)
+
+         if tpResult.uops_MS is not None:
+            resultNode.attrib['uops_MS'+suffix] = str(tpResult.uops_MS)
 
          if useIACA and instrNode in latencyDict:
             resultNode.attrib['latency'] = str(latencyDict[instrNode])
@@ -2989,6 +3039,9 @@ def main():
          resultNode.attrib['TP'+suffix] = "%.2f" % tpResult.TP
          if instrNode in tpDictNoInteriteration:
             resultNode.attrib['TP_no_interiteration'] = "%.2f" % tpDictNoInteriteration[instrNode]
+
+         if instrNode in macroFusionDict:
+            resultNode.attrib['macro_fusible'] = ';'.join(sorted(m.attrib['string'] for m in macroFusionDict[instrNode]))
 
          divCycles = tpResult.divCycles
          if divCycles: resultNode.attrib['div_cycles'+suffix] = str(divCycles)
