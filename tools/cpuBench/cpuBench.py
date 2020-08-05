@@ -612,16 +612,18 @@ def getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr, doNot
 
    return independentInstructions
 
-# Returns True iff there are two non-suppressed operands that can use the same register
+# Returns True iff there are two operands that can use the same register, all reg. operands are non-suppressed, and there are no memory operands
 def hasCommonRegister(instrNode):
    if 'GATHER' in instrNode.attrib['category'] or 'SCATTER' in instrNode.attrib['category']:
       return False
+   if instrNode.find('./operand[@type="mem"]') is not None:
+      return False
+   if instrNode.find('./operand[@type="reg"][@suppressed="1"]') is not None:
+      return False
    for opNode1 in instrNode.findall('./operand[@type="reg"]'):
-      if opNode1.attrib.get('suppressed', '0') == '1': continue
       regs1 = set(map(getCanonicalReg, opNode1.text.split(",")))
       for opNode2 in instrNode.findall('./operand[@type="reg"]'):
          if opNode1 == opNode2: continue
-         if opNode2.attrib.get('suppressed', '0') == '1': continue
          regs2 = set(map(getCanonicalReg, opNode2.text.split(",")))
          if regs1.intersection(regs2):
             return True
@@ -2132,7 +2134,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
    return [configList]
 
 
-def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
+def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
    if useIACA:
       createIacaAsmFile("/tmp/ramdisk/asm.s", "", 0, getInstrInstanceFromNode(instrNode).asm)
 
@@ -2217,7 +2219,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
                maxLatDistinctRegs = 0
 
                configI = 0
-               for useDistinctRegs in ([True, False] if hasCommonRegister(instrNode) else [True]):
+               for useDistinctRegs in ([True, False] if instrNode in tpDictSameReg else [True]):
                   latConfigLists = getLatConfigLists(instrNode, opNode1, opNode2, useDistinctRegs, addrMem, tpDict)
                   if latConfigLists is None: continue
 
@@ -2378,7 +2380,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
                      latencyNode.attrib['start_op'] = str(opNode1.attrib['idx'])
                      latencyNode.attrib['target_op'] = str(opNode2.attrib['idx'])
 
-                  suffix = ('_'+addrMem if addrMem else '') + ('_same_reg' if not useDistinctRegs else '')
+                  suffix = ('_'+addrMem.replace('VSIB', 'index') if addrMem else '') + ('_same_reg' if not useDistinctRegs else '')
                   if minLat == maxLat:
                      latencyNode.attrib['cycles'+suffix] = str(minLat)
                      if minLatIsUpperBound:
@@ -2391,7 +2393,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, htmlReports):
                      if maxLatIsUpperBound:
                         latencyNode.attrib['max_cycles'+suffix+'_is_upper_bound'] = '1'
 
-                  summaryLine = latencyNodeToStr(latencyNode, not useDistinctRegs, addrMem)
+                  summaryLine = latencyNodeToStr(latencyNode, not useDistinctRegs, addrMem.replace('VSIB', 'index'))
 
                   h2ID = 'lat' + str(opNode1Idx) + '->' + str(opNode2Idx) + suffix
                   htmlHead.append('<a href="#' + h2ID + '"><h3>' + summaryLine + '</h3></a>')
@@ -2711,9 +2713,10 @@ def main():
 
          if hasCommonReg:
             htmlReports.append('<hr><h2 id="sameReg">With the same register for for different operands</h2>\n')
-            tpResultSameReg = getThroughputAndUops(instrNode, False, False, htmlReports)
-            if tpResultSameReg:
-               tpDictSameReg[instrNode] = tpResultSameReg
+            tpResultSR = getThroughputAndUops(instrNode, False, False, htmlReports)
+            if tpResultSR and (tpResult.uops != tpResultSR.uops or tpResult.fused_uops != tpResultSR.fused_uops or tpResult.uops_MITE != tpResultSR.uops_MITE
+                                  or abs(tpResult.TP-tpResultSR.TP) > .05):
+               tpDictSameReg[instrNode] = tpResultSR
 
          if hasExplMemOp:
             htmlReports.append('<hr><h2 id="indexedAddr">With an indexed addressing mode</h2>\n')
@@ -2760,7 +2763,7 @@ def main():
          print 'Measuring latencies for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Latency' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>\n<hr>\n']
-         lat = getLatencies(instrNode, instrNodeList, tpDict, htmlReports)
+         lat = getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports)
 
          if lat is not None:
             if debugOutput: print instrNode.attrib['iform'] + ': ' + str(lat)
@@ -2891,10 +2894,7 @@ def main():
                tpResult = None
 
                if not useDistinctRegs:
-                  tp1 = tpDict[instrNode]
-                  tp2 = tpDictSameReg[instrNode]
-                  if (tp1.uops == tp2.uops and tp1.fused_uops == tp2.fused_uops): continue
-                  tpResult = tp2
+                  tpResult = tpDictSameReg[instrNode]
                   htmlReports.append('<hr><h2>With the same register for different operands</h2>')
                elif useIndexedAddr:
                   tpResult = tpDictIndexedAddr[instrNode]
