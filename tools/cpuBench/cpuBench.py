@@ -429,8 +429,14 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
          address = []
 
          if 'R' in agen: address.append('RIP')
-         if 'B' in agen: address.append('R14')
-         if 'I' in agen: address.append('2*R14')
+         if 'B' in agen:
+            addrReg = getAddrReg(instrNode, operandNode)
+            address.append(addrReg)
+            readRegs.add(addrReg)
+         if 'I' in agen:
+            indexReg = getIndexReg(instrNode, operandNode)
+            address.append('2*' + indexReg)
+            readRegs.add(indexReg)
          if 'D' in agen: address.append('8')
 
          asm += ' [' + '+'.join(address) + ']'
@@ -1781,11 +1787,19 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
 
    configList = LatConfigList()
 
-   if startNode.text == 'RSP' or targetNode.text == 'RSP':
+   if instrNode.attrib['iclass'] == 'LEAVE':
+      if startNode.text and targetNode.text and 'BP' in startNode.text and 'BP' in targetNode.text:
+         chainInstrs = 'MOVSX RBP, BP; ' * cRep
+         chainInstrs += 'AND RBP, R14; OR RBP, R14; '
+         chainLatency = basicLatency['MOVSX'] * cRep + basicLatency['AND'] + basicLatency['OR']
+         configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
+      else:
+         return None
+   elif startNode.text == 'RSP' or targetNode.text == 'RSP':
       # we ignore operands that modify the stack pointer, as these are usually handled by the stack engine in the issue stage of the pipeline, and
       # thus would not lead to meaningful results
       return None
-   elif (startNode.text and 'RIP' in startNode.text) or (targetNode.text and 'RIP' in targetNode.text):
+   elif (startNode.text and 'RIP' in startNode.text) or (targetNode.text and 'RIP' in targetNode.text) or 'R' in instrNode.attrib.get('agen', ''):
       return None
    elif startNode.attrib['type'] == 'reg':
       #################
@@ -2156,7 +2170,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
 
          return latency
    else:
-      if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR', 'RDPMC', 'LEAVE', 'CPUID', 'POPF', 'POPFQ']:
+      if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR', 'RDPMC', 'CPUID', 'POPF', 'POPFQ']:
          return None;
       if 'REP' in instrNode.attrib['iclass']:
          return None;
@@ -2849,11 +2863,11 @@ def main():
       blockingInstructionsDictNonAVX = {comb: next(iter(sorted(instr_set, key=sort_key))) for comb, instr_set in blockingInstructionsDictNonAVX_set.items()}
       blockingInstructionsDictNonSSE = {comb: next(iter(sorted(instr_set, key=sort_key))) for comb, instr_set in blockingInstructionsDictNonSSE_set.items()}
 
-      for comb, instr_set in blockingInstructionsDictNonAVX_set.items():
-         print comb
-         print [x.attrib['string'] for x in sorted(instr_set, key=sort_key)]
+      #for comb, instr_set in blockingInstructionsDictNonAVX_set.items():
+      #   print comb
+      #   print [x.attrib['string'] for x in sorted(instr_set, key=sort_key)]
 
-      print str(blockingInstructionsDictNonAVX.items())
+      #print str(blockingInstructionsDictNonAVX.items())
 
       # mov to mem has always two uops: store address and store data; there is no instruction that uses just one of them
       movMemInstrNode = instrNodeDict['MOV (M64, R64)']
@@ -2884,6 +2898,8 @@ def main():
          if not instrNode in tpDict:
             # don't iterate over the keys of tpDict directly because of the ordering
             continue
+
+         #if not 'LEA' in instrNode.attrib['string']: continue
 
          print 'Measuring port usage for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
@@ -2939,7 +2955,7 @@ def main():
                         if tpResult.config.preInstrNodes:
                            for preInstrNode in tpResult.config.preInstrNodes:
                               for pre_comb, pre_uops in portCombinationsResultDict[instrNodeDict[preInstrNode.attrib['string']]]:
-                                 if pre_comb.issubset(combination):
+                                 if pre_comb.issubset(frozenset(''.join(map(str,combination)))):
                                     prevUopsOnCombination += pre_uops
 
                      nPortsInComb = sum(len(str(x)) for x in combination)
@@ -3015,6 +3031,8 @@ def main():
       for tpResult, portUsageList, suffix in applicableResults:
          uops = tpResult.uops
          uopsFused = tpResult.fused_uops
+         uopsMITE = tpResult.uops_MITE
+         uopsMS = tpResult.uops_MS
          if useIACA:
             if uopsFused:
                resultNode.attrib['fusion_occurred'] = '1'
@@ -3023,15 +3041,17 @@ def main():
                uops -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops for preInstrNode in tpResult.config.preInstrNodes)
                if uopsFused is not None:
                   uopsFused -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].fused_uops for preInstrNode in tpResult.config.preInstrNodes)
-            if uopsFused:
+               if uopsMITE is not None:
+                  uopsMITE -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops_MITE for preInstrNode in tpResult.config.preInstrNodes)
+               if uopsMS is not None:
+                  uopsMS -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops_MS for preInstrNode in tpResult.config.preInstrNodes)
+            if uopsFused is not None:
                resultNode.attrib['uops_retire_slots'+suffix] = str(uopsFused)
+            if uopsMITE is not None:
+               resultNode.attrib['uops_MITE'+suffix] = str(uopsMITE)
+            if uopsMS is not None:
+               resultNode.attrib['uops_MS'+suffix] = str(uopsMS)
          resultNode.attrib['uops'+suffix] = str(uops)
-
-         if tpResult.uops_MITE is not None:
-            resultNode.attrib['uops_MITE'+suffix] = str(tpResult.uops_MITE)
-
-         if tpResult.uops_MS is not None:
-            resultNode.attrib['uops_MS'+suffix] = str(tpResult.uops_MS)
 
          if useIACA and instrNode in latencyDict:
             resultNode.attrib['latency'] = str(latencyDict[instrNode])
