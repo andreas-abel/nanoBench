@@ -2,6 +2,7 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import argparse
+import sys
 
 # Shows the differences between two XML files for a specific microarchitecture
 def main():
@@ -34,11 +35,12 @@ def main():
       for mNode1 in instrNode1.findall('./architecture[@name="' + args.arch1 + '"]/measurement'):
          for mNode2 in instrNode2.findall('./architecture[@name="' + args.arch2 + '"]/measurement'):
             if args.TP:
-               tp1 = mNode1.attrib['TP']
-               tp2 = mNode2.attrib['TP']
+               tp1 = min(map(float, [mNode1.attrib.get('TP_unrolled', sys.maxsize), mNode1.attrib.get('TP_loop', sys.maxsize), mNode1.attrib.get('TP', sys.maxsize)]))
+               tp2 = min(map(float, [mNode2.attrib.get('TP_unrolled', sys.maxsize), mNode2.attrib.get('TP_loop', sys.maxsize), mNode2.attrib.get('TP', sys.maxsize)]))
+
                if tp1 != tp2:
                   tpDiff += 1
-                  print instrStr + ' - TP1: ' + tp1 + ' - TP2: ' + tp2
+                  print instrStr + ' - TP1: ' + str(tp1) + ' - TP2: ' + str(tp2)
 
             if args.lat:
                for latNode1, latNode2 in zip(mNode1.findall('./latency'), mNode2.findall('./latency')):

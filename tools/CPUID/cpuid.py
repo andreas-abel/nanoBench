@@ -204,7 +204,10 @@ def micro_arch(cpu):
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x4E), (0x06, 0x5E)]:
       return 'SKL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x55)]:
-      return 'SKX'
+      if vi.stepping <= 0x4:
+         return 'SKX'
+      else:
+         return 'CLX'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x8E), (0x06, 0x9E)]:
       # ToDo: not sure if this is correct
       if vi.stepping <= 0x9:
