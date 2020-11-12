@@ -224,6 +224,8 @@ def micro_arch(cpu):
       return 'ZEN+'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x71)]:
       return 'ZEN2'
+   if (vi.displ_family, vi.displ_model) in [(0x19, 0x21)]:
+      return 'ZEN3'
 
    return 'unknown'
 
