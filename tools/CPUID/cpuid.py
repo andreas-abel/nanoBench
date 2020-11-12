@@ -505,6 +505,9 @@ def get_cache_info(cpu):
       elif d_15_12 == 0x4: L3Assoc = 4
       elif d_15_12 == 0x6: L3Assoc = 8
       elif d_15_12 == 0x8: L3Assoc = 16
+      # Value 0x9, returned by Zen 3, is reserved according to AMD CPUID Specification document.
+      # The Software Optimization Guide for AMD Family 19h Processors specifies L3 cache to be 16-way associative and shared by 8 cores inside a CPU complex.
+      elif d_15_12 == 0x9: L3Assoc = 16
       elif d_15_12 == 0xA: L3Assoc = 32
       elif d_15_12 == 0xB: L3Assoc = 48
       elif d_15_12 == 0xC: L3Assoc = 64
