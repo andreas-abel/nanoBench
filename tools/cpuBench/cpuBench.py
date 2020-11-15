@@ -2591,8 +2591,16 @@ def filterInstructions(XMLRoot):
       if extension == 'WAITPKG' and not cpuid.get_bit(ecx7, 5): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VBMI2') and not cpuid.get_bit(ecx7, 6): instrSet.discard(XMLInstr)
       if category == 'GFNI' and not cpuid.get_bit(ecx7, 8): instrSet.discard(XMLInstr)
-      if 'VAES' in isaSet and not cpuid.get_bit(ecx7, 9): instrSet.discard(XMLInstr)
-      if 'VPCLMULQDQ' in isaSet and not cpuid.get_bit(ecx7, 10): instrSet.discard(XMLInstr)
+      if 'VAES' in isaSet:
+          if not cpuid.get_bit(ecx7, 9):
+              instrSet.discard(XMLInstr)
+          else:
+              if 'AVX512' in isaSet and not cpuid.get_bit(ebx7, 31): instrSet.discard(XMLInstr)
+      if 'VPCLMULQDQ' in isaSet:
+          if not cpuid.get_bit(ecx7, 10):
+              instrSet.discard(XMLInstr)
+          else:
+              if 'AVX512' in isaSet and not cpuid.get_bit(ebx7, 31): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VNNI') and not cpuid.get_bit(ecx7, 11): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_BITALG') and not cpuid.get_bit(ecx7, 12): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VPOPCNTDQ') and not cpuid.get_bit(ecx7, 14): instrSet.discard(XMLInstr)
