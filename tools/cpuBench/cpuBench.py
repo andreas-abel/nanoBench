@@ -194,8 +194,9 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
       if evt == 'UOPS':
          if arch in ['CON', 'WOL']: evt = 'RS_UOPS_DISPATCHED'
          elif arch in ['NHM', 'WSM']: evt = 'UOPS_RETIRED.ANY'
-         elif arch in ['SNB', 'IVB', 'HSW', 'BDW']: evt = 'UOPS_RETIRED.ALL'
-         elif arch in ['SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: evt = 'UOPS_EXECUTED.THREAD'
+         elif arch in ['SNB']: evt = 'UOPS_RETIRED.ALL'
+         elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
+         elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: evt = 'UOPS_EXECUTED.THREAD'
       localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
    localHtmlReports.append('</ul>\n</li>')
 
@@ -203,6 +204,10 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
       # Workaround for broken port4 and port5 counters
       ret['UOPS_PORT4'] = ret['UOPS_PORT3']
       ret['UOPS_PORT5'] = max(0, ret['UOPS'] - ret['UOPS_PORT0'] - ret['UOPS_PORT1'] - ret['UOPS_PORT2'] - ret['UOPS_PORT3'] - ret['UOPS_PORT4'])
+
+   if arch in ['SNB'] and all(('UOPS_PORT'+str(p) in ret) for p in range(0,6)):
+      # some retired uops are not executed due to, e.g., move el. and zero idioms; however, using the sum of the uops on all ports may overcount due to replays
+      ret['UOPS'] = min(ret['UOPS'], sum(ret['UOPS_PORT'+str(p)] for p in range(0,6)))      
 
    if isAMDCPU():
       ret['Core cycles'] = ret['APERF']
@@ -245,13 +250,17 @@ def getMachineCode(objFile):
 def getEventConfig(event):
    if event == 'UOPS':
       if arch in ['CON', 'WOL']: return 'A0.00' # RS_UOPS_DISPATCHED
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW']: return 'C2.01' # UOPS_RETIRED.ALL
-      if arch in ['SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'B1.01' # UOPS_EXECUTED.THREAD
+      if arch in ['NHM', 'WSM', 'SNB' ]: return 'C2.01' # UOPS_RETIRED.ANY
+      if arch in ['SNB']: return 'C2.01' # UOPS_RETIRED.ALL
+      if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
+      if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'B1.01' # UOPS_EXECUTED.THREAD
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'C2.02'
    if event == 'UOPS_MITE':
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '79.04'
+   if event == 'UOPS_MITE>0':
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '79.04.CMSK=1'
    if event == 'UOPS_MS':
       if arch in ['NHM', 'WSM']: return 'D1.02'
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '79.30'
@@ -936,7 +945,7 @@ def fancyRound(cycles):
 
 
 TPResult = namedtuple('TPResult', ['TP', 'TP_loop', 'TP_noLoop', 'TP_noDepBreaking_noLoop', 'TP_single', 'uops', 'fused_uops', 'uops_MITE', 'uops_MS', 'divCycles',
-                                   'ILD_stalls', 'dec0', 'config', 'unblocked_ports'])
+                                   'ILD_stalls', 'complexDec', 'nAvailableSimpleDecoders', 'config', 'unblocked_ports'])
 
 # returns TPResult
 # port usages are averages (when no ports are blocked by other instructions)
@@ -1014,7 +1023,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                else:
                   divCycles = 0
 
-      return TPResult(minTP, minTP, minTP, minTP_noDepBreaking_noLoop, minTP_single, unfused_uops, fused_uops, None, None, divCycles, 0, False, config, ports_dict)
+      return TPResult(minTP, minTP, minTP, minTP_noDepBreaking_noLoop, minTP_single, unfused_uops, fused_uops, None, None, divCycles, 0, False, None, config, ports_dict)
    else:
       hasMemWriteOperand = len(instrNode.findall('./operand[@type="mem"][@r="1"][@w="1"]'))>0
       uops = None
@@ -1023,7 +1032,9 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
       uopsMS = None
       divCycles = None
       ILD_stalls = None
-      dec0 = None
+      complexDec = False
+      # number of other instr. requiring the simple decoder that can be decoded in the same cycle; only applicable for instr. that require the complex decoder
+      nAvailableSimpleDecoders = None 
       ports_dict = {}
       for config in configs:
          if config.note: htmlReports.append('<h2>' + config.note + '</h2>\n')
@@ -1094,6 +1105,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                      minTP_loop = min(minTP_loop, cycles)
 
                   if ic == 1 and (minTP == sys.maxint or cycles == minTP) and not useDepBreakingInstrs and repType == 'unrollOnly':
+                     minConfig = config
                      minTP_single = min(minTP_single, cycles)
 
                      if isIntelCPU():
@@ -1115,19 +1127,29 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                      if 'ILD_STALL.LCP' in result:
                         ILD_stalls = int(result['ILD_STALL.LCP'])
 
-                     if 'INST_DECODED.DEC0' in result:
-                        dec0 = (int(round(result['INST_DECODED.DEC0'])) > 0)
-
                      if 'DIV_CYCLES' in result:
                         divCycles = int(result['DIV_CYCLES']+.2)
 
-                     minConfig = config
+                     if (not config.preInstrCode) and ((uopsMITE > 1) or (uopsMS > 0) or (result.get('INST_DECODED.DEC0', 0) > .05) or
+                                                          ((result.get('UOPS_MITE>0', 1) > .95) and (not isBranchInstr(instrNode)))): # ToDo: preInstrs
+                        complexDec = True
+
+                     if complexDec and ('UOPS_MITE>0' in result):
+                        for nNops in count(1):
+                           nopStr = str(nNops) + ' nop' + ('s' if nNops > 1 else '')
+                           htmlReports.append('<h4>With unroll_count=' + str(unrollCount) +', no inner loop, and ' + nopStr + '</h4>\n')
+                           htmlReports.append('<ul>\n')
+                           resultNops = runExperiment(instrNode, instrStr + ('; nop' * nNops), init=init, unrollCount=unrollCount, htmlReports=htmlReports)
+                           htmlReports.append('</ul>\n')
+                           if resultNops['UOPS_MITE>0'] > result['UOPS_MITE>0'] +.95:
+                              nAvailableSimpleDecoders = nNops - 1
+                              break
 
             htmlReports.append('</div>')
 
       if minTP < sys.maxint:
          return TPResult(minTP, minTP_loop, minTP_noLoop, minTP_noDepBreaking_noLoop, minTP_single, uops, uopsFused, uopsMITE, uopsMS, divCycles, ILD_stalls,
-                         dec0, minConfig, ports_dict)
+                         complexDec, nAvailableSimpleDecoders, minConfig, ports_dict)
 
 
 def canMacroFuse(flagInstrNode, branchInstrNode, htmlReports):
@@ -2474,6 +2496,8 @@ def isAVXInstr(instrNode):
 def isDivOrSqrtInstr(instrNode):
    return ('DIV' in instrNode.attrib['iclass']) or ('SQRT' in instrNode.attrib['iclass'])
 
+def isBranchInstr(instrNode):
+   return any((op is not None) for op in instrNode.findall('./operand[@type="reg"][@w="1"]') if op.text == 'RIP')
 
 def writeHtmlFile(folder, instrNode, title, body):
    filename = canonicalizeInstrString(instrNode.attrib['string'])
@@ -2702,7 +2726,8 @@ def main():
          configurePFCs(['UOPS','FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3', 'DIV_CYCLES'])
       else:
          configurePFCs(['UOPS', 'RETIRE_SLOTS', 'UOPS_MITE', 'UOPS_MS', 'UOPS_PORT0', 'UOPS_PORT1', 'UOPS_PORT2', 'UOPS_PORT3', 'UOPS_PORT4', 'UOPS_PORT5',
-                        'UOPS_PORT6', 'UOPS_PORT7', 'UOPS_PORT23', 'UOPS_PORT49', 'UOPS_PORT78', 'DIV_CYCLES', 'ILD_STALL.LCP', 'INST_DECODED.DEC0'])
+                        'UOPS_PORT6', 'UOPS_PORT7', 'UOPS_PORT23', 'UOPS_PORT49', 'UOPS_PORT78', 'DIV_CYCLES', 'ILD_STALL.LCP', 'INST_DECODED.DEC0',
+                        'UOPS_MITE>0'])
 
    try:
       subprocess.check_output('mkdir -p /tmp/ramdisk; sudo mount -t tmpfs -o size=100M none /tmp/ramdisk/', shell=True)
