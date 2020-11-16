@@ -54,7 +54,7 @@ serializingInstructions = {'INVD', 'INVEPT', 'INVLPG', 'INVVPID', 'LGDT', 'LIDT'
                            'CPUID', 'IRET', 'RSM', 'SFENCE', 'LFENCE', 'MFENCE'}
 
 def isAMDCPU():
-   return arch in ['ZEN+', 'ZEN2']
+   return arch in ['ZEN+', 'ZEN2', 'ZEN3']
 
 def isIntelCPU():
    return not isAMDCPU()
@@ -247,7 +247,7 @@ def getEventConfig(event):
       if arch in ['CON', 'WOL']: return 'A0.00' # RS_UOPS_DISPATCHED
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW']: return 'C2.01' # UOPS_RETIRED.ALL
       if arch in ['SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'B1.01' # UOPS_EXECUTED.THREAD
-      if arch in ['ZEN+', 'ZEN2']: return '0C1.00'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'C2.02'
    if event == 'UOPS_MITE':
@@ -296,19 +296,19 @@ def getEventConfig(event):
    if event == 'DIV_CYCLES':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01.CMSK=1' # undocumented on HSW, but seems to work
       if arch in ['ICL']: return '14.09.CMSK=1'
-      if arch in ['ZEN+', 'ZEN2']: return '0D3.00'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0D3.00'
    if event == 'ILD_STALL.LCP':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '87.01'
    if event == 'INST_DECODED.DEC0':
       if arch in ['NHM', 'WSM']: return '18.01'
    if event == 'FpuPipeAssignment.Total0':
-      if arch in ['ZEN+', 'ZEN2']: return '000.01'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.01'
    if event == 'FpuPipeAssignment.Total1':
-      if arch in ['ZEN+', 'ZEN2']: return '000.02'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.02'
    if event == 'FpuPipeAssignment.Total2':
-      if arch in ['ZEN+', 'ZEN2']: return '000.04'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.04'
    if event == 'FpuPipeAssignment.Total3':
-      if arch in ['ZEN+', 'ZEN2']: return '000.08'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.08'
    return None
 
 
@@ -1731,7 +1731,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
    # We use (V)SHUFPD instead of (V)MOV*PD because the latter is a 0-latency operation on some CPUs in some cases
    if cType == 'FP':
       if isAVXInstr(instrNode):
-         if arch in ['ZEN+', 'ZEN2']:
+         if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
             # on ZEN, all shuffles are integer operations
             chainInstrFP = 'VANDPD {0}, {1}, {1};'.format(targetReg, startReg)
             chainInstrFP += 'VANDPD {0}, {0}, {0};'.format(targetReg) * cRep
@@ -1741,7 +1741,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
             chainInstrFP += 'VSHUFPD {0}, {0}, {0}, 0;'.format(targetReg) * cRep
             chainLatencyFP = basicLatency['VSHUFPD'] * (cRep+1)
       else:
-         if arch in ['ZEN+', 'ZEN2']:
+         if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
             # on ZEN, all shuffles are integer operations
             chainInstrFP = 'VANDPD {0}, {1}, {1};'.format(targetReg, startReg)
             chainInstrFP += 'VANDPD {0}, {0}, {0};'.format(targetReg) * cRep
@@ -2591,8 +2591,16 @@ def filterInstructions(XMLRoot):
       if extension == 'WAITPKG' and not cpuid.get_bit(ecx7, 5): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VBMI2') and not cpuid.get_bit(ecx7, 6): instrSet.discard(XMLInstr)
       if category == 'GFNI' and not cpuid.get_bit(ecx7, 8): instrSet.discard(XMLInstr)
-      if 'VAES' in isaSet and not cpuid.get_bit(ecx7, 9): instrSet.discard(XMLInstr)
-      if 'VPCLMULQDQ' in isaSet and not cpuid.get_bit(ecx7, 10): instrSet.discard(XMLInstr)
+      if 'VAES' in isaSet:
+          if not cpuid.get_bit(ecx7, 9):
+              instrSet.discard(XMLInstr)
+          else:
+              if 'AVX512' in isaSet and not cpuid.get_bit(ebx7, 31): instrSet.discard(XMLInstr)
+      if 'VPCLMULQDQ' in isaSet:
+          if not cpuid.get_bit(ecx7, 10):
+              instrSet.discard(XMLInstr)
+          else:
+              if 'AVX512' in isaSet and not cpuid.get_bit(ebx7, 31): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VNNI') and not cpuid.get_bit(ecx7, 11): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_BITALG') and not cpuid.get_bit(ecx7, 12): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VPOPCNTDQ') and not cpuid.get_bit(ecx7, 14): instrSet.discard(XMLInstr)
@@ -2690,7 +2698,7 @@ def main():
 
       resetNanoBench()
 
-      if arch in ['ZEN+', 'ZEN2']:
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
          configurePFCs(['UOPS','FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3', 'DIV_CYCLES'])
       else:
          configurePFCs(['UOPS', 'RETIRE_SLOTS', 'UOPS_MITE', 'UOPS_MS', 'UOPS_PORT0', 'UOPS_PORT1', 'UOPS_PORT2', 'UOPS_PORT3', 'UOPS_PORT4', 'UOPS_PORT5',
