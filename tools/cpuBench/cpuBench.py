@@ -2,7 +2,7 @@
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 from xml.dom import minidom
-from itertools import groupby, cycle, islice, chain
+from itertools import chain, count, cycle, groupby, islice
 from collections import namedtuple, OrderedDict
 
 import argparse
@@ -207,7 +207,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
 
    if arch in ['SNB'] and all(('UOPS_PORT'+str(p) in ret) for p in range(0,6)):
       # some retired uops are not executed due to, e.g., move el. and zero idioms; however, using the sum of the uops on all ports may overcount due to replays
-      ret['UOPS'] = min(ret['UOPS'], sum(ret['UOPS_PORT'+str(p)] for p in range(0,6)))      
+      ret['UOPS'] = min(ret['UOPS'], sum(ret['UOPS_PORT'+str(p)] for p in range(0,6)))
 
    if isAMDCPU():
       ret['Core cycles'] = ret['APERF']
@@ -1034,7 +1034,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
       ILD_stalls = None
       complexDec = False
       # number of other instr. requiring the simple decoder that can be decoded in the same cycle; only applicable for instr. that require the complex decoder
-      nAvailableSimpleDecoders = None 
+      nAvailableSimpleDecoders = None
       ports_dict = {}
       for config in configs:
          if config.note: htmlReports.append('<h2>' + config.note + '</h2>\n')
@@ -1835,6 +1835,12 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          chainInstrs = 'MOVSX RBP, BP; ' * cRep
          chainInstrs += 'AND RBP, R14; OR RBP, R14; '
          chainLatency = basicLatency['MOVSX'] * cRep + basicLatency['AND'] + basicLatency['OR']
+         configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
+      elif startNode.text and targetNode.text and 'BP' in startNode.text and 'SP' in targetNode.text:
+         chainInstrs = 'MOVSX RBP, SP; '
+         chainInstrs += 'MOVSX RBP, BP; ' * cRep
+         chainInstrs += 'AND RBP, R14; OR RBP, R14; '
+         chainLatency = basicLatency['MOVSX'] + basicLatency['MOVSX'] * cRep + basicLatency['AND'] + basicLatency['OR']
          configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
       else:
          return None
@@ -2882,10 +2888,10 @@ def main():
                                                                      'VMOVUPD_', 'VMOVAPD_', 'VMOVUPS_', 'VMOVAPS_', 'VMOVDQA_', 'VMOVDQU_'))
                                        and len(x.findall('./operand[@type="reg"]')) >= 2 and not 'MEM' in x.attrib['iform'])
       # iforms of instructions that change the control flow based on a register, flag, or memory location
-      controlFlowInstrs = set(instr for instr in instrNodeList for op in instr.findall('./operand[@type="reg"]') if op.text == 'RIP')
+      branchInstrs = set(instr for instr in instrNodeList if isBranchInstr(instr))
       disallowedBlockingInstrs = set(instr for instr in tpDict
                                      if instr.attrib['iform'] in (zeroLatencyMovIforms | serializingInstructions | set(['PAUSE']))
-                                        or (instr in controlFlowInstrs and not instr.attrib['iform'] == 'JMP_RELBRb')
+                                        or (instr in branchInstrs and not instr.attrib['iform'] == 'JMP_RELBRb')
                                         or (instr.find('./operand[@base="RSP"]') is not None)
                                         or (instr.find('./operand[@conditionalWrite="1"]') is not None)
                                         or instr.attrib['category'] == 'SYSTEM'
@@ -2934,7 +2940,7 @@ def main():
 
       # choose instruction with lowest throughput value; prefer non-control flow instructions, instr. that do not need decoder 0, and instr. with as few as
       # possible implicit operands that are read
-      sort_key = lambda x:(x in controlFlowInstrs, tpDict[x].dec0, len(x.findall('./operand[@suppressed="1"]')), tpDict[x].TP_noDepBreaking_noLoop, x.attrib['string'])
+      sort_key = lambda x:(x in branchInstrs, tpDict[x].complexDec, len(x.findall('./operand[@suppressed="1"]')), tpDict[x].TP_noDepBreaking_noLoop, x.attrib['string'])
       blockingInstructionsDictNonAVX = {comb: next(iter(sorted(instr_set, key=sort_key))) for comb, instr_set in blockingInstructionsDictNonAVX_set.items()}
       blockingInstructionsDictNonSSE = {comb: next(iter(sorted(instr_set, key=sort_key))) for comb, instr_set in blockingInstructionsDictNonSSE_set.items()}
 
@@ -3109,8 +3115,13 @@ def main():
          uopsMITE = tpResult.uops_MITE
          uopsMS = tpResult.uops_MS
          if useIACA:
+            resultNode.attrib['TP'+suffix] = "%.2f" % tpResult.TP_loop
             if uopsFused:
                resultNode.attrib['fusion_occurred'] = '1'
+            if instrNode in latencyDict:
+               resultNode.attrib['latency'] = str(latencyDict[instrNode])
+            if instrNode in tpDictNoInteriteration:
+               resultNode.attrib['TP_no_interiteration'] = "%.2f" % tpDictNoInteriteration[instrNode]
          else:
             if tpResult.config.preInstrNodes:
                uops -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops for preInstrNode in tpResult.config.preInstrNodes)
@@ -3126,15 +3137,14 @@ def main():
                resultNode.attrib['uops_MITE'+suffix] = str(uopsMITE)
             if uopsMS is not None:
                resultNode.attrib['uops_MS'+suffix] = str(uopsMS)
+            if tpResult.complexDec:
+               resultNode.attrib['complex_decoder'+suffix] = '1'
+               if tpResult.nAvailableSimpleDecoders is not None:
+                  resultNode.attrib['available_simple_decoders'+suffix] = str(tpResult.nAvailableSimpleDecoders)
+            resultNode.attrib['TP_unrolled'+suffix] = "%.2f" % tpResult.TP_noLoop
+            resultNode.attrib['TP_loop'+suffix] = "%.2f" % tpResult.TP_loop
+
          resultNode.attrib['uops'+suffix] = str(uops)
-
-         if useIACA and instrNode in latencyDict:
-            resultNode.attrib['latency'] = str(latencyDict[instrNode])
-
-         resultNode.attrib['TP_unrolled'+suffix] = "%.2f" % tpResult.TP_noLoop
-         resultNode.attrib['TP_loop'+suffix] = "%.2f" % tpResult.TP_loop
-         if instrNode in tpDictNoInteriteration:
-            resultNode.attrib['TP_no_interiteration'] = "%.2f" % tpDictNoInteriteration[instrNode]
 
          if instrNode in macroFusionDict:
             resultNode.attrib['macro_fusible'] = ';'.join(sorted(m.attrib['string'] for m in macroFusionDict[instrNode]))
