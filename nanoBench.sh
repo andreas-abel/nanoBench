@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ "$EUID" -ne 0 ]; then
     echo "Error: nanoBench requires root privileges" 1>&2
