@@ -2045,7 +2045,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          configList.append(LatConfig(instrI))
 
          cfModifiers = startNode.attrib.get('flag_CF', '')
-         if 'r' in cfModifiers and 'w' in cfModifiers:
+         if ('r' in cfModifiers and 'w' in cfModifiers) or ('cw' in cfModifiers):
             chainInstrs = 'CMC;'*cRep
             configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=basicLatency['CMC']*cRep))
       elif targetNode.attrib['type'] == 'mem':
@@ -2244,6 +2244,10 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                   inputOpnds.append(opNode)
                elif opNode.attrib['type'] == 'reg':
                   if opNode.attrib.get('width', '') in ['8', '16'] and opNode.text.split(',')[0] in GPRegs:
+                     inputOpnds.append(opNode)
+                  elif instrNode.attrib['iclass'] in ['POPCNT', 'LZCNT', 'TZCNT']:
+                     # these instructions have a false dependency on the first operand on some microarchitectures;
+                     # see also https://stackoverflow.com/questions/21390165/why-does-breaking-the-output-dependency-of-lzcnt-matter
                      inputOpnds.append(opNode)
 
       archNode = instrNode.find('./architecture[@name="' + arch + '"]')
@@ -2537,7 +2541,7 @@ def filterInstructions(XMLRoot):
       isaSet = XMLInstr.attrib['isa-set']
 
       # Future instruction set extensions
-      if extension in ['CET', 'RDPRU', 'SERIALIZE', 'TSX_LDTRK']: instrSet.discard(XMLInstr)
+      if extension in ['AMD_INVLPGB', 'CET', 'KEYLOCKER', 'KEYLOCKER_WIDE', 'RDPRU', 'SERIALIZE', 'TDX', 'TSX_LDTRK']: instrSet.discard(XMLInstr)
 
       # Not supported by assembler
       if XMLInstr.attrib['iclass'] == 'NOP' and len(XMLInstr.findall('operand')) > 1:
@@ -2549,7 +2553,7 @@ def filterInstructions(XMLRoot):
          instrSet.discard(XMLInstr)
 
       # "no CPU available today has PTWRITE support" (https://software.intel.com/en-us/forums/intel-isa-extensions/topic/704356)
-      if extension in ['PT']:
+      if extension in ['PTWRITE']:
          instrSet.discard(XMLInstr)
 
       if useIACA:
@@ -2641,9 +2645,15 @@ def filterInstructions(XMLRoot):
       if extension == 'ENQCMD' and not cpuid.get_bit(ecx7, 29): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_4VNNI') and not cpuid.get_bit(edx7, 2): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_4FMAPS') and not cpuid.get_bit(edx7, 3): instrSet.discard(XMLInstr)
+      if extension == 'UINTR' and not cpuid.get_bit(edx7, 5): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VP2INTERSECT') and not cpuid.get_bit(edx7, 8): instrSet.discard(XMLInstr)
       if extension == 'PCONFIG' and not cpuid.get_bit(edx7, 18): instrSet.discard(XMLInstr)
+      if extension == 'AMX_BF16' and not cpuid.get_bit(edx7, 22): instrSet.discard(XMLInstr)
+      if extension == 'AMX_TILE' and not cpuid.get_bit(edx7, 24): instrSet.discard(XMLInstr)
+      if extension == 'AMX_INT8' and not cpuid.get_bit(edx7, 25): instrSet.discard(XMLInstr)
+      if extension == 'AVX_VNNI' and not cpuid.get_bit(eax7_1, 4): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_BF16') and not cpuid.get_bit(eax7_1, 5): instrSet.discard(XMLInstr)
+      if extension == 'HRESET' and not cpuid.get_bit(eax7_1, 22): instrSet.discard(XMLInstr)
       if extension == 'SSE4a' and not cpuid.get_bit(ecx8_1, 6): instrSet.discard(XMLInstr)
       if extension == 'XOP' and not cpuid.get_bit(ecx8_1, 11): instrSet.discard(XMLInstr)
       if extension == 'FMA4' and not cpuid.get_bit(ecx8_1, 16): instrSet.discard(XMLInstr)
