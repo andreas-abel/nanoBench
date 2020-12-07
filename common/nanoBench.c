@@ -225,16 +225,17 @@ void parse_msr_configs() {
         }
 
         char* wrmsr_str = strsep(&line, " \t");
-
         char* rdmsr_str = strsep(&line, " \t");
-        strreplace(rdmsr_str, 'h', '\0'); strreplace(rdmsr_str, 'H', '\0');
 
         if (line && strlen(line) > 0) {
             msr_configs[n_msr_configs].description = line;
         } else {
             msr_configs[n_msr_configs].description = rdmsr_str;
+            rdmsr_str = wrmsr_str;
+            wrmsr_str = line;
         }
 
+        strreplace(rdmsr_str, 'h', '\0'); strreplace(rdmsr_str, 'H', '\0');
         nb_strtoul(rdmsr_str+4, 16, &(msr_configs[n_msr_configs].rdmsr));
 
         size_t n_wrmsr = 0;
