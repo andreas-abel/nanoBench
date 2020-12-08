@@ -264,6 +264,15 @@ static ssize_t no_mem_store(struct kobject *kobj, struct kobj_attribute *attr, c
 }
 static struct kobj_attribute no_mem_attribute =__ATTR(no_mem, 0660, no_mem_show, no_mem_store);
 
+static ssize_t no_normalization_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%u\n", no_normalization);
+}
+static ssize_t no_normalization_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%u", &no_normalization);
+    return count;
+}
+static struct kobj_attribute no_normalization_attribute =__ATTR(no_normalization, 0660, no_normalization_show, no_normalization_store);
+
 static ssize_t agg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%d\n", aggregate_function);
 }
@@ -390,6 +399,7 @@ static ssize_t reset_show(struct kobject *kobj, struct kobj_attribute *attr, cha
     initial_warm_up_count = INITIAL_WARM_UP_COUNT_DEFAULT;
 
     no_mem = NO_MEM_DEFAULT;
+    no_normalization = NO_NORMALIZATION_DEFAULT;
     basic_mode = BASIC_MODE_DEFAULT;
     aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
     verbose = VERBOSE_DEFAULT;
@@ -640,6 +650,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &agg_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &basic_mode_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &no_mem_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &no_normalization_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &r14_size_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &print_r14_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &code_offset_attribute.attr);

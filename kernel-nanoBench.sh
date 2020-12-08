@@ -52,7 +52,7 @@ while [ "$1" ]; do
         shift 2
     elif [[ "$1" == -cpu ]]; then
         taskset="taskset -c $2"
-        shift 2    
+        shift 2
     elif [[ "$1" == -con* ]]; then
         echo -n "$2" > /sys/nb/config
         shift 2
@@ -65,8 +65,11 @@ while [ "$1" ]; do
     elif [[ "$1" == -l* ]]; then
         echo "$2" > /sys/nb/loop_count
         shift 2
-    elif [[ "$1" == -no_mem ]]; then
+    elif [[ "$1" == -no_m* ]]; then
         echo "1" > /sys/nb/no_mem
+        shift
+    elif [[ "$1" == -no_n* ]]; then
+        echo "1" > /sys/nb/no_normalization
         shift
     elif [[ "$1" == -n* ]]; then
         echo "$2" > /sys/nb/n_measurements
@@ -118,8 +121,9 @@ while [ "$1" ]; do
         echo "  -max:                       Selects the maximum as the aggregate function."
         echo "  -basic_mode:                Enables basic mode."
         echo "  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses."
+        echo "  -no_normalization:          The measurement results are not divided by the number of repetitions."
         echo "  -cpu <n>:                   Pins the measurement thread to CPU n."
-        echo "  -verbose:                   Outputs the results of all performance counter readings."        
+        echo "  -verbose:                   Outputs the results of all performance counter readings."
         exit 0
     else
         echo "Invalid option: $1"

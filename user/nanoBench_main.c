@@ -39,6 +39,7 @@ void print_usage() {
     printf("  -min:                           Selects the minimum as the aggregate function.\n");
     printf("  -basic_mode:                    Enables basic mode.\n");
     printf("  -no_mem:                        The code for reading the perf. ctrs. does not make memory accesses.\n");
+    printf("  -no_normalization:              The measurement results are not divided by the number of repetitions.\n");
     printf("  -verbose:                       Outputs the results of all performance counter readings.\n");
     printf("  -cpu <n>:                       Pins the measurement thread to CPU n. \n");
     printf("  -usr <n>:                       If 1, counts events at a privilege level greater than 0.\n");
@@ -83,6 +84,7 @@ int main(int argc, char **argv) {
         {"max", no_argument, &aggregate_function, MAX},
         {"basic_mode", no_argument, &basic_mode, 1},
         {"no_mem", no_argument, &no_mem, 1},
+        {"no_normalization", no_argument, &no_normalization, 1},
         {"verbose", no_argument, &verbose, 1},
         {"cpu", required_argument, 0, 'p'},
         {"usr", required_argument, 0, 'r'},

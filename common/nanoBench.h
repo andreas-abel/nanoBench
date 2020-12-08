@@ -100,6 +100,10 @@ extern size_t alignment_offset;
 extern int no_mem;
 #define NO_MEM_DEFAULT 0;
 
+// If enabled, the measurement results are not divided by the number of repetitions.
+extern int no_normalization;
+#define NO_NORMALIZATION_DEFAULT 0;
+
 // If disabled, the first measurement is performed with 2*unroll_count and the second with unroll_count; the reported result is the difference between the two
 // measurements.
 // If enabled, the first measurement is performed with unroll_count and the second with an empty measurement body; the reported result is the difference
@@ -217,7 +221,7 @@ void run_experiment(char* measurement_template, int64_t* results[], int n_counte
 void create_and_run_one_time_init_code(void);
 
 char* compute_result_str(char* buf, size_t buf_len, char* desc, int counter);
-int64_t get_aggregate_value_100(int64_t* values, size_t length);
+int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale);
 int cmpInt64(const void *a, const void *b);
 long long ll_abs(long long val);
 

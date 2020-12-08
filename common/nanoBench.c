@@ -19,6 +19,7 @@ long initial_warm_up_count = INITIAL_WARM_UP_COUNT_DEFAULT;
 size_t alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
 
 int no_mem = NO_MEM_DEFAULT;
+int no_normalization = NO_NORMALIZATION_DEFAULT;
 int basic_mode = BASIC_MODE_DEFAULT;
 int aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
 int verbose = VERBOSE_DEFAULT;
@@ -637,21 +638,23 @@ void run_experiment(char* measurement_template, int64_t* results[], int n_counte
 }
 
 char* compute_result_str(char* buf, size_t buf_len, char* desc, int counter) {
-    int64_t agg = get_aggregate_value_100(measurement_results[counter], n_measurements);
-    int64_t agg_base = get_aggregate_value_100(measurement_results_base[counter], n_measurements);
+    int64_t agg = get_aggregate_value(measurement_results[counter], n_measurements, no_normalization?1:100);
+    int64_t agg_base = get_aggregate_value(measurement_results_base[counter], n_measurements, no_normalization?1:100);
 
-    int64_t n_rep = loop_count * unroll_count;
-    if (loop_count == 0) {
-        n_rep = unroll_count;
+    if (no_normalization) {
+        snprintf(buf, buf_len, "%s: %lld\n", desc, (long long)(agg-agg_base));
+    } else {
+        int64_t n_rep = loop_count * unroll_count;
+        if (loop_count == 0) {
+            n_rep = unroll_count;
+        }
+        int64_t result = ((agg-agg_base) + n_rep/2)/n_rep;
+        snprintf(buf, buf_len, "%s: %s%lld.%.2lld\n", desc, (result<0?"-":""), ll_abs(result/100), ll_abs(result)%100);
     }
-
-    int64_t result = ((agg-agg_base) + n_rep/2)/n_rep;
-
-    snprintf(buf, buf_len, "%s: %s%lld.%.2lld\n", desc, (result<0?"-":""), ll_abs(result/100), ll_abs(result)%100);
     return buf;
 }
 
-int64_t get_aggregate_value_100(int64_t* values, size_t length) {
+int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale) {
     if (aggregate_function == MIN) {
         int64_t min = values[0];
         for (int i=0; i<length; i++) {
@@ -659,7 +662,7 @@ int64_t get_aggregate_value_100(int64_t* values, size_t length) {
                 min = values[i];
             }
         }
-        return min * 100;
+        return min * scale;
     } else if (aggregate_function == MAX)  {
         int64_t max = values[0];
         for (int i=0; i<length; i++) {
@@ -667,7 +670,7 @@ int64_t get_aggregate_value_100(int64_t* values, size_t length) {
                 max = values[i];
             }
         }
-        return max * 100;
+        return max * scale;
     } else {
         qsort(values, length, sizeof(int64_t), cmpInt64);
 
@@ -676,11 +679,11 @@ int64_t get_aggregate_value_100(int64_t* values, size_t length) {
             int64_t sum = 0;
             int count = 0;
             for (int i=length/5; i<length-(length/5); i++, count++) {
-                sum += (values[i] * 100);
+                sum += (values[i] * scale);
             }
             return sum/count;
         } else {
-            return values[length/2] * 100;
+            return values[length/2] * scale;
         }
     }
 }
