@@ -181,7 +181,7 @@ You can find details on the meanings of the different parts of the entries in ch
 
 ## MSR Performance Counter Config Files
 
-Some performance counters, such as the uncore counters on Intel CPUs, cannot be read with the `RDPMC` instruction, but only with the `RDMSR` instruction. The entries in the corresponding configuration files have the following format:
+Some performance counters, such as the uncore counters or the RAPL counters on Intel CPUs, cannot be read with the `RDPMC` instruction, but only with the `RDMSR` instruction. The entries in the corresponding configuration files have the following format:
 
     msr_...=...(.msr_...=...)* msr_... Name
 
