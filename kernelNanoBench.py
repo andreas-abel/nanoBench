@@ -54,7 +54,7 @@ paramDict = dict()
 # Otherwise, reset() needs to be called first.
 def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConfigFile=None, nMeasurements=None, unrollCount=None, loopCount=None,
                            warmUpCount=None, initialWarmUpCount=None, alignmentOffset=0, codeOffset=0, aggregateFunction=None, basicMode=None, noMem=None,
-                           verbose=None):
+                           noNormalization=None, verbose=None):
    if not ramdiskCreated: createRamdisk()
 
    if config is not None:
@@ -122,6 +122,11 @@ def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConf
       if paramDict.get('noMem', None) != noMem:
          writeFile('/sys/nb/no_mem', str(int(noMem)))
          paramDict['noMem'] = noMem
+
+   if noNormalization is not None:
+      if paramDict.get('noNormalization', None) != noNormalization:
+         writeFile('/sys/nb/no_normalization', str(int(noNormalization)))
+         paramDict['noNormalization'] = noNormalization
 
    if verbose is not None:
       if paramDict.get('verbose', None) != verbose:
