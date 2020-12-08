@@ -28,6 +28,13 @@ while [ "$2" ]; do
         objcopy asm-init.o -O binary asm-init.bin
         args="$args -code_init asm-init.bin"
         shift 2
+    elif [[ "$1" == -asm_l* ]]; then
+        echo ".intel_syntax noprefix" > asm-late-init.s
+        echo "$2" >> asm-late-init.s
+        as asm-late-init.s -o asm-late-init.o || exit
+        objcopy asm-late-init.o -O binary asm-late-init.bin
+        args="$args -code_late_init asm-late-init.bin"
+        shift 2
     elif [[ "$1" == -asm_o* ]]; then
         echo ".intel_syntax noprefix" > asm-one-time-init.s
         echo "$2" >> asm-one-time-init.s
@@ -74,6 +81,8 @@ fi
 
 rm -f asm-code.*
 rm -f asm-init.*
+rm -f asm-late-init.*
+rm -f asm-one-time-init.*
 
 echo $prev_rdpmc > /sys/bus/event_source/devices/cpu/rdpmc
 echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog

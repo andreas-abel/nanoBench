@@ -25,6 +25,14 @@ while [ "$1" ]; do
         echo -n "asm-init.o" > /sys/nb/init
         rm -f asm-init.s asm-init.o
         shift 2
+   elif [[ "$1" == -asm_l* ]]; then
+        echo ".intel_syntax noprefix" > asm-late-init.s
+        echo "$2" >> asm-late-init.s
+        as asm-late-init.s -o asm-late-init.o
+        objcopy asm-late-init.o -O binary asm-late-init.o
+        echo -n "asm-late-init.o" > /sys/nb/late_init
+        rm -f asm-late-init.s asm-late-init.o
+        shift 2
     elif [[ "$1" == -asm_o* ]]; then
         echo ".intel_syntax noprefix" > asm-one-time-init.s
         echo "$2" >> asm-one-time-init.s
@@ -104,10 +112,12 @@ while [ "$1" ]; do
     elif [[ "$1" == -h* ]]; then
         echo "kernel-nanoBench.sh usage:"
         echo
-	echo "  -asm <code>:                Assembler code string (in Intel syntax) to be benchmarked."
-	echo "  -asm_init <code>:           Assembler code string (in Intel syntax) to be executed once in the beginning"
+        echo "  -asm <code>:                Assembler code string (in Intel syntax) to be benchmarked."
+        echo "  -asm_init <code>:           Assembler code string (in Intel syntax) to be executed once in the beginning."
+        echo "  -asm_late_init <code>:      Assembler code string (in Intel syntax) to be executed once immediately before the code to be benchmarked."
         echo "  -code <filename>:           Binary file containing the code to be benchmarked."
-        echo "  -code_init <filename>:      Binary file containing code to be executed once in the beginning"
+        echo "  -code_init <filename>:      Binary file containing code to be executed once in the beginning."
+        echo "  -code_late_init <filename>: Binary file containing code to be executed once immediately before the code to be benchmarked."
         echo "  -config <filename>:         File with performance counter event specifications."
         echo "  -n_measurements <n>:        Number of times the measurements are repeated."
         echo "  -unroll_count <n>:          Number of copies of the benchmark code inside the inner loop."

@@ -25,7 +25,8 @@ void print_usage() {
     printf("nanoBench usage:\n");
     printf("\n");
     printf("  -code <filename>:               Binary file containing the code to be benchmarked.\n");
-    printf("  -code_init <filename>:          Binary file containing code to be executed once before each measurement\n");
+    printf("  -code_init <filename>:          Binary file containing code to be executed once before each measurement.\n");
+    printf("  -code_late_init <filename>:     Binary file containing code to be executed once immediately before the code to be benchmarked.\n");
     printf("  -code_one_time_init <filename>: Binary file containing code to be executed once before the first measurement\n");
     printf("  -config <filename>:             File with performance counter event specifications.\n");
     printf("  -n_measurements <n>:            Number of times the measurements are repeated.\n");
@@ -70,6 +71,7 @@ int main(int argc, char **argv) {
     struct option long_opts[] = {
         {"code", required_argument, 0, 'c'},
         {"code_init", required_argument, 0, 'i'},
+        {"code_late_init", required_argument, 0, 't'},
         {"code_one_time_init", required_argument, 0, 'o'},
         {"config", required_argument, 0, 'f'},
         {"n_measurements", required_argument, 0, 'n'},
@@ -104,6 +106,9 @@ int main(int argc, char **argv) {
                 break;
             case 'i':
                 code_init_length = mmap_file(optarg, &code_init);
+                break;
+            case 't':
+                code_late_init_length = mmap_file(optarg, &code_late_init);
                 break;
             case 'o':
                 code_one_time_init_length = mmap_file(optarg, &code_one_time_init);

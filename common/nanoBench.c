@@ -31,6 +31,9 @@ size_t code_length = 0;
 char* code_init = NULL;
 size_t code_init_length = 0;
 
+char* code_late_init = NULL;
+size_t code_late_init_length = 0;
+
 char* code_one_time_init = NULL;
 size_t code_one_time_init_length = 0;
 
@@ -417,7 +420,7 @@ size_t get_required_runtime_code_length() {
             req_code_length += 100;
         }
     }
-    return code_init_length + 2*unroll_count*req_code_length + 10000;
+    return code_init_length + code_late_init_length + 2*unroll_count*req_code_length + 10000;
 }
 
 size_t get_distance_to_code(char* measurement_template, size_t templateI) {
@@ -465,7 +468,7 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                 *(int32_t*)(&runtime_code[rcI]) = (int32_t)local_loop_count; rcI += 4; // mov R15, local_loop_count
             }
 
-            size_t dist = get_distance_to_code(measurement_template, templateI);
+            size_t dist = get_distance_to_code(measurement_template, templateI) + code_late_init_length;
             size_t nFill = (64 - ((uintptr_t)&runtime_code[rcI+dist] % 64)) % 64;
             nFill += alignment_offset;
             for (size_t i=0; i<nFill; i++) {
@@ -477,6 +480,11 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_CODE)) {
             magic_bytes_code_I = templateI;
             templateI += 8;
+
+            if (code_late_init_length > 0) {
+                memcpy(&runtime_code[rcI], code_late_init, code_late_init_length);
+                rcI += code_late_init_length;
+            }
 
             if (unrollI == 0 && codeI == 0) {
                 rcI_code_start = rcI;

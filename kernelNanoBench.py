@@ -142,6 +142,7 @@ def resetNanoBench():
 # code, codeObjFile, codeBinFile cannot be specified at the same time (same for init, initObjFile and initBinFile)
 def runNanoBench(code='', codeObjFile=None, codeBinFile=None,
                  init='', initObjFile=None, initBinFile=None,
+                 lateInit='', lateInitObjFile=None, lateInitBinFile=None,
                  oneTimeInit='', oneTimeInitObjFile=None, oneTimeInitBinFile=None):
    if not ramdiskCreated: createRamdisk()
    with open('/sys/nb/clear') as clearFile: clearFile.read()
@@ -163,6 +164,15 @@ def runNanoBench(code='', codeObjFile=None, codeBinFile=None,
       writeFile('/sys/nb/init', '/tmp/ramdisk/init.bin')
    elif initBinFile is not None:
       writeFile('/sys/nb/init', initBinFile)
+
+   if lateInit:
+      lateInitObjFile = '/tmp/ramdisk/late_init.o'
+      assemble(lateInit, lateInitObjFile)
+   if lateInitObjFile is not None:
+      objcopy(lateInitObjFile, '/tmp/ramdisk/late_init.bin')
+      writeFile('/sys/nb/late_init', '/tmp/ramdisk/late_init.bin')
+   elif lateInitBinFile is not None:
+      writeFile('/sys/nb/late_init', lateInitBinFile)
 
    if oneTimeInit:
       oneTimeInitObjFile = '/tmp/ramdisk/one_time_init.o'

@@ -128,6 +128,9 @@ extern size_t code_length;
 extern char* code_init;
 extern size_t code_init_length;
 
+extern char* code_late_init;
+extern size_t code_late_init_length;
+
 extern char* code_one_time_init;
 extern size_t code_one_time_init_length;
 

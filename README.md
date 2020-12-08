@@ -101,6 +101,7 @@ We will now take a look behind the scenes at the code that *nanoBench* generates
             save_regs
             code_init
             m1 = read_perf_ctrs // stores results in memory, does not modify registers
+            code_late_init
             for j=0 to loop_count // this line is omitted if loop_count=0
                 code // (copy #1)
                 code // (copy #2)
@@ -130,9 +131,11 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 |------------------------------|-------------|
 | `-asm <code>`                | Assembler code sequence (in Intel syntax) containing the code to be benchmarked. |
 | `-asm_init <code>`           | Assembler code sequence (in Intel syntax) that is executed once in the beginning of every benchmark run. |
+| `-asm_late_init <code>`      | Assembler code sequence (in Intel syntax) that is executed once immediately before the code to be benchmarked. |
 | `-asm_one_time_init <code>`  | Assembler code sequence (in Intel syntax) that is executed once before the first benchmark run. |
 | `-code <filename>`           | A binary file containing the code to be benchmarked as raw x86 machine code.  *This option cannot be used together with `-asm`.* |
 | `-code_init <filename>`      | A binary file containing code to be executed once in the beginning of every benchmark run. *This option cannot be used together with `-asm_init`.* |
+| `-code_late_init <filename>` | A binary file containing code to be executed once immediately before the code to be benchmarked. *This option cannot be used together with `-asm_late_init`.* |
 | `-code_one_time_init <code>` | A binary file containing code to be executed once before the first benchmark run. *This option cannot be used together with `-asm_one_time_init`.*|
 | `-config <file>`             | File with performance counter event specifications. Details are described [below](#performance-counter-config-files).  |
 | `-n_measurements <n>`        | Number of times the measurements are repeated. `[Default: n=10]` |

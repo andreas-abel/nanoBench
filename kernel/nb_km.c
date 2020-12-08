@@ -43,6 +43,7 @@ char* runtime_code_base = NULL;
 size_t code_offset = 0;
 size_t code_memory_size = 0;
 size_t code_init_memory_size = 0;
+size_t code_late_init_memory_size = 0;
 size_t code_one_time_init_memory_size = 0;
 size_t pfc_config_memory_size = 0;
 size_t msr_config_memory_size = 0;
@@ -114,6 +115,15 @@ static ssize_t init_store(struct kobject *kobj, struct kobj_attribute *attr, con
     return count;
 }
 static struct kobj_attribute code_init_attribute =__ATTR(init, 0660, init_show, init_store);
+
+static ssize_t late_init_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return 0;
+}
+static ssize_t late_init_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    read_file_into_buffer(buf, &code_late_init, &code_late_init_length, &code_late_init_memory_size);
+    return count;
+}
+static struct kobj_attribute code_late_init_attribute =__ATTR(late_init, 0660, late_init_show, late_init_store);
 
 static ssize_t one_time_init_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return 0;
@@ -382,8 +392,10 @@ static ssize_t verbose_store(struct kobject *kobj, struct kobj_attribute *attr, 
 static struct kobj_attribute verbose_attribute =__ATTR(verbose, 0660, verbose_show, verbose_store);
 
 static ssize_t clear_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
-    code_init_length = 0;
     code_length = 0;
+    code_init_length = 0;
+    code_late_init_length = 0;
+    code_one_time_init_length = 0;
     return 0;
 }
 static ssize_t clear_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
@@ -403,8 +415,11 @@ static ssize_t reset_show(struct kobject *kobj, struct kobj_attribute *attr, cha
     basic_mode = BASIC_MODE_DEFAULT;
     aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
     verbose = VERBOSE_DEFAULT;
+    alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
 
     code_init_length = 0;
+    code_late_init_length = 0;
+    code_one_time_init_length = 0;
     code_length = 0;
     code_offset = 0;
     n_pfc_configs = 0;
@@ -638,6 +653,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &reset_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &code_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &code_init_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &code_late_init_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &code_one_time_init_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &config_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &msr_config_attribute.attr);
@@ -673,6 +689,7 @@ static int __init nb_init(void) {
 static void __exit nb_exit(void) {
     kfree(code);
     kfree(code_init);
+    kfree(code_late_init);
     kfree(code_one_time_init);
     kfree(pfc_config_file_content);
     kfree(msr_config_file_content);
