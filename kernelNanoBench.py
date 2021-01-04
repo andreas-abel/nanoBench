@@ -13,7 +13,8 @@ def writeFile(fileName, content):
 def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
    try:
       code = '.intel_syntax noprefix;' + code + ';1:;.att_syntax prefix\n'
-      with open(asmFile, 'w') as f: f.write(code);
+      with open(asmFile, 'w') as f:
+         f.write(code);
       subprocess.check_call(['as', asmFile, '-o', objFile])
    except subprocess.CalledProcessError as e:
       sys.stderr.write("Error (assemble): " + str(e))

@@ -1,10 +1,14 @@
 import re
+from collections import namedtuple
 
 GPRegs = {'AH', 'AL', 'AX', 'BH', 'BL', 'BP', 'BPL', 'BX', 'CH', 'CL', 'CX', 'DH', 'DI', 'DIL', 'DL', 'DX', 'EAX',
    'EBP', 'EBX', 'ECX', 'EDI', 'EDX', 'ESI', 'ESP', 'R10', 'R10B', 'R10D', 'R10W', 'R11', 'R11B', 'R11D', 'R11W', 'R12',
    'R12B', 'R12D', 'R12W', 'R13', 'R13B', 'R13D', 'R13W', 'R14', 'R14B', 'R14D', 'R14W', 'R15', 'R15B', 'R15D', 'R15W',
    'R8', 'R8B', 'R8D', 'R8W', 'R9', 'R9B', 'R9D', 'R9W', 'RAX', 'RBP', 'RBX', 'RCX', 'RDI', 'RDX', 'RSI', 'RSP', 'SI',
    'SIL', 'SP', 'SPL'}
+
+High8Regs = {'AH', 'BH', 'CH', 'DH'}
+Low8Regs = {'AL', 'BL', 'BPL', 'CL', 'DIL', 'DL', 'R10B', 'R11B', 'R12B', 'R13B', 'R14B', 'R15B', 'R8B', 'R9B', 'SIL', 'SPL'}
 
 STATUSFLAGS = {'CF', 'PF', 'AF', 'ZF', 'SF', 'OF'}
 STATUSFLAGS_noAF = {'CF', 'PF', 'ZF', 'SF', 'OF'}
@@ -87,28 +91,6 @@ def regToSize(reg, size):
    elif size == 32: return regTo32(reg)
    else: return regTo64(reg)
 
-# Returns a set of registers that are a part of the register that is provided (e.g., EAX is a part of RAX; RAX is also a part of RAX)
-def getSubRegs(reg):
-   subRegs = set()
-   subRegs.add(reg)
-   if reg in GPRegs:
-      regSize = getRegSize(reg)
-      if regSize > 8:
-         for size in [16, 32, 64]:
-            if size > regSize: continue
-            subRegs.add(regToSize(reg, size))
-         if 'AX' in reg or 'BX' in reg or 'CX' in reg or 'DX' in reg:
-            subRegs.add(reg[-2] + 'L')
-            subRegs.add(reg[-2] + 'H')
-         else:
-            subRegs.add(regTo8(reg))
-   elif 'ZMM' in reg:
-      subRegs.add('Y' + reg[1:])
-      subRegs.add('X' + reg[1:])
-   elif 'YMM' in reg:
-      subRegs.add('X' + reg[1:])
-   return subRegs
-
 # Returns for a GPR the corresponding 64-bit registers, and for a (X|Y|Z)MM register the corresponding XMM register
 def getCanonicalReg(reg):
    if reg in GPRegs:
@@ -141,3 +123,20 @@ def getRegSize(reg):
    elif reg.startswith('YMM'): return 256
    elif reg.startswith('ZMM'): return 512
    else: return -1
+
+MemAddr = namedtuple('MemAddr', ['base', 'index', 'scale', 'displacement'])
+def getMemAddr(memAddrAsm):
+   base = index = None
+   displacement = 0
+   scale = 1
+   for c in re.split('\+|-', re.search('\[(.*)\]', memAddrAsm).group(1)):
+      if '0x' in c:
+         displacement = int(c, 0)
+         if '-0x' in memAddrAsm:
+            displacement = -displacement
+      elif '*' in c:
+         index, scale = c.split('*')
+         scale = int(scale)
+      else:
+         base = c
+   return MemAddr(base, index, scale, displacement)
