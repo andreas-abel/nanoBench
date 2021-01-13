@@ -256,6 +256,14 @@ def getMachineCode(objFile):
       print "Error (getMachineCode): " + str(e)
 
 
+def getCodeLength(asmCode):
+   objFile = '/tmp/ramdisk/code.o'
+   binFile = '/tmp/ramdisk/code.bin'
+   assemble(asmCode, objFile, asmFile='/tmp/ramdisk/code.s')
+   objcopy(objFile, binFile)
+   return os.path.getsize(binFile)
+
+
 def getEventConfig(event):
    if event == 'UOPS':
       if arch in ['CON', 'WOL']: return 'A0.00' # RS_UOPS_DISPATCHED
@@ -784,6 +792,13 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
    if iform == 'RET_NEAR_IMMw':
       config.independentInstrs = [getInstrInstanceFromNode(instrNode, immediate=8)]
 
+   if iclass == 'XGETBV': config.init = ['XOR ECX, ECX']
+   if iclass == 'XSETBV': config.init = ['XOR ECX, ECX; XGETBV']
+   if iclass == 'XRSTOR': config.init = ['XSAVE [R14]']
+   if iclass == 'XRSTORS': config.init = ['XSAVES [R14]']
+   if iclass == 'XRSTOR64': config.init = ['XSAVE64 [R14]']
+   if iclass == 'XRSTORS64': config.init = ['XSAVES64 [R14]']
+
    return [config]
 
 def getPreInstr(instrNode):
@@ -1052,110 +1067,134 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
          if config.note: htmlReports.append('<h2>' + config.note + '</h2>\n')
 
          instrIList = config.independentInstrs
+         instrLen = getCodeLength(instrIList[0].asm)
          for ic in sorted(set([1, min(4, len(instrIList)), min(8, len(instrIList)), len(instrIList)])):
             if minTP_noLoop < sys.maxint and minTP_loop < sys.maxint and minTP_noLoop > 100 and minTP_loop > 100: break
 
             if len(instrIList) > 1: htmlReports.append('<h3 style="margin-left: 25px">With ' + str(ic) + ' independent instruction' + ('s' if ic>1 else '') + '</h3>\n')
             htmlReports.append('<div style="margin-left: 50px">\n')
 
+            init = list(chain.from_iterable(i.regMemInit for i in instrIList[0:ic])) + config.init
+
             for useDepBreakingInstrs in ([False, True] if config.depBreakingInstrs else [False]):
                if minTP_noLoop < sys.maxint and minTP_loop < sys.maxint and minTP_noLoop > 100 and minTP_loop > 100: break
 
+               depBreakingInstrs = ''
                if useDepBreakingInstrs:
-                  instrStr = ';'.join([config.depBreakingInstrs+';'+config.preInstrCode+';'+i.asm for i in instrIList[0:ic]])
+                  depBreakingInstrs = config.depBreakingInstrs
                   htmlReports.append('<h4>With additional dependency-breaking instructions</h4>\n')
-               else:
-                  instrStr = ';'.join([config.preInstrCode+';'+i.asm for i in instrIList[0:ic]])
-
-               init = list(chain.from_iterable(i.regMemInit for i in instrIList[0:ic])) + config.init
 
                for repType in ['unrollOnly', 'loopSmall', 'loopBig']:
                   if minTP_noLoop < sys.maxint and minTP_loop < sys.maxint and minTP_noLoop > 100 and minTP_loop > 100: break
 
-                  if repType == 'unrollOnly':
-                     unrollCount = int(round(500/ic+49, -2)) # should still fit in the icache
-                     if instrNode.attrib['iclass'] in ['CPUID', 'RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
-                        unrollCount = 10
-                     loopCount = 0
-                  else:
-                     # we test with a small loop body so that uops may be delivered from the loop stream detector (LSD)
-                     # we also test with a larger loop body to minimize potential overhead from the loop itself
-                     loopCount = 100
-                     unrollCount = max(1, int(round(10.0/ic)))
-                     if minTP < sys.maxint and minTP > 100:
-                        unrollCount = 1
-                        loopCount = 10
-                     if repType == 'loopBig':
-                        unrollCount *= 10
+                  paddingTypes = ['']
+                  if (repType != 'unrollOnly') and (uopsMITE is not None) and (math.ceil(32.0/instrLen) * uopsMITE > 18) and (not 'RIP' in config.preInstrCode):
+                     if (instrNode.attrib.get('vex', '') != '') or (instrNode.attrib.get('evex', '') != '') or (instrNode.attrib.get('high8', '') != ''):
+                        paddingTypes.append('long NOPs')
+                     else:
+                        paddingTypes.append('redundant prefixes')
 
-                  if loopCount > 0:
-                     htmlReports.append('<h4>With loop_count=' + str(loopCount) + ' and unroll_count=' + str(unrollCount) + '</h4>\n')
-                  else:
-                     htmlReports.append('<h4>With unroll_count=' + str(unrollCount) +' and no inner loop</h4>\n')
+                  for paddingType in paddingTypes:
+                     instrStr = ''
+                     for i, instr in enumerate(instrIList[0:ic]):
+                        instrStr += depBreakingInstrs + ';' + config.preInstrCode + ';'
+                        if paddingType == 'redundant prefixes':
+                           nPrefixes = max(1, 8 - instrLen) if (not useDepBreakingInstrs and not config.preInstrCode) else (14 - instrLen)
+                           instrStr += '.byte ' + ','.join(['0x40'] * nPrefixes) + ';' # 'empty' REX prefixes
+                        instrStr += instr.asm + ';'
+                        if paddingType == 'long NOPs' and ((i % 4 == 3) or (i == ic - 1)):
+                           instrStr += '.byte 0x66,0x66,0x66,0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;' # 15-Byte NOP
 
-                  htmlReports.append('<ul>\n')
-                  result = runExperiment(instrNode, instrStr, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=(loopCount>0),
-                                         htmlReports=htmlReports)
-                  htmlReports.append('</ul>\n')
+                     if repType == 'unrollOnly':
+                        unrollCount = int(round(500/ic+49, -2)) # should still fit in the icache
+                        if instrNode.attrib['iclass'] in ['CPUID', 'RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
+                           unrollCount = 10
+                        loopCount = 0
+                     else:
+                        # we test with a small loop body so that uops may be delivered from the loop stream detector (LSD)
+                        # we also test with a larger loop body to minimize potential overhead from the loop itself
+                        unrollCount = max(1, int(round(10.0/ic)))
+                        if repType == 'loopSmall':
+                           loopCount = 1000
+                        else:
+                           loopCount = 100
+                           unrollCount *= 10
+                        if minTP < sys.maxint and minTP > 100:
+                           unrollCount = 1
+                           loopCount = 10
 
-                  cycles = fancyRound(result['Core cycles']/ic)
+                     htmlReports.append('<h4>')
+                     if loopCount > 0:
+                        htmlReports.append('With loop_count=' + str(loopCount) + (',' if paddingType else ' and') +  ' unroll_count=' + str(unrollCount))
+                     else:
+                        htmlReports.append('With unroll_count=' + str(unrollCount) + (',' if paddingType else ' and') + ' no inner loop')
+                     if paddingType:
+                        htmlReports.append(', and padding (' + paddingType + ')')
+                     htmlReports.append('</h4>\n')
 
-                  #invalid = False
-                  #if any('PORT' in e for e in result):
-                  #   maxPortUops = max(v/(len(e)-9) for e,v in result.items() if e.startswith('UOPS_PORT') and not '4' in e)
-                  #   if maxPortUops * .98 > result['Core cycles']:
-                  #      print 'More uops on ports than cycles, uops: {}, cycles: {}'.format(maxPortUops, result['Core cycles'])
-                  #       #invalid = True
+                     htmlReports.append('<ul>\n')
+                     result = runExperiment(instrNode, instrStr, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=(loopCount>0),
+                                            htmlReports=htmlReports)
+                     htmlReports.append('</ul>\n')
 
-                  #if not invalid:
-                  minTP = min(minTP, cycles)
-                  if repType == 'unrollOnly':
-                     minTP_noLoop = min(minTP_noLoop, cycles)
-                     if not useDepBreakingInstrs:
-                        minTP_noDepBreaking_noLoop = min(minTP_noDepBreaking_noLoop, cycles)
-                  else:
-                     minTP_loop = min(minTP_loop, cycles)
+                     cycles = fancyRound(result['Core cycles']/ic)
 
-                  if ic == 1 and (minTP == sys.maxint or cycles == minTP) and not useDepBreakingInstrs and repType == 'unrollOnly':
-                     minConfig = config
-                     minTP_single = min(minTP_single, cycles)
+                     #invalid = False
+                     #if any('PORT' in e for e in result):
+                     #   maxPortUops = max(v/(len(e)-9) for e,v in result.items() if e.startswith('UOPS_PORT') and not '4' in e)
+                     #   if maxPortUops * .98 > result['Core cycles']:
+                     #      print 'More uops on ports than cycles, uops: {}, cycles: {}'.format(maxPortUops, result['Core cycles'])
+                     #       #invalid = True
 
-                     if isIntelCPU():
-                        ports_dict = {int(p[9:]): i for p, i in result.items() if 'UOPS_PORT' in p}
-                     elif isAMDCPU() and not instrNode.attrib['extension'] == 'BASE':
-                        # We ignore BASE instructions, as they sometimes wrongly count floating point uops
-                        ports_dict = {int(p[23:]): i for p, i in result.items() if 'FpuPipeAssignment.Total' in p}
+                     #if not invalid:
+                     minTP = min(minTP, cycles)
+                     if repType == 'unrollOnly':
+                        minTP_noLoop = min(minTP_noLoop, cycles)
+                        if not useDepBreakingInstrs:
+                           minTP_noDepBreaking_noLoop = min(minTP_noDepBreaking_noLoop, cycles)
+                     else:
+                        minTP_loop = min(minTP_loop, cycles)
 
-                     uops = int(result['UOPS']+.2)
-                     if 'RETIRE_SLOTS' in result:
-                        uopsFused = int(result['RETIRE_SLOTS']+.2)
+                     if ic == 1 and (minTP == sys.maxint or cycles == minTP) and not useDepBreakingInstrs and repType == 'unrollOnly':
+                        minConfig = config
+                        minTP_single = min(minTP_single, cycles)
 
-                     if 'UOPS_MITE' in result:
-                        uopsMITE = int(result['UOPS_MITE']+.2)
+                        if isIntelCPU():
+                           ports_dict = {int(p[9:]): i for p, i in result.items() if 'UOPS_PORT' in p}
+                        elif isAMDCPU() and not instrNode.attrib['extension'] == 'BASE':
+                           # We ignore BASE instructions, as they sometimes wrongly count floating point uops
+                           ports_dict = {int(p[23:]): i for p, i in result.items() if 'FpuPipeAssignment.Total' in p}
 
-                     if 'UOPS_MS' in result:
-                        uopsMS = int(result['UOPS_MS']+.2)
+                        uops = int(result['UOPS']+.2)
+                        if 'RETIRE_SLOTS' in result:
+                           uopsFused = int(result['RETIRE_SLOTS']+.2)
 
-                     if 'ILD_STALL.LCP' in result:
-                        ILD_stalls = int(result['ILD_STALL.LCP'])
+                        if 'UOPS_MITE' in result:
+                           uopsMITE = int(result['UOPS_MITE']+.2)
 
-                     if 'DIV_CYCLES' in result:
-                        divCycles = int(result['DIV_CYCLES']+.2)
+                        if 'UOPS_MS' in result:
+                           uopsMS = int(result['UOPS_MS']+.2)
 
-                     if (not config.preInstrCode) and ((uopsMITE > 1) or (uopsMS > 0) or (result.get('INST_DECODED.DEC0', 0) > .05) or
-                                                          ((result.get('UOPS_MITE>0', 1) > .95) and (not isBranchInstr(instrNode)))): # ToDo: preInstrs
-                        complexDec = True
+                        if 'ILD_STALL.LCP' in result:
+                           ILD_stalls = int(result['ILD_STALL.LCP'])
 
-                     if complexDec and ('UOPS_MITE>0' in result):
-                        for nNops in count(1):
-                           nopStr = str(nNops) + ' nop' + ('s' if nNops > 1 else '')
-                           htmlReports.append('<h4>With unroll_count=' + str(unrollCount) +', no inner loop, and ' + nopStr + '</h4>\n')
-                           htmlReports.append('<ul>\n')
-                           resultNops = runExperiment(instrNode, instrStr + ('; nop' * nNops), init=init, unrollCount=unrollCount, htmlReports=htmlReports)
-                           htmlReports.append('</ul>\n')
-                           if resultNops['UOPS_MITE>0'] > result['UOPS_MITE>0'] +.95:
-                              nAvailableSimpleDecoders = nNops - 1
-                              break
+                        if 'DIV_CYCLES' in result:
+                           divCycles = int(result['DIV_CYCLES']+.2)
+
+                        if (not config.preInstrCode) and ((uopsMITE > 1) or (uopsMS > 0) or (result.get('INST_DECODED.DEC0', 0) > .05) or
+                                                             ((result.get('UOPS_MITE>0', 1) > .95) and (not isBranchInstr(instrNode)))): # ToDo: preInstrs
+                           complexDec = True
+
+                        if complexDec and ('UOPS_MITE>0' in result):
+                           for nNops in count(1):
+                              nopStr = str(nNops) + ' NOP' + ('s' if nNops > 1 else '')
+                              htmlReports.append('<h4>With unroll_count=' + str(unrollCount) +', no inner loop, and ' + nopStr + '</h4>\n')
+                              htmlReports.append('<ul>\n')
+                              resultNops = runExperiment(instrNode, instrStr + ('; nop' * nNops), init=init, unrollCount=unrollCount, htmlReports=htmlReports)
+                              htmlReports.append('</ul>\n')
+                              if resultNops['UOPS_MITE>0'] > result['UOPS_MITE>0'] +.95:
+                                 nAvailableSimpleDecoders = nNops - 1
+                                 break
 
             htmlReports.append('</div>')
 
@@ -1866,6 +1905,15 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
       else:
          return None
+   elif instrNode.attrib['iclass'] == 'XGETBV':
+      if startNode.text == 'ECX':
+         chainInstrs = 'MOVSX ECX, {}; '.format(regTo16(targetNode.text))
+         chainInstrs += 'MOVSX ECX, CX; ' * cRep
+         chainInstrs += 'AND ECX, 0; '
+         chainLatency = basicLatency['MOVSX'] * (cRep + 1) + basicLatency['AND']
+         configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
+      else:
+         return None
    elif startNode.text == 'RSP' or targetNode.text == 'RSP':
       # we ignore operands that modify the stack pointer, as these are usually handled by the stack engine in the issue stage of the pipeline, and
       # thus would not lead to meaningful results
@@ -2277,9 +2325,11 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
          return latency
    else:
       if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR', 'RDPMC', 'CPUID', 'POPF', 'POPFQ']:
-         return None;
+         return None
+      if 'XSAVE' in instrNode.attrib['iclass']:
+         return None
       if 'REP' in instrNode.attrib['iclass']:
-         return None;
+         return None
       if instrNode.attrib['category'] in ['IO', 'IOSTRINGOP', 'PKU']:
          return None
 
@@ -2629,6 +2679,7 @@ def filterInstructions(XMLRoot):
    _, _, ecx1, edx1 = cpu(0x01)
    _, ebx7, ecx7, edx7 = cpu(0x07)
    eax7_1, _, _, _ = cpu(0x07, 0x01)
+   eaxD_1, _, _, _ = cpu(0x0D, 0x01)
    _, _, ecx8_1, edx8_1 = cpu(0x80000001)
    _, ebx8_8, _, _ = cpu(0x80000008)
 
@@ -2654,6 +2705,7 @@ def filterInstructions(XMLRoot):
             global supportsAVX
             supportsAVX = True
       if extension == 'AVXAES' and not (cpuid.get_bit(ecx1, 25) and cpuid.get_bit(ecx1, 28)): instrSet.discard(XMLInstr)
+      if extension in ['XSAVE', 'XSAVEC', 'XSAVEOPT', 'XSAVES'] and not cpuid.get_bit(ecx1, 27): instrSet.discard(XMLInstr)
       if extension == 'F16C' and not cpuid.get_bit(ecx1, 29): instrSet.discard(XMLInstr)
       if extension == 'RDRAND' and not cpuid.get_bit(ecx1, 30): instrSet.discard(XMLInstr)
       if extension == 'MMX' and not cpuid.get_bit(edx1, 23): instrSet.discard(XMLInstr)
@@ -2711,6 +2763,9 @@ def filterInstructions(XMLRoot):
       if extension == 'AVX_VNNI' and not cpuid.get_bit(eax7_1, 4): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_BF16') and not cpuid.get_bit(eax7_1, 5): instrSet.discard(XMLInstr)
       if extension == 'HRESET' and not cpuid.get_bit(eax7_1, 22): instrSet.discard(XMLInstr)
+      if extension == 'XSAVEOPT' and not cpuid.get_bit(eaxD_1, 0): instrSet.discard(XMLInstr)
+      if extension == 'XSAVEC' and not cpuid.get_bit(eaxD_1, 1): instrSet.discard(XMLInstr)
+      if extension == 'XSAVES' and not cpuid.get_bit(eaxD_1, 3): instrSet.discard(XMLInstr)
       if extension == 'SSE4a' and not cpuid.get_bit(ecx8_1, 6): instrSet.discard(XMLInstr)
       if extension == 'XOP' and not cpuid.get_bit(ecx8_1, 11): instrSet.discard(XMLInstr)
       if extension == 'FMA4' and not cpuid.get_bit(ecx8_1, 16): instrSet.discard(XMLInstr)
@@ -2737,10 +2792,10 @@ def filterInstructions(XMLRoot):
       if XMLInstr.attrib['category'] in ['X87_ALU']: instrSet.discard(XMLInstr)
 
       # System instructions
-      if extension in ['INVPCID', 'MONITOR', 'MONITORX', 'RDWRFSGS', 'SMAP', 'SNP', 'XSAVE', 'XSAVEC', 'XSAVEOPT', 'XSAVES']: instrSet.discard(XMLInstr)
+      if extension in ['INVPCID', 'MONITOR', 'MONITORX', 'RDWRFSGS', 'SMAP', 'SNP']: instrSet.discard(XMLInstr)
       if XMLInstr.attrib['category'] in ['INTERRUPT', 'SEGOP', 'SYSCALL', 'SYSRET']: instrSet.discard(XMLInstr)
-      if XMLInstr.attrib['iclass'] in ['CALL_FAR', 'HLT', 'INVD', 'IRET', 'IRETD', 'IRETQ', 'JMP_FAR', 'LTR', 'RET_FAR', 'UD2']:
-         instrSet.discard(XMLInstr)
+      if XMLInstr.attrib['iclass'] in ['CALL_FAR', 'HLT', 'INVD', 'IRET', 'IRETD', 'IRETQ', 'JMP_FAR', 'LTR', 'RET_FAR', 'UD2']: instrSet.discard(XMLInstr)
+      if 'XRSTOR' in XMLInstr.attrib['iclass']: instrSet.discard(XMLInstr)
       if XMLInstr.attrib['iform'] in ['POP_FS', 'POP_GS', 'MOV_CR_CR_GPR64', 'MOV_SEG_MEMw', 'MOV_SEG_GPR16', 'SWAPGS']: instrSet.discard(XMLInstr)
 
       # Undefined instructions
@@ -2855,7 +2910,7 @@ def main():
          tpDictNoInteriteration = {instrNodeDict[k.attrib['string']]:v for k,v in pTpDictNoInteriteration.items()}
    else:
       for i, instrNode in enumerate(instrNodeList):
-         #if not 'VPDPWSSD (XMM, K, XMM, XMM)' in instrNode.attrib['string']: continue
+         #if not 'RCR (R64, 1)' in instrNode.attrib['string']: continue
          print 'Measuring throughput for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Throughput and Uops' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>\n<hr>\n']
