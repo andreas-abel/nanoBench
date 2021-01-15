@@ -129,10 +129,10 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 
 | Option                       | Description |
 |------------------------------|-------------|
-| `-asm <code>`                | Assembler code sequence (in Intel syntax) containing the code to be benchmarked. |
-| `-asm_init <code>`           | Assembler code sequence (in Intel syntax) that is executed once in the beginning of every benchmark run. |
-| `-asm_late_init <code>`      | Assembler code sequence (in Intel syntax) that is executed once immediately before the code to be benchmarked. |
-| `-asm_one_time_init <code>`  | Assembler code sequence (in Intel syntax) that is executed once before the first benchmark run. |
+| `-asm <code>`                | Assembler code sequence (in Intel syntax<sup>[1](#syntax)</sup>) containing the code to be benchmarked. |
+| `-asm_init <code>`           | Assembler code sequence (in Intel syntax<sup>[1](#syntax)</sup>) that is executed once in the beginning of every benchmark run. |
+| `-asm_late_init <code>`      | Assembler code sequence (in Intel syntax<sup>[1](#syntax)</sup>) that is executed once immediately before the code to be benchmarked. |
+| `-asm_one_time_init <code>`  | Assembler code sequence (in Intel syntax<sup>[1](#syntax)</sup>) that is executed once before the first benchmark run. |
 | `-code <filename>`           | A binary file containing the code to be benchmarked as raw x86 machine code.  *This option cannot be used together with `-asm`.* |
 | `-code_init <filename>`      | A binary file containing code to be executed once in the beginning of every benchmark run. *This option cannot be used together with `-asm_init`.* |
 | `-code_late_init <filename>` | A binary file containing code to be executed once immediately before the code to be benchmarked. *This option cannot be used together with `-asm_late_init`.* |
@@ -153,6 +153,8 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | `-no_normalization`          | If this option is enabled, the measurement results are not divided by the number of repetitions. |
 | `-cpu <n>`                   | Pins the measurement thread to CPU n. `[Default: Pin the thread to the CPU it is currently running on.]` |
 | `-verbose`                   | Outputs the results of all performance counter readings. In the user-space version, the results are printed to stdout. The output of the kernel module can be accessed using `dmesg`. |
+
+<sup id="syntax">1</sup> As an extension, the tool also supports statements of the form `|n` (with 1&le;n&le;15) that are translated to n-byte NOPs.
 
 The following parameters are only supported by `nanoBench.sh`.
 

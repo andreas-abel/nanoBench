@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source utils.sh
+
 if [ "$EUID" -ne 0 ]; then
     echo "Error: nanoBench requires root privileges" 1>&2
     echo "Try \"sudo ./nanoBench-asm.sh ...\"" 1>&2
@@ -22,31 +24,19 @@ done
 args=''
 while [ "$2" ]; do
     if [[ "$1" == -asm_i* ]]; then
-        echo ".intel_syntax noprefix" > asm-init.s
-        echo "$2" >> asm-init.s
-        as asm-init.s -o asm-init.o || exit
-        objcopy asm-init.o -O binary asm-init.bin
+        assemble "$2" asm-init.bin
         args="$args -code_init asm-init.bin"
         shift 2
     elif [[ "$1" == -asm_l* ]]; then
-        echo ".intel_syntax noprefix" > asm-late-init.s
-        echo "$2" >> asm-late-init.s
-        as asm-late-init.s -o asm-late-init.o || exit
-        objcopy asm-late-init.o -O binary asm-late-init.bin
+        assemble "$2" asm-late-init.bin
         args="$args -code_late_init asm-late-init.bin"
         shift 2
     elif [[ "$1" == -asm_o* ]]; then
-        echo ".intel_syntax noprefix" > asm-one-time-init.s
-        echo "$2" >> asm-one-time-init.s
-        as asm-one-time-init.s -o asm-one-time-init.o || exit
-        objcopy asm-one-time-init.o -O binary asm-one-time-init.bin
+        assemble "$2" asm-one-time-init.bin
         args="$args -code_one_time_init asm-one-time-init.bin"
         shift 2
     elif [[ "$1" == -as* ]]; then
-        echo ".intel_syntax noprefix" > asm-code.s
-        echo "$2" >> asm-code.s
-        as asm-code.s -o asm-code.o || exit
-        objcopy asm-code.o -O binary asm-code.bin
+        assemble "$2" asm-code.bin
         args="$args -code asm-code.bin"
         shift 2
     else
@@ -79,10 +69,7 @@ else
     user/nanoBench $@
 fi
 
-rm -f asm-code.*
-rm -f asm-init.*
-rm -f asm-late-init.*
-rm -f asm-one-time-init.*
+rm -f asm-*.bin
 
 echo $prev_rdpmc > /sys/bus/event_source/devices/cpu/rdpmc
 echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog

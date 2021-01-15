@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source utils.sh
+
 if [ "$EUID" -ne 0 ]; then
     echo "Error: nanoBench requires root privileges"
     echo "Try \"sudo ./kernel-nanoBench.sh ...\""
@@ -18,36 +20,24 @@ taskset=""
 
 while [ "$1" ]; do
     if [[ "$1" == -asm_i* ]]; then
-        echo ".intel_syntax noprefix" > asm-init.s
-        echo "$2" >> asm-init.s
-        as asm-init.s -o asm-init.o
-        objcopy asm-init.o -O binary asm-init.o
-        echo -n "asm-init.o" > /sys/nb/init
-        rm -f asm-init.s asm-init.o
+        assemble "$2" asm-init.bin
+        echo -n "asm-init.bin" > /sys/nb/init
+        rm -f asm-init.bin
         shift 2
    elif [[ "$1" == -asm_l* ]]; then
-        echo ".intel_syntax noprefix" > asm-late-init.s
-        echo "$2" >> asm-late-init.s
-        as asm-late-init.s -o asm-late-init.o
-        objcopy asm-late-init.o -O binary asm-late-init.o
-        echo -n "asm-late-init.o" > /sys/nb/late_init
-        rm -f asm-late-init.s asm-late-init.o
+        assemble "$2" asm-late-init.bin
+        echo -n "asm-late-init.bin" > /sys/nb/late_init
+        rm -f asm-late-init.bin
         shift 2
     elif [[ "$1" == -asm_o* ]]; then
-        echo ".intel_syntax noprefix" > asm-one-time-init.s
-        echo "$2" >> asm-one-time-init.s
-        as asm-one-time-init.s -o asm-one-time-init.o
-        objcopy asm-one-time-init.o -O binary asm-one-time-init.o
-        echo -n "asm-one-time-init.o" > /sys/nb/one_time_init
-        rm -f asm-one-time-init.s asm-one-time-init.o
+        assemble "$2" asm-one-time-init.bin
+        echo -n "asm-one-time-init.bin" > /sys/nb/one_time_init
+        rm -f asm-one-time-init.bin
         shift 2
     elif [[ "$1" == -as* ]]; then
-        echo ".intel_syntax noprefix" > asm-code.s
-        echo "$2" >> asm-code.s
-        as asm-code.s -o asm-code.o
-        objcopy asm-code.o -O binary asm-code.o
-        echo -n "asm-code.o" > /sys/nb/code
-        rm -f asm-code.s asm-code.o
+        assemble "$2" asm-code.bin
+        echo -n "asm-code.bin" > /sys/nb/code
+        rm -f asm-code.bin
         shift 2
     elif [[ "$1" == -code_i* ]]; then
         echo -n "$2" > /sys/nb/init
