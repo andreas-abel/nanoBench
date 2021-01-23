@@ -720,17 +720,6 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
       depBreakingInstrs = getDependencyBreakingInstrsForSuppressedOperands(instrNode)
 
    # instructions with multiple configs
-   if 'I8' in instrNode.attrib['string']:
-      configs = []
-      for immediate in [0, 1, 2]:
-         if instrNode.attrib['string'].replace('I8', str(immediate)) in instrNodeDict:
-            continue
-         config = TPConfig(note='With immediate = ' + str(immediate))
-         config.independentInstrs = getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr, immediate=immediate)
-         config.depBreakingInstrs = depBreakingInstrs
-         configs.append(config)
-      return configs
-
    if iclass in ['JB', 'JBE', 'JLE', 'JNB', 'JNBE', 'JNLE', 'JNO', 'JNP', 'JNS', 'JNZ', 'JO', 'JP', 'JS', 'JZ']:
       config0 = TPConfig(independentInstrs=independentInstrs, init=['pushfq; and qword ptr [RSP], ~0x8D5; popfq'], note='With all flags set to 0')
       config1 = TPConfig(independentInstrs=independentInstrs, init=['pushfq; or qword ptr [RSP], 0x8D5; popfq'], note='With all flags set to 1')
@@ -2049,8 +2038,9 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                   chainInstr = 'SET{} {};'.format(flag[0], reg)
                   chainLatency = basicLatency['SET' + flag[0]]
                else:
-                  chainInstr = 'CMOV{} {}, {};'.format(flag[0], reg, regToSize('R15', regSize))
-                  chainLatency = basicLatency['CMOV' + flag[0]]
+                  chainInstr = 'CMOV{} {}, {};'.format(flag[0], regToSize('R15', regSize), regToSize('R15', regSize))
+                  chainInstr += 'MOVSX {}, {};'.format(regTo64(reg), regToSize('R15', min(32, regSize)))
+                  chainLatency = basicLatency['CMOV' + flag[0]] + basicLatency['MOVSX']
                instrI = getInstrInstanceFromNode(instrNode, ['R15'], ['R15'], useDistinctRegs, {startNodeIdx:reg})
 
                if reg in High8Regs:
@@ -2470,10 +2460,6 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                                  continue
                               elif opNode1.attrib['type'] == 'flags' and depOpNode.attrib['type'] == 'flags':
                                  continue
-                              elif depOpNode == opNode1:
-                                 # ToDo: this might be unnecessary, if CMOVcc wouldn't use the same regs
-                                 newlatConfig.chainInstrs = depBreakingInstrs[depOpNode] + '; ' + latConfig.chainInstrs
-                                 depBreakingAdded = True
                               else:
                                  if not latConfig.chainInstrs.endswith(depBreakingInstrs[depOpNode]):
                                     newlatConfig.chainInstrs = latConfig.chainInstrs + ';' + depBreakingInstrs[depOpNode]
