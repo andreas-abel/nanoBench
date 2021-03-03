@@ -18,7 +18,7 @@ obj-m += $(MODULE_NAME).o
 CFLAGS_nb_km.o := -DDEBUG
 CFLAGS_nanoBench.o := -DDEBUG
 
-ccflags-y+=-std=gnu99 -Wno-declaration-after-statement
+ccflags-y+=-std=gnu99 -Wno-declaration-after-statement -DDEBUG
 
 all: 
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules

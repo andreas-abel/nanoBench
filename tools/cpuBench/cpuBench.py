@@ -224,7 +224,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
    if maxRepeat>0:
       if any(v<-0.05 for v in ret.values()):
          print 'Repeating experiment because there was a value < 0'
-         return runExperiment(instrNode, instrCode, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=basicMode, htmlReports=htmlReports, maxRepeat=maxRepeat-1)
+         return runExperiment(instrNode, instrCode, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=True, htmlReports=htmlReports, maxRepeat=maxRepeat-1)
 
       #sumPortUops = sum(v for e,v in ret.items() if 'PORT' in e and not '4' in e)
       #if (sumPortUops % 1) > .2 and (sumPortUops % 1) < .8:
@@ -236,7 +236,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
          maxPortUops = max(v/(len(e)-9) for e,v in ret.items() if 'PORT' in e)
          if maxPortUops * .98 > ret['Core cycles']:
             print 'Repeating experiment because there were more uops on a port than core cycles'
-            return runExperiment(instrNode, instrCode, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=basicMode, htmlReports=htmlReports, maxRepeat=maxRepeat-1)
+            return runExperiment(instrNode, instrCode, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=True, htmlReports=htmlReports, maxRepeat=maxRepeat-1)
 
    if htmlReports is not None:
       htmlReports.extend(localHtmlReports)
@@ -1220,12 +1220,8 @@ def getBasicLatencies(instrNodeList):
       sys.exit()
    basicLatency['MOVSX'] = movsxCycles
 
-   movsxR8hResult = runExperiment(None, 'MOVSX EAX, AH; MOV AH, AL')
-   movsxR8hCycles = int(round(movsxR8hResult['Core cycles']))
-   if movsxR8hCycles != 2:
-      print 'Latency of "MOVSX EAX, AH; MOV AH, AL" must be 2'
-      sys.exit()
-   basicLatency['MOV_R8h_R8l'] = 1
+   movsxR8hResult = runExperiment(None, 'MOV AH, AL')
+   basicLatency['MOV_R8h_R8l'] = max(1, int(round(movsxR8hResult['Core cycles'])))
 
    movR8hR8hResult = runExperiment(instrNodeDict['MOV_88 (R8h, R8h)'], 'MOV AH, AH')
    basicLatency['MOV_R8h_R8h'] = int(round(movR8hR8hResult['Core cycles']))
@@ -1836,11 +1832,12 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
 
 
 class LatConfig:
-   def __init__(self, instrI, chainInstrs='', chainLatency=0, init=None, notes=None):
+   def __init__(self, instrI, chainInstrs='', chainLatency=0, init=None, basicMode=False, notes=None):
       self.instrI = instrI
       self.chainInstrs = chainInstrs
       self.chainLatency = chainLatency
       self.init = ([] if init is None else init)
+      self.basicMode = basicMode
       self.notes = ([] if notes is None else notes)
 
 class LatConfigList:
@@ -2268,7 +2265,10 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                chainInstrs += 'XOR ' + chainReg + ', R12; XOR ' + chainReg + ', R12;' + ('TEST R15, R15;' if instrReadsFlags else '')
                chainLatency = basicLatency['MOVSX'] * cRep + 2*basicLatency['XOR']
                chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(min(64, memWidth))] >= 12) # 0 if CPU supports zero-latency store forwarding
-               configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
+               # we use basicMode, as the measurements for these benchmarks are often not very stable, in particular on, e.g., HSW
+               configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency, basicMode=True))
+               # on some microarch. (e.g., HSW), an additional nop instr. can sometimes lead to a better port scheduling
+               configList.append(LatConfig(instrI, chainInstrs=chainInstrs + 'nop;', chainLatency=chainLatency, basicMode=True, notes=['with additional nop']))
             else:
                # mem -> mem
                if startNode.attrib.get('r','0')=='1':
@@ -2280,7 +2280,8 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                      chainInstrs += ('MOVSX R12, ' + regToSize('R12', min(32, memWidth)) + ';')*10
                      chainInstrs += ('MOV [' + addrReg + '], ' + regToSize('R12', min(64, memWidth)))
                      chainLatency = basicLatency['MOV_10MOVSX_MOV_'+str(min(64, memWidth))]
-                     configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
+                     # we use basicMode, as the measurements for these benchmarks are often not very stable, in particular on, e.g., HSW
+                     configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency, basicMode=True))
                   else:
                      # ToDo
                      pass
@@ -2513,7 +2514,8 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                            configHtmlReports.append('<li>Chain latency: ' + ('&ge;' if latConfigList.isUpperBound else '') + str(latConfig.chainLatency) + '</li>\n')
 
                         init = latConfig.instrI.regMemInit + latConfig.init
-                        measurementResult = runExperiment(instrNode, latConfig.instrI.asm + ';' + latConfig.chainInstrs, init=init, htmlReports=configHtmlReports, unrollCount=100)
+                        measurementResult = runExperiment(instrNode, latConfig.instrI.asm + ';' + latConfig.chainInstrs, init=init,
+                                                          basicMode=latConfig.basicMode, htmlReports=configHtmlReports, unrollCount=100)
                         configHtmlReports.append('</ul>\n')
 
                         if not measurementResult:

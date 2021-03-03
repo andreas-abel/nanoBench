@@ -35,6 +35,7 @@ void print_usage() {
     printf("  -warm_up_count <n>:             Number of runs before the first measurement gets recorded.\n");
     printf("  -initial_warm_up_count <n>:     Number of runs before any measurement is performed.\n");
     printf("  -alignment_offset <n>:          Alignment offset.\n");
+    printf("  -df:                            Drains front-end buffers between executing code_late_init and code.\n");
     printf("  -avg:                           Selects the arithmetic mean as the aggregate function.\n");
     printf("  -median:                        Selects the median as the aggregate function.\n");
     printf("  -min:                           Selects the minimum as the aggregate function.\n");
@@ -80,6 +81,7 @@ int main(int argc, char **argv) {
         {"warm_up_count", required_argument, 0, 'w'},
         {"initial_warm_up_count", required_argument, 0, 'a'},
         {"alignment_offset", required_argument, 0, 'm'},
+        {"df", no_argument, &drain_frontend, 1},
         {"avg", no_argument, &aggregate_function, AVG_20_80},
         {"median", no_argument, &aggregate_function, MED},
         {"min", no_argument, &aggregate_function, MIN},

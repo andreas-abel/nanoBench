@@ -17,7 +17,7 @@ long loop_count = LOOP_COUNT_DEFAULT;
 long warm_up_count = WARM_UP_COUNT_DEFAULT;
 long initial_warm_up_count = INITIAL_WARM_UP_COUNT_DEFAULT;
 size_t alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
-
+int drain_frontend = DRAIN_FRONTEND_DEFAULT;
 int no_mem = NO_MEM_DEFAULT;
 int no_normalization = NO_NORMALIZATION_DEFAULT;
 int basic_mode = BASIC_MODE_DEFAULT;
@@ -420,7 +420,7 @@ size_t get_required_runtime_code_length() {
             req_code_length += 100;
         }
     }
-    return code_init_length + code_late_init_length + 2*unroll_count*req_code_length + 10000;
+    return code_init_length + code_late_init_length + (drain_frontend?128*15:0) + 2*unroll_count*req_code_length + 10000;
 }
 
 size_t get_distance_to_code(char* measurement_template, size_t templateI) {
@@ -486,12 +486,20 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                 rcI += code_late_init_length;
             }
 
+            if (drain_frontend) {
+                // the length of the following code sequence is a multiple of 64, and thus doesn't affect the alignment
+                for (size_t i=0; i<128; i++) {
+                    strncpy(&runtime_code[rcI], "\x66\x66\x66\x66\x66\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00", 15);
+                    rcI += 15;
+                }
+            }
+
             if (unrollI == 0 && codeI == 0) {
                 rcI_code_start = rcI;
             }
 
             if (!code_contains_magic_bytes) {
-                // in this case, we can use a memcpy, which is faster
+                // in this case, we can use memcpy, which is faster
                 for (unrollI=0; unrollI<local_unroll_count; unrollI++) {
                     memcpy(&runtime_code[rcI], code, code_length);
                     rcI += code_length;
@@ -711,8 +719,7 @@ long long ll_abs(long long val) {
 void print_all_measurement_results(int64_t* results[], int n_counters) {
     int run_padding = (n_measurements<=10?1:(n_measurements<=100?2:(n_measurements<=1000?3:4)));
 
-    size_t size = 120;
-    char buf[size];
+    char buf[120];
 
     sprintf(buf, "\t%*s      ", run_padding, "");
     for (int c=0; c<n_counters; c++) {

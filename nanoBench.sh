@@ -16,7 +16,7 @@ fi
 
 debug=false
 for p in "$@"; do
-    if [[ "$p" == -d* ]]; then
+    if [[ "$p" == -de* ]]; then
         debug=true
     fi
 done

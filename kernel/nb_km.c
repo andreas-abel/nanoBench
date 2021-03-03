@@ -256,6 +256,15 @@ static ssize_t alignment_offset_store(struct kobject *kobj, struct kobj_attribut
 }
 static struct kobj_attribute alignment_offset_attribute =__ATTR(alignment_offset, 0660, alignment_offset_show, alignment_offset_store);
 
+static ssize_t drain_frontend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%u\n", drain_frontend);
+}
+static ssize_t drain_frontend_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%u", &drain_frontend);
+    return count;
+}
+static struct kobj_attribute drain_frontend_attribute =__ATTR(drain_frontend, 0660, drain_frontend_show, drain_frontend_store);
+
 static ssize_t basic_mode_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%u\n", basic_mode);
 }
@@ -416,6 +425,7 @@ static ssize_t reset_show(struct kobject *kobj, struct kobj_attribute *attr, cha
     aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
     verbose = VERBOSE_DEFAULT;
     alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
+    drain_frontend = DRAIN_FRONTEND_DEFAULT;
 
     code_init_length = 0;
     code_late_init_length = 0;
@@ -663,6 +673,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &warm_up_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &initial_warm_up_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &alignment_offset_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &drain_frontend_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &agg_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &basic_mode_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &no_mem_attribute.attr);

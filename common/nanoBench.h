@@ -95,6 +95,10 @@ extern long initial_warm_up_count;
 extern size_t alignment_offset;
 #define ALIGNMENT_OFFSET_DEFAULT 0;
 
+// If enabled, the front-end buffers are drained between code_late_init and code by executing a sequence of 128 15-Byte NOP instructions.
+extern int drain_frontend;
+#define DRAIN_FRONTEND_DEFAULT 0;
+
 // If enabled, the temporary performance counter values are stored in registers instead of in memory;
 // the code to be measured must then not use registers R8-R13
 extern int no_mem;
