@@ -19,6 +19,7 @@
 #include <linux/version.h>
 #include <linux/vmalloc.h>
 #include <../arch/x86/include/asm/fpu/api.h>
+#include <asm-generic/io.h>
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(4,12,0)
 #include <asm/cacheflush.h>
@@ -34,6 +35,34 @@ int (*set_memory_nx)(unsigned long, int) = 0;
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Andreas Abel");
+
+// __vmalloc has no langer the pgprot_t parameter so we need to hook __vmalloc_node_range directly
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+void *(*kallsym__vmalloc_node_range)(unsigned long size, unsigned long align,
+			unsigned long start, unsigned long end, gfp_t gfp_mask,
+			pgprot_t prot, unsigned long vm_flags, int node,
+			const void *caller);
+#endif
+
+// kallsyms_lookup_name is no logner supported we use a kprobes to get the address
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
+#include <linux/kprobes.h>
+#include <linux/kallsyms.h>
+unsigned long kallsyms_lookup_name(const char* name) {
+  struct kprobe kp = {
+    .symbol_name    = name,
+  };
+
+  int ret = register_kprobe(&kp);
+  if (ret < 0) {
+    return 0;
+  };
+
+  unregister_kprobe(&kp);
+
+  return (unsigned long) kp.addr;
+}
+#endif
 
 // 4 Mb is the maximum that kmalloc supports on my machines
 #define KMALLOC_MAX (4*1024*1024)
@@ -134,7 +163,11 @@ static ssize_t one_time_init_store(struct kobject *kobj, struct kobj_attribute *
     if (new_runtime_one_time_init_code_memory_size > runtime_one_time_init_code_memory_size) {
         runtime_one_time_init_code_memory_size = new_runtime_one_time_init_code_memory_size;
         vfree(runtime_one_time_init_code);
+        #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        runtime_one_time_init_code = kallsym__vmalloc_node_range(runtime_one_time_init_code_memory_size, 1, VMALLOC_START, VMALLOC_END, GFP_KERNEL, PAGE_KERNEL_EXEC, 0, NUMA_NO_NODE, __builtin_return_address(0));
+        #else
         runtime_one_time_init_code = __vmalloc(runtime_one_time_init_code_memory_size, GFP_KERNEL, PAGE_KERNEL_EXEC);
+        #endif
         if (!runtime_one_time_init_code) {
             runtime_one_time_init_code_memory_size = 0;
             pr_debug("failed to allocate executable memory\n");
@@ -597,6 +630,15 @@ static int open(struct inode *inode, struct  file *file) {
     return single_open(file, show, NULL);
 }
 
+// since 5.6 the struct for fileops has changed
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+static const struct proc_ops proc_file_fops = {
+    .proc_lseek = seq_lseek,
+    .proc_open = open,
+    .proc_read = seq_read,
+    .proc_release = single_release,
+};
+#else
 static const struct file_operations proc_file_fops = {
     .llseek = seq_lseek,
     .open = open,
@@ -604,6 +646,7 @@ static const struct file_operations proc_file_fops = {
     .read = seq_read,
     .release = single_release,
 };
+#endif
 
 static struct kobject* nb_kobject;
 
@@ -612,6 +655,9 @@ static int __init nb_init(void) {
     #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
     set_memory_x = (void*)kallsyms_lookup_name("set_memory_x");
     set_memory_nx = (void*)kallsyms_lookup_name("set_memory_nx");
+    #endif
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+    kallsym__vmalloc_node_range = (void*)kallsyms_lookup_name("__vmalloc_node_range");
     #endif
     if (check_cpuid()) {
         return -1;
