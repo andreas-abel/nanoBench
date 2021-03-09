@@ -36,7 +36,7 @@ int (*set_memory_nx)(unsigned long, int) = 0;
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Andreas Abel");
 
-// __vmalloc has no langer the pgprot_t parameter so we need to hook __vmalloc_node_range directly
+// __vmalloc has no longer the pgprot_t parameter, so we need to hook __vmalloc_node_range directly
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 void *(*kallsym__vmalloc_node_range)(unsigned long size, unsigned long align,
 			unsigned long start, unsigned long end, gfp_t gfp_mask,
@@ -44,7 +44,7 @@ void *(*kallsym__vmalloc_node_range)(unsigned long size, unsigned long align,
 			const void *caller);
 #endif
 
-// kallsyms_lookup_name is no logner supported we use a kprobes to get the address
+// kallsyms_lookup_name is no longer supported; we use a kprobes to get the address
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 #include <linux/kprobes.h>
 #include <linux/kallsyms.h>

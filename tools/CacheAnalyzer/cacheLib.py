@@ -23,26 +23,26 @@ def getEventConfig(event):
    if event == 'L1_HIT':
       if arch in ['Core', 'EnhancedCore']: return '40.0E ' + event # L1D_CACHE_LD.MES
       if arch in ['NHM', 'WSM']: return 'CB.01 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.01 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.01 ' + event
    if event == 'L1_MISS':
       if arch in ['Core', 'EnhancedCore']: return 'CB.01.CTR=0 ' + event
-      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.08 ' + event
+      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.08 ' + event
       if arch in ['ZEN+']: return '064.70 ' + event
    if event == 'L2_HIT':
       if arch in ['Core', 'EnhancedCore']: return '29.7E ' + event # L2_LD.THIS_CORE.ALL_INCL.MES
       if arch in ['NHM', 'WSM']: return 'CB.02 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.02 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.02 ' + event
       if arch in ['ZEN+']: return '064.70 ' + event
    if event == 'L2_MISS':
       if arch in ['Core', 'EnhancedCore']: return 'CB.04.CTR=0 ' + event
-      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.10 ' + event
+      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.10 ' + event
       if arch in ['ZEN+']: return '064.08 ' + event
    if event == 'L3_HIT':
       if arch in ['NHM', 'WSM']: return 'CB.04 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.04 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.04 ' + event
    if event == 'L3_MISS':
       if arch in ['NHM', 'WSM']: return 'CB.10 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL']: return 'D1.20 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.20 ' + event
    return ''
 
 def getDefaultCacheConfig():
@@ -51,7 +51,7 @@ def getDefaultCacheConfig():
 
 def getDefaultCacheMSRConfig():
    if 'Intel' in getCPUVendor() and 'L3' in getCpuidCacheInfo() and getCpuidCacheInfo()['L3']['complex']:
-      if getArch() in ['CNL', 'ICL']:
+      if getArch() in ['CNL', 'ICL', 'TGL']:
          dist = 8
          ctrOffset = 2
       else:
@@ -150,8 +150,8 @@ def getNCBoxUnits():
    if not hasattr(getNCBoxUnits, 'nCBoxUnits'):
       try:
          subprocess.check_output(['modprobe', 'msr'])
-         cbo_config = subprocess.check_output(['rdmsr', '0x396'])
-         if getArch() in ['CNL', 'ICL']:
+         cbo_config = subprocess.check_output(['rdmsr', '0x396', '-f', '3:0'])
+         if getArch() in ['CNL', 'ICL', 'TGL']:
             getNCBoxUnits.nCBoxUnits = int(cbo_config)
          else:
             getNCBoxUnits.nCBoxUnits = int(cbo_config) - 1

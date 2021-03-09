@@ -205,7 +205,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
          elif arch in ['NHM', 'WSM']: evt = 'UOPS_RETIRED.ANY'
          elif arch in ['SNB']: evt = 'UOPS_RETIRED.ALL'
          elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
-         elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: evt = 'UOPS_EXECUTED.THREAD'
+         elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: evt = 'UOPS_EXECUTED.THREAD'
       localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
    localHtmlReports.append('</ul>\n</li>')
 
@@ -270,25 +270,25 @@ def getEventConfig(event):
       if arch in ['NHM', 'WSM', 'SNB' ]: return 'C2.01' # UOPS_RETIRED.ANY
       if arch in ['SNB']: return 'C2.01' # UOPS_RETIRED.ALL
       if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
-      if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'B1.01' # UOPS_EXECUTED.THREAD
+      if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'B1.01' # UOPS_EXECUTED.THREAD
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'C2.02'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'C2.02'
    if event == 'UOPS_MITE':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '79.04'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '79.04'
    if event == 'UOPS_MITE>0':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '79.04.CMSK=1'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '79.04.CMSK=1'
    if event == 'UOPS_MS':
       if arch in ['NHM', 'WSM']: return 'D1.02'
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '79.30'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '79.30'
    if event == 'UOPS_PORT0':
       if arch in ['CON', 'WOL']: return 'A1.01.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.01'
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'A1.01'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.01'
    if event == 'UOPS_PORT1':
       if arch in ['CON', 'WOL']: return 'A1.02.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.02'
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'A1.02'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.02'
    if event == 'UOPS_PORT2':
       if arch in ['CON', 'WOL']: return 'A1.04.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.04'
@@ -308,23 +308,23 @@ def getEventConfig(event):
       if arch in ['CON', 'WOL']: return 'A1.20.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.20'
       if arch in ['SNB', 'IVB']: return 'A1.80'
-      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'A1.20'
+      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.20'
    if event == 'UOPS_PORT6':
-      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return 'A1.40'
+      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.40'
    if event == 'UOPS_PORT7':
       if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return 'A1.80'
    if event == 'UOPS_PORT23':
-      if arch in ['ICL']: return 'A1.04'
+      if arch in ['ICL', 'TGL']: return 'A1.04'
    if event == 'UOPS_PORT49':
-      if arch in ['ICL']: return 'A1.10'
+      if arch in ['ICL', 'TGL']: return 'A1.10'
    if event == 'UOPS_PORT78':
-      if arch in ['ICL']: return 'A1.80'
+      if arch in ['ICL', 'TGL']: return 'A1.80'
    if event == 'DIV_CYCLES':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01.CMSK=1' # undocumented on HSW, but seems to work
-      if arch in ['ICL']: return '14.09.CMSK=1'
+      if arch in ['ICL', 'TGL']: return '14.09.CMSK=1'
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0D3.00'
    if event == 'ILD_STALL.LCP':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX']: return '87.01'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '87.01'
    if event == 'INST_DECODED.DEC0':
       if arch in ['NHM', 'WSM']: return '18.01'
    if event == 'FpuPipeAssignment.Total0':
@@ -335,6 +335,11 @@ def getEventConfig(event):
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.04'
    if event == 'FpuPipeAssignment.Total3':
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.08'
+   # the following two counters are undocumented so far, but seem to work
+   if event == 'FpuPipeAssignment.Total4':
+      if arch in ['ZEN3']: return '000.10'
+   if event == 'FpuPipeAssignment.Total5':
+      if arch in ['ZEN3']: return '000.20'
    return None
 
 
@@ -566,7 +571,11 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
          else:
             events = ['UOPS_PORT'+str(p) for p in blockedPorts]
       else:
-         events = ['FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3']
+         if arch in ['ZEN+', 'ZEN2']:
+            events = ['FpuPipeAssignment.Total'+str(p) for p in range(0,4)]
+         elif arch in ['ZEN3']:
+            events = ['FpuPipeAssignment.Total'+str(p) for p in range(0,6)]
+
       configurePFCs(events)
 
       blockInstrAsm = ';'.join(islice(cycle(x.asm for x in blockInstrsList), blockInstrRep))
@@ -720,6 +729,19 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
       depBreakingInstrs = getDependencyBreakingInstrsForSuppressedOperands(instrNode)
 
    # instructions with multiple configs
+   if iclass == 'CPUID':
+      configs = []
+      cpu = cpuid.CPUID()
+      for eax in (0x0, 0x80000000):
+         maxEax = cpu(eax)[0]
+         while eax <= maxEax + 1:
+            preInstrCode = 'mov EAX, {}; mov ECX, 0'.format(hex(eax))
+            preInstrNodes = [instrNodeDict['MOV (R32, I32)'], instrNodeDict['MOV (R32, I32)']]
+            note = 'With EAX={}, and ECX=0'.format(hex(eax))
+            configs.append(TPConfig(independentInstrs=independentInstrs, preInstrCode=preInstrCode, preInstrNodes=preInstrNodes, note=note))
+            eax += 1
+      return configs
+
    if iclass in ['JB', 'JBE', 'JLE', 'JNB', 'JNBE', 'JNLE', 'JNO', 'JNP', 'JNS', 'JNZ', 'JO', 'JP', 'JS', 'JZ']:
       config0 = TPConfig(independentInstrs=independentInstrs, init=['pushfq; and qword ptr [RSP], ~0x8D5; popfq'], note='With all flags set to 0')
       config1 = TPConfig(independentInstrs=independentInstrs, init=['pushfq; or qword ptr [RSP], 0x8D5; popfq'], note='With all flags set to 1')
@@ -769,6 +791,9 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
    if iform == 'LLDT_GPR16': config.init = list(set('SLDT ' + reg for i in independentInstrs for reg in i.readRegs))
    if iform == 'LMSW_GPR16': config.init = list(set('SMSW ' + reg for i in independentInstrs for reg in i.readRegs))
    if iform == 'LMSW_MEMw': config.init = list(['SMSW [R14+'+str(i*64)+']' for i in range(0,maxTPRep)])
+
+   if iform == 'MOVDIR64B_GPRa_MEM':
+      config.independentInstrs = [getInstrInstanceFromNode(instrNode, opRegDict={1: 'RSI'})]
 
    if iform == 'POPF':
       config.init = ['PUSHF; POP AX']
@@ -1077,7 +1102,8 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                   if minTP_noLoop < sys.maxint and minTP_loop < sys.maxint and minTP_noLoop > 100 and minTP_loop > 100: break
 
                   paddingTypes = ['']
-                  if (repType != 'unrollOnly') and (uopsMITE is not None) and (math.ceil(32.0/instrLen) * uopsMITE > 18) and (not 'RIP' in config.preInstrCode):
+                  if ((repType != 'unrollOnly') and (uopsMITE is not None) and (not uopsMS) and (math.ceil(32.0/instrLen) * uopsMITE > 18)
+                        and (not 'RIP' in config.preInstrCode)):
                      if (instrNode.attrib.get('vex', '') != '') or (instrNode.attrib.get('evex', '') != '') or (instrNode.attrib.get('high8', '') != ''):
                         paddingTypes.append('long NOPs')
                      else:
@@ -1096,7 +1122,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
 
                      if repType == 'unrollOnly':
                         unrollCount = int(round(500/ic+49, -2)) # should still fit in the icache
-                        if instrNode.attrib['iclass'] in ['CPUID', 'RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
+                        if instrNode.attrib['iclass'] in ['RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
                            unrollCount = 10
                         loopCount = 0
                      else:
@@ -1171,7 +1197,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                            divCycles = int(result['DIV_CYCLES']+.2)
 
                         if (not config.preInstrCode) and ((uopsMITE > 1) or (uopsMS > 0) or (result.get('INST_DECODED.DEC0', 0) > .05) or
-                                                             ((result.get('UOPS_MITE>0', 1) > .95) and (not isBranchInstr(instrNode)))): # ToDo: preInstrs
+                                                             ((result.get('UOPS_MITE>0', 0) > .95) and (not isBranchInstr(instrNode)))): # ToDo: preInstrs
                            complexDec = True
 
                         if complexDec and ('UOPS_MITE>0' in result):
@@ -1249,6 +1275,12 @@ def getBasicLatencies(instrNodeList):
          sys.exit()
       basicLatency['SET' + flag[0]] = 1
       basicLatency['TEST'] = 1
+
+      testSetHigh8Result = runExperiment(None, 'TEST AH, AH; SET' + flag[0] + ' AH')
+      testSetHigh8Cycles = int(round(testSetHigh8Result['Core cycles']))
+      if testSetHigh8Cycles == 2:
+         basicLatency['SET' + flag[0] + '_R8h'] = 1
+         basicLatency['TEST_R8h_R8h'] = 1
 
       testCmovResult = runExperiment(None, 'TEST RAX, RAX; CMOV' + flag[0] + ' RAX, RAX')
       basicLatency['CMOV' + flag[0]] = int(round(testCmovResult['Core cycles'])) - 1
@@ -1865,8 +1897,6 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
       if instrNode.attrib.get('mask', '') == '1' and (startNode == targetNode): return None
       return getDivLatConfigLists(instrNode, startNode, targetNode, cRep)
 
-   init = []
-
    startNodeIdx = int(startNode.attrib['idx'])
    targetNodeIdx = int(targetNode.attrib['idx'])
 
@@ -1889,6 +1919,14 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          chainInstrs += 'AND RBP, R14; OR RBP, R14; '
          chainLatency = basicLatency['MOVSX'] + basicLatency['MOVSX'] * cRep + basicLatency['AND'] + basicLatency['OR']
          configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
+      else:
+         return None
+   elif instrNode.attrib['iclass'] == 'MOVDIR64B':
+      if (startNodeIdx == 1) and (targetNodeIdx == 3):
+         instrI = getInstrInstanceFromNode(instrNode, opRegDict={1: 'RSI'})
+         chainInstrs = 'MOV RSI, [RSI]'
+         configList.isUpperBound = True
+         configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=1, init='MOV [R14], RSI'))
       else:
          return None
    elif instrNode.attrib['iclass'] == 'XGETBV':
@@ -2033,7 +2071,14 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                regSize = getRegSize(reg)
                if regSize == 8:
                   chainInstr = 'SET{} {};'.format(flag[0], reg)
-                  chainLatency = basicLatency['SET' + flag[0]]
+                  if reg in High8Regs:
+                     if 'SET' + flag[0] + '_R8h' in basicLatency:
+                        chainLatency = basicLatency['SET' + flag[0] + '_R8h']
+                     else:
+                        chainLatency = 1
+                        configList.isUpperBound = True
+                  else:
+                     chainLatency = basicLatency['SET' + flag[0]]
                else:
                   chainInstr = 'CMOV{} {}, {};'.format(flag[0], regToSize('R15', regSize), regToSize('R15', regSize))
                   chainInstr += 'MOVSX {}, {};'.format(regTo64(reg), regToSize('R15', min(32, regSize)))
@@ -2112,7 +2157,14 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          if reg in GPRegs:
             instrI = getInstrInstanceFromNode(instrNode, useDistinctRegs=useDistinctRegs, opRegDict={targetNodeIdx:reg})
             chainInstrs = 'TEST {0}, {0};'.format(reg)
-            chainLatency = basicLatency['TEST']
+            if reg in High8Regs:
+               if 'TEST_R8h_R8h' in basicLatency:
+                  chainLatency = basicLatency['TEST_R8h_R8h']
+               else:
+                  chainLatency = 1
+                  configList.isUpperBound = True
+            else:
+               chainLatency = basicLatency['TEST']
             configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
 
             if reg in High8Regs:
@@ -2315,7 +2367,8 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
 
          return latency
    else:
-      if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR', 'RDPMC', 'CPUID', 'POPF', 'POPFQ']:
+      if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'MOVDIR64B', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR',
+                                        'RDPMC', 'CPUID', 'POPF', 'POPFQ']:
          return None
       if 'XSAVE' in instrNode.attrib['iclass']:
          return None
@@ -2839,7 +2892,8 @@ def main():
       resetNanoBench()
 
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
-         configurePFCs(['UOPS','FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3', 'DIV_CYCLES'])
+         configurePFCs(['UOPS','FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3',
+                        'FpuPipeAssignment.Total4', 'FpuPipeAssignment.Total5', 'DIV_CYCLES'])
       else:
          configurePFCs(['UOPS', 'RETIRE_SLOTS', 'UOPS_MITE', 'UOPS_MS', 'UOPS_PORT0', 'UOPS_PORT1', 'UOPS_PORT2', 'UOPS_PORT3', 'UOPS_PORT4', 'UOPS_PORT5',
                         'UOPS_PORT6', 'UOPS_PORT7', 'UOPS_PORT23', 'UOPS_PORT49', 'UOPS_PORT78', 'DIV_CYCLES', 'ILD_STALL.LCP', 'INST_DECODED.DEC0',
@@ -2862,10 +2916,10 @@ def main():
 
    # move instructions that need a preInstr to the end, as their throughput can only be determined after the throughput of the instructions included in the
    # preInstr has been measured
-   instrRequiringPreInstr = []
-   if not useIACA:
-      instrRequiringPreInstr = [x for x in instrNodeList if isDivOrSqrtInstr(x) or getPreInstr(x)[0]]
-   instrNodeList.sort(key=lambda x: (x in instrRequiringPreInstr, x.attrib['string']))
+   #instrRequiringPreInstr = []
+   #if not useIACA:
+   #   instrRequiringPreInstr = [x for x in instrNodeList if isDivOrSqrtInstr(x) or getPreInstr(x)[0]]
+   instrNodeList.sort(key=lambda x: x.attrib['string'])
 
    condBrInstr = [i for i in instrNodeList if i.attrib['category'] == 'COND_BR' and i.attrib['isa-set'] == 'I86' and not 'LOOP' in i.attrib['iclass']]
 
@@ -3009,13 +3063,18 @@ def main():
                                         or '_AL_' in instr.attrib['iform'] or '_OrAX_' in instr.attrib['iform']
                                         or tpDict[instr].TP_noDepBreaking_noLoop - .2 > max([uops for _, uops in tpDict[instr].unblocked_ports.items()] or [0])
                                         or '512' in instr.attrib['isa-set']) # on SKX, some AVX-512 instructions can 'shut down' vector units on port 1
+
       if isAMDCPU():
          disallowedBlockingInstrs |= set(instr for instr in instrNodeList for op in instr.findall('./operand[@type="mem"]'))
          # combining SHA instr. with other instr. leads to wrong port counts
          disallowedBlockingInstrs |= set(instr for instr in instrNodeList if instr.attrib['extension'] == 'SHA')
          # combining FP with non-FP instr. can lead to wrong port counts
-         disallowedBlockingInstrs |= set(instr for instr in instrNodeList if instr.attrib['category'] in ['LOGICAL_FP'] or
-                                         any(not 'f' in o.attrib.get('xtype','f') for o in instr.findall('./operand')))
+         #disallowedBlockingInstrs |= set(instr for instr in instrNodeList if instr.attrib['category'] in ['LOGICAL_FP'] or
+         #                                any(not 'f' in o.attrib.get('xtype','f') for o in instr.findall('./operand')))
+         if arch in ['ZEN3']:
+            # we need one instruction with 1*FP45;
+            # their throughput is limited to 1 per cycle; thus, they are disallowed by the TP_noDepBreaking_noLoop check above
+            disallowedBlockingInstrs.remove(instrNodeDict['MOVD (R32, XMM)'])
 
       print 'disallowedBlockingInstrs'
       for instrNode in disallowedBlockingInstrs:
@@ -3060,19 +3119,20 @@ def main():
 
       #print str(blockingInstructionsDictNonAVX.items())
 
-      # mov to mem has always two uops: store address and store data; there is no instruction that uses just one of them
-      movMemInstrNode = instrNodeDict['MOV (M64, R64)']
+      if isIntelCPU():
+         # mov to mem has always two uops: store address and store data; there is no instruction that uses just one of them
+         movMemInstrNode = instrNodeDict['MOV (M64, R64)']
 
-      if arch in ['ICL']:
-         storeDataPort = 49
-      else:
-         storeDataPort = 4
-      blockingInstructionsDictNonAVX[frozenset({storeDataPort})] = movMemInstrNode
-      blockingInstructionsDictNonSSE[frozenset({storeDataPort})] = movMemInstrNode
+         if arch in ['ICL', 'TGL']:
+            storeDataPort = 49
+         else:
+            storeDataPort = 4
+         blockingInstructionsDictNonAVX[frozenset({storeDataPort})] = movMemInstrNode
+         blockingInstructionsDictNonSSE[frozenset({storeDataPort})] = movMemInstrNode
 
-      storeAddressPorts = frozenset({p for p, x in tpDict[movMemInstrNode].unblocked_ports.items() if x>=0.1 and not p == storeDataPort})
-      if storeAddressPorts not in blockingInstructionsDictNonAVX: blockingInstructionsDictNonAVX[storeAddressPorts] = movMemInstrNode
-      if storeAddressPorts not in blockingInstructionsDictNonSSE: blockingInstructionsDictNonSSE[storeAddressPorts] = movMemInstrNode
+         storeAddressPorts = frozenset({p for p, x in tpDict[movMemInstrNode].unblocked_ports.items() if x>=0.1 and not p == storeDataPort})
+         if storeAddressPorts not in blockingInstructionsDictNonAVX: blockingInstructionsDictNonAVX[storeAddressPorts] = movMemInstrNode
+         if storeAddressPorts not in blockingInstructionsDictNonSSE: blockingInstructionsDictNonSSE[storeAddressPorts] = movMemInstrNode
 
       print 'Non-AVX:'
       for k,v in blockingInstructionsDictNonAVX.items():
@@ -3085,12 +3145,8 @@ def main():
       sortedPortCombinationsNonSSE = sorted(blockingInstructionsDictNonSSE.keys(), key=lambda x:(len(x), sorted(x)))
       print 'sortedPortCombinations: ' + str(sortedPortCombinationsNonAVX)
 
-      for i, instrNode in enumerate(instrNodeList):
-         if not instrNode in tpDict:
-            # don't iterate over the keys of tpDict directly because of the ordering
-            continue
-
-         #if not 'LEA' in instrNode.attrib['string']: continue
+      for i, instrNode in enumerate(sorted(tpDict.keys(), key=lambda x: (tpDict[x].config.preInstrNodes, x.attrib['string']))):
+         #if not 'CVTPD2PI' in instrNode.attrib['string']: continue
 
          print 'Measuring port usage for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')'
 
@@ -3133,7 +3189,7 @@ def main():
                   # one uop instruction
                   uopsCombinationList = [(frozenset(used_ports), 1)]
                   htmlReports.append('<hr>Port usage: 1*' + ('p' if isIntelCPU() else 'FP') + ''.join(str(p) for p in used_ports))
-               elif rem_uops > 0 and not isAMDCPU():
+               elif (rem_uops > 0) and (arch not in ['ZEN+', 'ZEN2']):
                   for combination in sortedPortCombinations:
                      if not combination.intersection(used_ports): continue
 
@@ -3141,6 +3197,10 @@ def main():
                      for prev_combination, prev_uops in uopsCombinationList:
                         if prev_combination.issubset(combination):
                            prevUopsOnCombination += prev_uops
+
+                     uopsOnCombinationUnblocked = sum(x for p, x in tpResult.unblocked_ports.items() if p in combination)
+                     if uopsOnCombinationUnblocked - prevUopsOnCombination < .8:
+                        continue
 
                      if not useIACA:
                         if tpResult.config.preInstrNodes:
@@ -3164,7 +3224,7 @@ def main():
 
                      if uopsOnBlockedPorts <= 0: continue
 
-                     if combination == {storeDataPort} and instrNode.attrib.get('locked', '') == '1':
+                     if isIntelCPU() and (combination == {storeDataPort}) and (instrNode.attrib.get('locked', '') == '1'):
                         # for instructions with a lock prefix, the blocking instrs don't seem to be sufficient for actually blocking the store data port, which
                         # seems to lead to replays of the store data uops
                         uopsOnBlockedPorts = 1
@@ -3270,7 +3330,12 @@ def main():
             portUsageWithDivList = list(portUsageList)
             if divCycles:
                portUsageWithDivList.append((frozenset(['div']), divCycles))
-            resultNode.attrib['TP_ports'+suffix] = "%.2f" % getTP_LP(portUsageWithDivList)
+
+            try:
+               resultNode.attrib['TP_ports'+suffix] = "%.2f" % getTP_LP(portUsageWithDivList)
+            except ValueError as err:
+               print 'Could not solve LP for ' + instrNode.attrib['string'] + ':'
+               print err
 
    with open(args.output, "w") as f:
       reparsed = XMLRoot

@@ -218,6 +218,8 @@ def micro_arch(cpu):
       return 'CNL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x7D), (0x06, 0x7E)]:
       return 'ICL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x8C), (0x06, 0x8D)]:
+      return 'TGL'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x01), (0x17, 0x11)]:
       return 'ZEN'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x08), (0x17, 0x18)]:

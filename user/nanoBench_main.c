@@ -211,11 +211,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    runtime_r14 = malloc(RUNTIME_R_SIZE);
-    runtime_rbp = malloc(RUNTIME_R_SIZE);
-    runtime_rdi = malloc(RUNTIME_R_SIZE);
-    runtime_rsi = malloc(RUNTIME_R_SIZE);
-    runtime_rsp = malloc(RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_r14, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rbp, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rdi, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rsi, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
+    posix_memalign((void**)&runtime_rsp, sysconf(_SC_PAGESIZE), RUNTIME_R_SIZE);
     if (!runtime_r14 || !runtime_rbp || !runtime_rdi || !runtime_rsi || !runtime_rsp) {
         fprintf(stderr, "Error: Could not allocate memory for runtime_r*\n");
         return 1;
