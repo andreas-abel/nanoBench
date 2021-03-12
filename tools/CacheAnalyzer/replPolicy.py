@@ -58,7 +58,7 @@ def getRandomSeq(n):
 def main():
    parser = argparse.ArgumentParser(description='Replacement Policies')
    parser.add_argument("-level", help="Cache level (Default: 1)", type=int, default=1)
-   parser.add_argument("-sets", help="Cache sets (if not specified, all cache sets are used)")
+   parser.add_argument("-sets", help="Cache set(s) (default: 0)", default='0')
    parser.add_argument("-cBox", help="cBox (default: 0)", type=int)
    parser.add_argument("-slice", help="Slice (within the cBox) (default: 0)", type=int, default=0)
    parser.add_argument("-nMeasurements", help="Number of measurements", type=int, default=3)
