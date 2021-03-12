@@ -466,9 +466,13 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
             readRegs.add(addrReg)
          if 'I' in agen:
             indexReg = getIndexReg(instrNode, operandNode)
-            address.append('2*' + indexReg)
+            if 'IS' in agen:
+               address.append('2*' + indexReg)
+            else:
+               address.append('1*' + indexReg)
             readRegs.add(indexReg)
-         if 'D' in agen: address.append('8')
+         if 'D8' in agen: address.append('8')
+         if 'D32' in agen: address.append('128')
 
          asm += ' [' + '+'.join(address) + ']'
       elif operandNode.attrib['type'] == "imm":
@@ -822,11 +826,11 @@ def getPreInstr(instrNode):
 
    if iform in ['CALL_NEAR_GPRv', 'JMP_GPRv']:
       preInstrCode = 'lea RAX, [RIP+2]'
-      preInstrNodes = [instrNodeDict['LEA_RD (R64)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)']]
 
    if iform in ['CALL_NEAR_MEMv', 'JMP_MEMv']:
       preInstrCode = 'lea RAX, [RIP+6]; mov [R14], RAX'
-      preInstrNodes = [instrNodeDict['LEA_RD (R64)'], instrNodeDict['MOV (M64, RAX)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, RAX)']]
 
    if iform == 'LEAVE':
       preInstrCode = 'lea RBP, [R14]'
@@ -842,11 +846,11 @@ def getPreInstr(instrNode):
 
    if iform == 'RET_NEAR':
       preInstrCode = 'lea RAX, [RIP+5]; mov [RSP], RAX'
-      preInstrNodes = [instrNodeDict['LEA_RD (R64)'], instrNodeDict['MOV (M64, RAX)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, RAX)']]
 
    if iform == 'RET_NEAR_IMMw':
       preInstrCode = 'lea RAX, [RIP+7]; mov [RSP], RAX'
-      preInstrNodes = [instrNodeDict['LEA_RD (R64)'], instrNodeDict['MOV (M64, RAX)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, RAX)']]
 
    return (preInstrCode, preInstrNodes)
 
