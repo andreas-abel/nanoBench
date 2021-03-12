@@ -1,5 +1,5 @@
 CC=gcc 
-CFLAGS=-Wall
+CFLAGS=-Wall -fPIC
 VPATH=../common/
 
 all: nanoBench
