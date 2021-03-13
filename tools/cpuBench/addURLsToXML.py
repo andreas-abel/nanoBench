@@ -1,8 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import xml.etree.ElementTree as ET
 import argparse
 import re
-import urllib
+import urllib.request
 from xml.dom import minidom
 from utils import *
 
@@ -12,7 +13,7 @@ def main():
    parser.add_argument("output", help="Output XML file")
    args = parser.parse_args()
 
-   html = urllib.urlopen('https://www.felixcloutier.com/x86/').read().decode('utf-8').replace(u'\u2013', '-').replace(u'\u2217', '*')
+   html = urllib.request.urlopen('https://www.felixcloutier.com/x86/').read().decode('utf-8').replace(u'\u2013', '-').replace(u'\u2217', '*')
    lines = re.findall('href="\./(.*?)">(.*?)</a>.*?</td><td>(.*?)</td>', html) # Example: ('ADC.html', 'ADC', 'Add with Carry'),
    lineDict = {(line[0],line[1]):line for line in lines}
 
@@ -128,7 +129,7 @@ def main():
                matchingLines.append(line)
 
       if len(matchingLines) > 1:
-         print 'Duplicate link found for ' + iclass
+         print('Duplicate link found for ' + iclass)
          exit(1)
 
       instrNode.attrib['url'] = 'uops.info/html-instr/' + canonicalizeInstrString(instrNode.attrib['string']) + '.html'

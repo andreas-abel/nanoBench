@@ -1,20 +1,20 @@
-#!/usr/bin/python
-from itertools import count
-from collections import namedtuple, OrderedDict
+#!/usr/bin/env python3
 
 import argparse
 import math
 import os
+import plotly.graph_objects as go
 import re
 import subprocess
 import sys
 
+from itertools import count
+from collections import namedtuple, OrderedDict
 from plotly.offline import plot
-import plotly.graph_objects as go
 
+import cacheSim
 from cacheLib import *
 from cacheGraph import *
-import cacheSim
 
 import logging
 log = logging.getLogger(__name__)
@@ -36,8 +36,8 @@ def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=Non
                                          cBox=cBox, cSlice=cSlice)
 
       accSeqStr = 'Access sequence: <wbinvd> ' + seq
-      print accSeqStr
-      print 'Ages: {' + ', '.join(b + ': ' + str(initAges[b]) for b in initBlocks) + '}'
+      print(accSeqStr)
+      print('Ages: {' + ', '.join(b + ': ' + str(initAges[b]) for b in initBlocks) + '}')
 
       event = (hitEvent if hitEvent in next(iter(nbDict.items()))[1][0] else missEvent)
       traces = [(b, [nb[event] for nb in nbDict[b]]) for b in initBlocks]
@@ -52,8 +52,8 @@ def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=Non
                                   cBox=cBox, cSlice=cSlice)
 
    accSeqStr = 'Access sequence: <wbinvd> ' + baseSeq
-   print accSeqStr
-   print 'Ages: {' + ', '.join(b + ': ' + str(ages[b]) for b in blocks) + '}'
+   print(accSeqStr)
+   print('Ages: {' + ', '.join(b + ': ' + str(ages[b]) for b in blocks) + '}')
 
    event = (hitEvent if hitEvent in next(iter(nbDict.items()))[1][0] else missEvent)
    traces = [(b, [nb[event] for nb in nbDict[b]]) for b in blocks]
@@ -77,7 +77,7 @@ def getPermutations(level, html, cacheSets=None, getInitialAges=True, maxAge=Non
             break
          perm[assoc-permAge] = bi
 
-      print u'\u03A0_' + str(permI) + ' = ' + str(tuple(perm))
+      print(u'\u03A0_' + str(permI) + ' = ' + str(tuple(perm)))
 
 
 def main():

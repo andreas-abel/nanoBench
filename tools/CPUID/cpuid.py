@@ -1,7 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2019 Andreas Abel
+# Copyright (C) 2021 Andreas Abel
 #
 # This file was modified from https://github.com/flababah/cpuid.py
 #
@@ -408,7 +408,7 @@ def get_cache_info(cpu):
          parameters.append('Physical Line partitions (P): ' + str(P))
          parameters.append('Ways of associativity (W): ' + str(W))
          parameters.append('Number of Sets (S): ' + str(S))
-         parameters.append('Cache Size: ' + str(W*P*L*S/1024) + ' kB')
+         parameters.append('Cache Size: ' + str(W*P*L*S//1024) + ' kB')
 
          if get_bit(d, 0): parameters.append('WBINVD/INVD is not guaranteed to act upon lower level caches of non-originating threads sharing this cache')
          else: parameters.append('WBINVD/INVD from threads sharing this cache acts upon lower level caches for threads sharing this cache')
@@ -447,7 +447,7 @@ def get_cache_info(cpu):
 
       cacheInfo['L1D'] = {
          'lineSize': L1DcLineSize,
-         'nSets': L1DcSize*1024/L1DcAssoc/L1DcLineSize,
+         'nSets': L1DcSize*1024//L1DcAssoc//L1DcLineSize,
          'assoc': L1DcAssoc
       }
 
@@ -463,7 +463,7 @@ def get_cache_info(cpu):
 
       cacheInfo['L1I'] = {
          'lineSize': L1IcLineSize,
-         'nSets': L1IcSize*1024/L1IcAssoc/L1IcLineSize,
+         'nSets': L1IcSize*1024//L1IcAssoc//L1IcLineSize,
          'assoc': L1IcAssoc
       }
 
@@ -484,7 +484,7 @@ def get_cache_info(cpu):
       elif c_15_12 == 0xC: L2Assoc = 64
       elif c_15_12 == 0xD: L2Assoc = 96
       elif c_15_12 == 0xE: L2Assoc = 128
-      elif c_15_12 == 0x2: L2Assoc = L2Size*1024/L2LineSize
+      elif c_15_12 == 0x2: L2Assoc = L2Size*1024//L2LineSize
 
       log.info('  L2LineSize: ' + str(L2LineSize) + ' B')
       log.info('  L2LinesPerTag: ' + str(L2LinesPerTag))
@@ -493,7 +493,7 @@ def get_cache_info(cpu):
 
       cacheInfo['L2'] = {
          'lineSize': L2LineSize,
-         'nSets': L2Size*1024/L2Assoc/L2LineSize,
+         'nSets': L2Size*1024//L2Assoc//L2LineSize,
          'assoc': L2Assoc
       }
 
@@ -519,11 +519,11 @@ def get_cache_info(cpu):
       log.info('  L3LineSize: ' + str(L3LineSize) + ' B')
       log.info('  L3LinesPerTag: ' + str(L3LinesPerTag))
       log.info('  L3Assoc: ' + str(L3Assoc))
-      log.info('  L3Size: ' + str(L3Size/1024) + ' MB')
+      log.info('  L3Size: ' + str(L3Size//1024) + ' MB')
 
       cacheInfo['L3'] = {
          'lineSize': L3LineSize,
-         'nSets': L3Size*1024/L3Assoc/L3LineSize,
+         'nSets': L3Size*1024//L3Assoc//L3LineSize,
          'assoc': L3Assoc
       }
 
@@ -551,13 +551,13 @@ if __name__ == "__main__":
                 yield (eax, regs)
                 eax += 1
 
-    print " ".join(x.ljust(8) for x in ("CPUID", "A", "B", "C", "D")).strip()
+    print(' '.join(x.ljust(8) for x in ('CPUID', 'A', 'B', 'C', 'D')).strip())
     for eax, regs in valid_inputs():
-        print "%08x" % eax, " ".join("%08x" % reg for reg in regs)
+        print('%08x' % eax, ' '.join('%08x' % reg for reg in regs))
 
-    print ''
-    print get_basic_info(cpuid)
+    print('')
+    print(get_basic_info(cpuid))
 
-    print '\nCache information:'
+    print('\nCache information:')
     get_cache_info(cpuid)
 

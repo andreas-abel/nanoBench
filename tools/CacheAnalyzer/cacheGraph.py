@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 from itertools import count
 from collections import namedtuple, OrderedDict
 
@@ -73,7 +74,7 @@ def main():
       _, nbDict = getAgesOfBlocks(blocks, args.level, args.seq, initSeq=args.seq_init, cacheSets=args.sets, cBox=args.cBox, cSlice=args.slice,
                                   clearHL=(not args.noClearHL), wbinvd=(not args.noWbinvd), returnNbResults=True, maxAge=args.maxAge,
                                   nMeasurements=args.nMeasurements, agg=args.agg)
-      for event in sorted(e for e in nbDict.values()[0][0].keys() if 'HIT' in e or 'MISS' in e):
+      for event in sorted(e for e in list(nbDict.values())[0][0].keys() if 'HIT' in e or 'MISS' in e):
          traces = [(b, [nb[event] for nb in nbDict[b]]) for b in blocks]
          title = 'Access Sequence: ' + (args.seq_init + ' ' + args.seq).replace('?','').strip() + ' <n fresh blocks> <block>?'
          html.append(getPlotlyGraphDiv(title, '# of fresh blocks', event, traces))
@@ -82,7 +83,7 @@ def main():
 
    with open(args.output ,'w') as f:
       f.write('\n'.join(html))
-      print 'Graph written to ' + args.output
+      print('Graph written to ' + args.output)
 
 
 if __name__ == "__main__":

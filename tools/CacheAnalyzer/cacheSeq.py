@@ -1,12 +1,12 @@
-#!/usr/bin/python
-from itertools import count, cycle, islice
-from collections import namedtuple, OrderedDict
+#!/usr/bin/env python3
 
 import argparse
 import sys
+from itertools import count, cycle, islice
+from collections import namedtuple, OrderedDict
 
-from cacheLib import *
 import cacheSim
+from cacheLib import *
 
 import logging
 log = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def main():
       policyClass = cacheSim.AllPolicies[args.sim]
       seq = args.seq_init + (' ' + args.seq) * args.loop
       hits = cacheSim.getHits(seq, policyClass, args.simAssoc, args.sets) / args.loop
-      print 'Hits: ' + str(hits)
+      print('Hits: ' + str(hits))
    else:
       nb = runCacheExperiment(args.level, args.seq, initSeq=args.seq_init, cacheSets=args.sets, cBox=args.cBox, cSlice=args.slice, clearHL=(not args.noClearHL),
                               doNotUseOtherCBoxes=args.noUseOtherCBoxes, loop=args.loop, wbinvd=(not args.noWbinvd), nMeasurements=args.nMeasurements, agg=args.agg)

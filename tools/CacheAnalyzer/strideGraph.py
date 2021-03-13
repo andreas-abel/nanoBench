@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import argparse
 import math
-
-from plotly.offline import plot
 import plotly.graph_objects as go
+from plotly.offline import plot
 
 from cacheLib import *
 
@@ -28,9 +28,9 @@ def main():
    while pt <= args.endSize*1024:
       tickvals.append(pt)
       for x in ([int(math.pow(2, math.log(pt, 2) + i/16.0)) for i in range(0,16)] if pt < args.endSize*1024 else [pt]):
-         print x/1024
+         print(x//1024)
          xValues.append(str(x))
-         addresses = range(0, x, args.stride)
+         addresses = list(range(0, x, args.stride))
          nAddresses.append(len(addresses))
          ec = getCodeForAddressLists([AddressList(addresses, False, False, False)], wbinvd=True)
          nbDicts.append(runNanoBench(code=ec.code, init=ec.init, oneTimeInit=ec.oneTimeInit))
@@ -57,7 +57,7 @@ def main():
 
    with open(args.output ,'w') as f:
       f.write('\n'.join(html))
-      print 'Graph written to ' + args.output
+      print('Graph written to ' + args.output)
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import argparse
 import sys
 
@@ -32,10 +33,10 @@ def main():
       seq = re.sub('[?!]', '', ' '.join([args.seq_init, args.seq])).strip() + '?'
       hits = cacheSim.getHits(seq, policyClass, args.simAssoc, args.sets)
       if hits > 0:
-         print 'HIT'
+         print('HIT')
          exit(1)
       else:
-         print 'MISS'
+         print('MISS')
          exit(0)
    else:
       setCount = len(parseCacheSetsStr(args.level, True, args.sets))
@@ -43,10 +44,10 @@ def main():
       nb = runCacheExperiment(args.level, seq, initSeq=args.seq_init, cacheSets=args.sets, cBox=args.cBox, cSlice=args.slice, clearHL=(not args.noClearHL),
                               loop=args.loop, wbinvd=(not args.noWbinvd))
       if nb['L' + str(args.level) + '_HIT']/setCount > .5:
-         print 'HIT'
+         print('HIT')
          exit(1)
       else:
-         print 'MISS'
+         print('MISS')
          exit(0)
 
 

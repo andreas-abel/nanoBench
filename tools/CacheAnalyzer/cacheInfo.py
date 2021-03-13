@@ -1,6 +1,6 @@
-#!/usr/bin/python
-import argparse
+#!/usr/bin/env python3
 
+import argparse
 from cacheLib import *
 
 import logging
@@ -16,11 +16,11 @@ def main():
 
    cpuidInfo = getCpuidCacheInfo()
 
-   print ''
-   print getCacheInfo(1)
-   print getCacheInfo(2)
+   print('')
+   print(getCacheInfo(1))
+   print(getCacheInfo(2))
    if 'L3' in cpuidInfo:
-      print getCacheInfo(3)
+      print(getCacheInfo(3))
 
 
 if __name__ == "__main__":

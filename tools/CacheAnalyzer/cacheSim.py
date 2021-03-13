@@ -1,9 +1,7 @@
-#!/usr/bin/python
 import random
 
 from itertools import count
 from numpy import median
-
 from cacheLib import *
 
 import logging
@@ -85,7 +83,7 @@ class PLRUSim(ReplPolicySim):
    def updateIndexBits(self, accIndex):
       lastIdx = accIndex
       for level in reversed(range(0, len(self.bits))):
-         curIdx = lastIdx/2
+         curIdx = lastIdx//2
          self.bits[level][curIdx] = 1 - (lastIdx % 2)
          lastIdx = curIdx
 
@@ -111,7 +109,7 @@ AllRandPLRUVariants = {
 
 class LRU_PLRU4Sim(ReplPolicySim):
    def __init__(self, assoc):
-      self.PLRUs = [PLRUSim(4, linearInit=True) for _ in range(0, assoc/4)]
+      self.PLRUs = [PLRUSim(4, linearInit=True) for _ in range(0, assoc//4)]
       self.PLRUOrdered = list(self.PLRUs) # from MRU to LRU
 
    def acc(self, block):
@@ -299,9 +297,9 @@ CommonPolicies = {
    'SRRIP': AllDetQLRUVariants['QLRU_H00_M2_R0_U0_UMO'],
 }
 
-AllDetPolicies = dict(CommonPolicies.items() + AllDetQLRUVariants.items())
-AllRandPolicies = dict(AllRandQLRUVariants.items() + AllRandPLRUVariants.items())
-AllPolicies = dict(AllDetPolicies.items() + AllRandPolicies.items())
+AllDetPolicies = dict(list(CommonPolicies.items()) + list(AllDetQLRUVariants.items()))
+AllRandPolicies = dict(list(AllRandQLRUVariants.items()) + list(AllRandPLRUVariants.items()))
+AllPolicies = dict(list(AllDetPolicies.items()) + list(AllRandPolicies.items()))
 
 
 def parseCacheSetsStrSim(cacheSetsStr):
@@ -312,7 +310,7 @@ def parseCacheSetsStrSim(cacheSetsStr):
    for s in cacheSetsStr.split(','):
       if '-' in s:
          first, last = s.split('-')[:2]
-         cacheSetList += range(int(first), int(last)+1)
+         cacheSetList += list(range(int(first), int(last)+1))
       else:
          cacheSetList.append(int(s))
 
@@ -381,8 +379,8 @@ def getPermutations(policySimClass, assoc):
    initAges = getAges(initBlocks, seq, policySimClass, assoc)
 
    accSeqStr = 'Access sequence: <wbinvd> ' + seq
-   print accSeqStr
-   print 'Ages: {' + ', '.join(b + ': ' + str(initAges[b]) for b in initBlocks) + '}'
+   print(accSeqStr)
+   print('Ages: {' + ', '.join(b + ': ' + str(initAges[b]) for b in initBlocks) + '}')
 
    blocks = ['B' + str(i) for i in range(0, assoc)]
    baseSeq = ' '.join(initBlocks + blocks)
@@ -390,8 +388,8 @@ def getPermutations(policySimClass, assoc):
    ages = getAges(blocks, baseSeq, policySimClass, assoc)
 
    accSeqStr = 'Access sequence: <wbinvd> ' + baseSeq
-   print accSeqStr
-   print 'Ages: {' + ', '.join(b + ': ' + str(ages[b]) for b in blocks) + '}'
+   print(accSeqStr)
+   print('Ages: {' + ', '.join(b + ': ' + str(ages[b]) for b in blocks) + '}')
 
    blocksSortedByAge = [a[0] for a in sorted(ages.items(), key=lambda x: -x[1])] # most recent block first
 
@@ -408,5 +406,5 @@ def getPermutations(policySimClass, assoc):
             break
          perm[assoc-permAge] = bi
 
-      print u'\u03A0_' + str(permI) + ' = ' + str(tuple(perm))
+      print(u'\u03A0_' + str(permI) + ' = ' + str(tuple(perm)))
 

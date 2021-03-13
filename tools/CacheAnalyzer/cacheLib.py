@@ -1,4 +1,3 @@
-#!/usr/bin/python
 from itertools import count
 from collections import namedtuple
 
@@ -79,11 +78,11 @@ class CacheInfo:
 
    def __str__(self):
       return '\n'.join(['L' + str(self.level) + ':',
-                        '  Size: ' + str(self.size/1024) + ' kB',
+                        '  Size: ' + str(self.size//1024) + ' kB',
                         '  Associativity: ' + str(self.assoc),
                         '  Line Size: ' + str(self.lineSize) + ' B',
                         '  Number of sets' + (' (per slice)' if self.nSlices is not None else '') + ': ' + str(self.nSets),
-                        '  Way size' + (' (per slice)' if self.nSlices is not None else '') + ': ' + str(self.waySize/1024) + ' kB',
+                        '  Way size' + (' (per slice)' if self.nSlices is not None else '') + ': ' + str(self.waySize//1024) + ' kB',
                        ('  Number of CBoxes: ' + str(self.nCboxes) if self.nCboxes is not None else ''),
                        ('  Number of slices: ' + str(self.nSlices) if self.nSlices is not None else '')])
 
@@ -134,13 +133,13 @@ def getCacheInfo(level):
             assoc = cpuidInfo['assoc']
             nSets = cpuidInfo['nSets']
 
-            stride = 2**((lineSize*nSets/getNCBoxUnits())-1).bit_length() # smallest power of two larger than lineSize*nSets/nCBoxUnits
+            stride = 2**((lineSize*nSets//getNCBoxUnits())-1).bit_length() # smallest power of two larger than lineSize*nSets/nCBoxUnits
             ms = findMaximalNonEvictingL3SetInCBox(0, stride, assoc, 0)
             log.debug('Maximal non-evicting L3 set: ' + str(len(ms)) + ' ' + str(ms))
             nCboxes = getNCBoxUnits()
             nSlices = nCboxes * int(math.ceil(float(len(ms))/assoc))
 
-            getCacheInfo.L3CacheInfo = CacheInfo(3, assoc, lineSize, nSets/nSlices, nSlices, nCboxes)
+            getCacheInfo.L3CacheInfo = CacheInfo(3, assoc, lineSize, nSets//nSlices, nSlices, nCboxes)
       return getCacheInfo.L3CacheInfo
    else:
       raise ValueError('invalid level')
@@ -376,9 +375,9 @@ def getAddresses(level, wayID, cacheSetList, cBox=1, cSlice=0):
                   L3SetToWayIDMap[cBox][cSlice][L3Set][i] = addr
          if not wayID in L3SetToWayIDMap[cBox][cSlice][L3Set]:
             if getCacheInfo(3).nSlices == getNCBoxUnits():
-               L3SetToWayIDMap[cBox][cSlice][L3Set][wayID] = next(iter(getNewAddressesInCBox(1, cBox, L3Set, L3SetToWayIDMap[cBox][cSlice][L3Set].values())))
+               L3SetToWayIDMap[cBox][cSlice][L3Set][wayID] = next(iter(getNewAddressesInCBox(1, cBox, L3Set, list(L3SetToWayIDMap[cBox][cSlice][L3Set].values()))))
             else:
-               L3SetToWayIDMap[cBox][cSlice][L3Set][wayID] = next(iter(findCongruentL3Addresses(1, L3Set, cBox, L3SetToWayIDMap[cBox][cSlice][L3Set].values())))
+               L3SetToWayIDMap[cBox][cSlice][L3Set][wayID] = next(iter(findCongruentL3Addresses(1, L3Set, cBox, list(L3SetToWayIDMap[cBox][cSlice][L3Set].values()))))
          addresses.append(L3SetToWayIDMap[cBox][cSlice][L3Set][wayID])
 
       return addresses
@@ -404,16 +403,16 @@ def parseCacheSetsStr(level, clearHL, cacheSetsStr, doNotUseOtherCBoxes=False):
       for s in cacheSetsStr.split(','):
          if '-' in s:
             first, last = s.split('-')[:2]
-            cacheSetList += range(int(first), int(last)+1)
+            cacheSetList += list(range(int(first), int(last)+1))
          else:
             cacheSetList.append(int(s))
    else:
       nSets = getCacheInfo(level).nSets
       if level > 1 and clearHL and not (level == 3 and getCacheInfo(3).nSlices is not None and not doNotUseOtherCBoxes):
          nHLSets = getCacheInfo(level-1).nSets
-         cacheSetList = range(nHLSets, nSets)
+         cacheSetList = list(range(nHLSets, nSets))
       else:
-         cacheSetList = range(0, nSets)
+         cacheSetList = list(range(0, nSets))
    return cacheSetList
 
 
@@ -509,7 +508,7 @@ def runCacheExperiment(level, seq, initSeq='', cacheSets=None, cBox=1, cSlice=0,
 
 def printNB(nb_result):
    for r in nb_result.items():
-      print r[0] + ': ' + str(r[1])
+      print(r[0] + ': ' + str(r[1]))
 
 
 def hasL3Conflicts(addresses, clearHLAddrList, codeOffset):

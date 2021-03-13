@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import argparse
 import random
 import sys
@@ -23,7 +24,7 @@ def findSmallCounterexample(policy, initSeq, level, sets, cBox, cSlice, assoc, s
       seq = initSeq + ' '.join(seqPrefix)
       actual = getActualHits(seq, level, sets, cBox, cSlice, nMeasurements)
       sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, sets)
-      print 'seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim)
+      print('seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim))
       if sim != actual:
          break
 
@@ -32,7 +33,7 @@ def findSmallCounterexample(policy, initSeq, level, sets, cBox, cSlice, assoc, s
       seq = initSeq + ' '.join(tmpPrefix)
       actual = getActualHits(seq, level, sets, cBox, cSlice, nMeasurements)
       sim = cacheSim.getHits(seq, cacheSim.AllPolicies[policy], assoc, sets)
-      print 'seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim)
+      print('seq:' + seq + ', actual: ' + str(actual) + ', sim: ' + str(sim))
       if sim != actual:
          seqPrefix = tmpPrefix
 
@@ -115,7 +116,7 @@ def main():
 
    for seq in seqList:
       fullSeq = ((args.initSeq + ' ') if args.initSeq else '') + seq
-      print fullSeq
+      print(fullSeq)
 
       html += ['<tr><td>' + fullSeq + '</td>']
       actualHits = set([getActualHits(fullSeq, args.level, args.sets, cBox, args.slice, args.nMeasurements) for _ in range(0, args.rep)])
@@ -151,14 +152,14 @@ def main():
       html += ['</tr>']
 
       if not args.randPolicies and not args.best:
-         print 'Possible policies: ' + ', '.join(possiblePolicies)
+         print('Possible policies: ' + ', '.join(possiblePolicies))
          if not possiblePolicies: break
 
    if not args.randPolicies and args.findCtrEx:
-      print ''
-      print 'Counter example(s): '
+      print('')
+      print('Counter example(s):')
       for p, ctrEx in counterExamples.items():
-         print '  ' + p + ': ' + ctrEx
+         print('  ' + p + ': ' + ctrEx)
 
    html += ['</table>', '</body>', '</html>']
 
@@ -166,10 +167,10 @@ def main():
       f.write('\n'.join(html))
 
    if not args.randPolicies and not args.best:
-      print 'Possible policies: ' + ', '.join(possiblePolicies)
+      print('Possible policies: ' + ', '.join(possiblePolicies))
    else:
       for p, d in reversed(sorted(dists.items(), key=lambda d: d[1])):
-         print p + ': ' + str(d)
+         print(p + ': ' + str(d))
 
 
 if __name__ == "__main__":

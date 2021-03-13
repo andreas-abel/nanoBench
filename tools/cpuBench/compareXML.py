@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import argparse
@@ -29,7 +30,7 @@ def main():
    for instrStr in sorted(instrNodeDict1):
       instrNode1 = instrNodeDict1[instrStr]
       if not instrStr in instrNodeDict2:
-         print 'No matching entry found for ' + instrStr
+         print('No matching entry found for ' + instrStr)
          continue
       instrNode2 = instrNodeDict2[instrStr]
       for mNode1 in instrNode1.findall('./architecture[@name="' + args.arch1 + '"]/measurement'):
@@ -40,44 +41,43 @@ def main():
 
                if tp1 != tp2:
                   tpDiff += 1
-                  print instrStr + ' - TP1: ' + str(tp1) + ' - TP2: ' + str(tp2)
+                  print(instrStr + ' - TP1: ' + str(tp1) + ' - TP2: ' + str(tp2))
 
             if args.lat:
                for latNode1, latNode2 in zip(mNode1.findall('./latency'), mNode2.findall('./latency')):
-                  latStr1 = ET.tostring(latNode1, encoding='utf-8').strip()
-                  latStr2 = ET.tostring(latNode2, encoding='utf-8').strip()
+                  latStr1 = ET.tostring(latNode1, encoding='utf-8').decode().strip()
+                  latStr2 = ET.tostring(latNode2, encoding='utf-8').decode().strip()
                   if latStr1 != latStr2:
                      latDiff += 1
-                     print instrStr
-                     print '  ' + latStr1
-                     print '  ' + latStr2
+                     print('  ' + latStr1)
+                     print('  ' + latStr2)
 
             if args.ports:
                p1 = mNode1.attrib.get('ports', '')
                p2 = mNode2.attrib.get('ports', '')
                if p1 != p2:
                   portsDiff += 1
-                  print instrStr + ' - P1: ' + p1 + ' - P2: ' + p2
+                  print(instrStr + ' - P1: ' + p1 + ' - P2: ' + p2)
 
             if not args.TP and not args.lat and not args.ports:
-               xmlStr1 = ET.tostring(mNode1, encoding='utf-8').strip()
-               xmlStr2 = ET.tostring(mNode2, encoding='utf-8').strip()
+               xmlStr1 = ET.tostring(mNode1, encoding='utf-8').decode().strip()
+               xmlStr2 = ET.tostring(mNode2, encoding='utf-8').decode().strip()
 
                if xmlStr1 != xmlStr2:
-                  print '-------------------------------'
-                  print instrStr
-                  print xmlStr1
-                  print xmlStr2
-                  print '-------------------------------'
+                  print('-------------------------------')
+                  print(instrStr)
+                  print(xmlStr1)
+                  print(xmlStr2)
+                  print('-------------------------------')
 
    if args.TP:
-      print 'TPDiff: ' + str(tpDiff)
+      print('TPDiff: ' + str(tpDiff))
 
    if args.lat:
-      print 'LatDiff: ' + str(latDiff)
+      print('LatDiff: ' + str(latDiff))
 
    if args.ports:
-      print 'portsDiff: ' + str(portsDiff)
+      print('portsDiff: ' + str(portsDiff))
 
 if __name__ == "__main__":
     main()

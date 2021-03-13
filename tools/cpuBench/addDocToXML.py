@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 from collections import namedtuple
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -43,9 +44,9 @@ def main():
                   matchingDEs.remove(de)
 
          if len(matchingDEs) == 0:
-            print 'No matching iform: ' + iform
+            print('No matching iform: ' + iform)
          elif len(matchingDEs) > 1:
-            print 'Multiple matching iforms: ' + iform
+            print('Multiple matching iforms: ' + iform)
          else:
             de = next(iter(matchingDEs))
 

@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import argparse
@@ -20,7 +21,7 @@ def main():
 
    for instrNode1 in root1.iter('instruction'):
       if instrNode1.attrib['string'] not in instrNode2Dict:
-         print 'no matching entry found for ' + instrNode1.attrib['string']
+         print('no matching entry found for ' + instrNode1.attrib['string'])
          continue
       for instrNode2 in instrNode2Dict[instrNode1.attrib['string']]:
          for archNode2 in instrNode2.iter('architecture'):

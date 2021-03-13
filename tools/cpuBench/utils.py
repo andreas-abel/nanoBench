@@ -137,7 +137,7 @@ def getLatencyTableEntry(measurementNode):
    if measurementNode is None or measurementNode.find('./latency') is None:
       return None
 
-   minLat = sys.maxint
+   minLat = sys.maxsize
    maxLat = 0
    minLatUB = False
    maxLatUB = False

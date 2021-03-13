@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import argparse
 import random
 
@@ -31,7 +32,7 @@ def main():
    nCBoxes = max(1, getNCBoxUnits())
    nSlicesPerCBox = 1
    if getCacheInfo(3).nSlices:
-      nSlicesPerCBox = getCacheInfo(3).nSlices / getCacheInfo(3).nCboxes
+      nSlicesPerCBox = getCacheInfo(3).nSlices // getCacheInfo(3).nCboxes
 
    seqLength = (args.length if args.length is not None else assoc+1)
    seq = ' '.join('B' + str(i) + '?' for i in range(0, seqLength))
@@ -42,7 +43,7 @@ def main():
    html = ['<html>', '<head>', '<title>' + title + '</title>', '<script src="https://cdn.plot.ly/plotly-latest.min.js">', '</script>', '</head>', '<body>']
    html += ['<h3>' + title + '</h3>']
 
-   setsForSlice = {cBox: {cSlice: range(0,nL3Sets) for cSlice in range(0, nSlicesPerCBox)} for cBox in range(0, nCBoxes)}
+   setsForSlice = {cBox: {cSlice: list(range(0,nL3Sets)) for cSlice in range(0, nSlicesPerCBox)} for cBox in range(0, nCBoxes)}
    L3HitsDict = {cBox: {cSlice: [[] for s in range(0, nL3Sets)]  for cSlice in range(0, nSlicesPerCBox)} for cBox in range(0, nCBoxes)}
 
    prevOti = ''
@@ -69,11 +70,11 @@ def main():
                                                  nMeasurements=args.nMeasurements, agg='med')
 
                      if nb['L1_MISS'] < seqLength - .2:
-                        print 'Hit in L1'
+                        print('Hit in L1')
                         continue
 
                      if nb['L2_MISS'] < seqLength - .2:
-                        print 'Hit in L2'
+                        print('Hit in L2')
                         continue
 
                      L3Hits.append(nb['L3_HIT'])
@@ -121,7 +122,7 @@ def main():
 
    with open(args.output ,'w') as f:
       f.write('\n'.join(html))
-      print 'Output written to ' + args.output
+      print('Output written to ' + args.output)
 
 
 if __name__ == "__main__":

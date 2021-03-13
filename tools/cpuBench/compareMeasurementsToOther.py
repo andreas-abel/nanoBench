@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 import xml.etree.ElementTree as ET
 import argparse
 import sys
@@ -66,13 +67,13 @@ def main():
             else:
                portsDiff = True
                nPortsDiff += 1
-               if args.verbose: print 'PortsDiff: {} - {} - {}'.format(instrNode.attrib['string'], mPorts, otherPorts)
+               if args.verbose: print('PortsDiff: {} - {} - {}'.format(instrNode.attrib['string'], mPorts, otherPorts))
          else:
             nPortsMeasurementOnly += 1
       else:
          if otherPorts:
             nPortsOtherOnly += 1
-            if args.verbose: print 'PortsOtherOnly: ' + instrNode.attrib['string']
+            if args.verbose: print('PortsOtherOnly: ' + instrNode.attrib['string'])
 
       otherUops = [v for m in nonMeasurementNodes for a,v in m.attrib.items() if a.startswith('uops') and v.replace('.','',1).isdigit()]
       mUops = ([v for a,v in measurementNode.attrib.items() if a.startswith('uops') and not 'retire_slots' in a] if measurementNode is not None else [])
@@ -86,13 +87,13 @@ def main():
                nUopsEqPortsDiff += int(portsDiff)
             else:
                nUopsDiff += 1
-               if args.verbose: print 'UopsDiff: {} - {} - {}'.format(instrNode.attrib['string'], mUops, otherUops)
+               if args.verbose: print('UopsDiff: {} - {} - {}'.format(instrNode.attrib['string'], mUops, otherUops))
          else:
             nUopsMeasurementOnly += 1
       else:
          if otherUops:
             nUopsOtherOnly += 1
-            if args.verbose: print 'UopsOtherOnly: ' + instrNode.attrib['string']
+            if args.verbose: print('UopsOtherOnly: ' + instrNode.attrib['string'])
 
 
       otherLatencies = [float(v) for m in nonMeasurementNodes for a,v in m.attrib.items() if a.startswith('latency') and v.replace('.','',1).isdigit()]
@@ -113,54 +114,54 @@ def main():
                      nLatUBClose += 1
                else:
                   nLatUBIncorrect += 1
-                  if args.verbose: print 'LatUBIncorrect: {} - {} - {}'.format(instrNode.attrib['string'], maxLat, otherLatencies)
+                  if args.verbose: print('LatUBIncorrect: {} - {} - {}'.format(instrNode.attrib['string'], maxLat, otherLatencies))
             else:
                nLatNoUB += 1
                if maxLat in otherLatencies:
                   nLatNoUBMaxEq += 1
                else:
                   nLatNoUBMaxDiff += 1
-                  if args.verbose: print 'LatNoUBMaxDiff: {} - {} - {}'.format(instrNode.attrib['string'], maxLat, otherLatencies)
+                  if args.verbose: print('LatNoUBMaxDiff: {} - {} - {}'.format(instrNode.attrib['string'], maxLat, otherLatencies))
          else:
             nLatMeasurementOnly += 1
       else:
          if otherLatencies:
             nLatOtherOnly += 1
-            if args.verbose: print 'LatOtherOnly: ' + instrNode.attrib['string']
+            if args.verbose: print('LatOtherOnly: ' + instrNode.attrib['string'])
 
-   print 'Ports:'
-   print '  Measurement data only: ' + str(nPortsMeasurementOnly)
-   print '  Other data only: ' + str(nPortsOtherOnly)
-   print '  Both: ' + str(nPortsBoth)
-   print '    Eq: ' + str(nPortsEq)
-   print '    Diff: ' + str(nPortsDiff)
-   print ''
+   print('Ports:')
+   print('  Measurement data only: ' + str(nPortsMeasurementOnly))
+   print('  Other data only: ' + str(nPortsOtherOnly))
+   print('  Both: ' + str(nPortsBoth))
+   print('    Eq: ' + str(nPortsEq))
+   print('    Diff: ' + str(nPortsDiff))
+   print('')
 
-   print 'Uops:'
-   print '  Measurement data only: ' + str(nUopsMeasurementOnly)
-   print '  Other data only: ' + str(nUopsOtherOnly)
-   print '  Both: ' + str(nUopsBoth)
-   print '    Eq: ' + str(nUopsEq)
-   print '      PortsEq: ' + str(nUopsEqPortsEq)
-   print '      PortsDiff: ' + str(nUopsEqPortsDiff)
-   print '    Diff: ' + str(nUopsDiff)
-   print ''
+   print('Uops:')
+   print('  Measurement data only: ' + str(nUopsMeasurementOnly))
+   print('  Other data only: ' + str(nUopsOtherOnly))
+   print('  Both: ' + str(nUopsBoth))
+   print('    Eq: ' + str(nUopsEq))
+   print('      PortsEq: ' + str(nUopsEqPortsEq))
+   print('      PortsDiff: ' + str(nUopsEqPortsDiff))
+   print('    Diff: ' + str(nUopsDiff))
+   print('')
 
-   print 'Latency:'
-   print '  Measurement data only: ' + str(nLatMeasurementOnly)
-   print '  Other data only: ' + str(nLatOtherOnly)
-   print '  Both: ' + str(nLatBoth)
-   print '    Exact: ' + str(nLatNoUB)
-   print '      Eq (Max): ' + str(nLatNoUBMaxEq)
-   print '      Diff (Max): ' + str(nLatNoUBMaxDiff)
-   print '    Upper Bound: ' + str(nLatUB)
-   print '      Correct: ' + str(nLatUBCorrect)
-   print '        Exact: ' + str(nLatUBExact)
-   print '        Close: ' + str(nLatUBClose)
-   print '      Incorrect: ' + str(nLatUBIncorrect)
-   print ''
+   print('Latency:')
+   print('  Measurement data only: ' + str(nLatMeasurementOnly))
+   print('  Other data only: ' + str(nLatOtherOnly))
+   print('  Both: ' + str(nLatBoth))
+   print('    Exact: ' + str(nLatNoUB))
+   print('      Eq (Max): ' + str(nLatNoUBMaxEq))
+   print('      Diff (Max): ' + str(nLatNoUBMaxDiff))
+   print('    Upper Bound: ' + str(nLatUB))
+   print('      Correct: ' + str(nLatUBCorrect))
+   print('        Exact: ' + str(nLatUBExact))
+   print('        Close: ' + str(nLatUBClose))
+   print('      Incorrect: ' + str(nLatUBIncorrect))
+   print('')
 
-   print 'Throughput:'
+   print('Throughput:')
    for TP_m, TP_o in [('TP', 'TP'), ('TP_ports', 'TP'), ('TP', 'TP_ports'), ('TP_ports', 'TP_ports')]:
       nTPMeasurementOnly = 0
       nTPOtherOnly = 0
@@ -184,28 +185,28 @@ def main():
                   nTPEq += 1
                else:
                   nTPDiff += 1
-                  if args.verbose: print 'TPDiff ({} (measurements) - {} (other)): {} - {} - {}'.format(TP_m, TP_o, instrNode.attrib['string'], mTPs, otherTPs)
+                  if args.verbose: print('TPDiff ({} (measurements) - {} (other)): {} - {} - {}'.format(TP_m, TP_o, instrNode.attrib['string'], mTPs, otherTPs))
                diff = min(abs(float(m)-float(o)) for o in otherTPs for m in mTPs)
                if diff <= .1:
                   nTPClose += 1
                else:
                   nTPNotClose += 1
-                  if args.verbose: print 'TPNotClose ({} (measurements) - {} (other)): {} - {} - {}'.format(TP_m, TP_o, instrNode.attrib['string'], mTPs, otherTPs)
+                  if args.verbose: print('TPNotClose ({} (measurements) - {} (other)): {} - {} - {}'.format(TP_m, TP_o, instrNode.attrib['string'], mTPs, otherTPs))
             else:
                nTPMeasurementOnly += 1
          else:
             if otherTPs:
                nTPOtherOnly += 1
-               if args.verbose: print 'TPOtherOnly ({} (measurements) - {} (other)): {}'.format(TP_m, TP_o, instrNode.attrib['string'])
+               if args.verbose: print('TPOtherOnly ({} (measurements) - {} (other)): {}'.format(TP_m, TP_o, instrNode.attrib['string']))
 
-      print '  {} (measurements) - {} (other):'.format(TP_m, TP_o)
-      print '    Measurement data only: ' + str(nTPMeasurementOnly)
-      print '    Other data only: ' + str(nTPOtherOnly)
-      print '    Both: ' + str(nTPBoth)
-      print '      Eq: ' + str(nTPEq)
-      print '      Diff: ' + str(nTPDiff)
-      print '      Close: ' + str(nTPClose)
-      print '      NotClose: ' + str(nTPNotClose)
+      print('  {} (measurements) - {} (other):'.format(TP_m, TP_o))
+      print('    Measurement data only: ' + str(nTPMeasurementOnly))
+      print('    Other data only: ' + str(nTPOtherOnly))
+      print('    Both: ' + str(nTPBoth))
+      print('      Eq: ' + str(nTPEq))
+      print('      Diff: ' + str(nTPDiff))
+      print('      Close: ' + str(nTPClose))
+      print('      NotClose: ' + str(nTPNotClose))
 
 if __name__ == "__main__":
     main()

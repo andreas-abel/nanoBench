@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+
 from collections import namedtuple
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -69,13 +70,13 @@ def main():
       iclassAsmDict.setdefault(re.sub('{.*} ', '', asm), set()).add(instrNode)
 
    #for x in set(op for de in docList for op in de.operands):
-   #   print x
+   #   print(x)
 
    xmlToDocDict = dict()
 
    for de in sorted(docEntrySet):
       if de.mnemonic not in iclassAsmDict:
-         print 'no XML entry found for ' + str(de)
+         print('no XML entry found for ' + str(de))
 
       xmlFound = False
       for instrNode in iclassAsmDict[de.mnemonic]:
@@ -135,15 +136,15 @@ def main():
             elif (set(de.operands) == {None}) and (set(xmlToDocDict[instrNode].operands) != {None}):
                pass
             else:
-               print 'duplicate entry for ' + instrNode.attrib['string'] + ' found: ' + str(list(xmlToDocDict[instrNode])) + ', ' + str(list(de))
+               print('duplicate entry for ' + instrNode.attrib['string'] + ' found: ' + str(list(xmlToDocDict[instrNode])) + ', ' + str(list(de)))
          else:
             xmlFound = True
             xmlToDocDict[instrNode] = de
 
       if not xmlFound:
-         print 'no matching XML entry found for ' + str(de)
+         print('no matching XML entry found for ' + str(de))
 
-   print 'Found data for ' + str(len(xmlToDocDict)) + ' instruction variants'
+   print('Found data for ' + str(len(xmlToDocDict)) + ' instruction variants')
 
    for instrNode, de in xmlToDocDict.items():
       archNode = instrNode.find('./architecture[@name="{}"]'.format(args.arch))
