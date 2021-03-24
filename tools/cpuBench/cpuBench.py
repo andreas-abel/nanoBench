@@ -251,7 +251,7 @@ def writeFile(fileName, content):
 
 def getMachineCode(objFile):
    try:
-      machineCode = subprocess.check_output(['objdump', '-M', 'intel', '-d', objFile]).decode()      
+      machineCode = subprocess.check_output(['objdump', '-M', 'intel', '-d', objFile]).decode()
       return machineCode.partition('<.text>:\n')[2]
    except subprocess.CalledProcessError as e:
       print('Error (getMachineCode): ' + str(e))
@@ -321,8 +321,8 @@ def getEventConfig(event):
    if event == 'UOPS_PORT78':
       if arch in ['ICL', 'TGL']: return 'A1.80'
    if event == 'DIV_CYCLES':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01.CMSK=1' # undocumented on HSW, but seems to work
-      if arch in ['ICL', 'TGL']: return '14.09.CMSK=1'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01' # undocumented on HSW, but seems to work
+      if arch in ['ICL', 'TGL']: return '14.09'
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0D3.00'
    if event == 'ILD_STALL.LCP':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '87.01'
@@ -658,13 +658,16 @@ def getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr, doNot
 
    return independentInstructions
 
-# Returns True iff there are two operands that can use the same register, all reg. operands are non-suppressed, and there are no memory operands
+# Returns True iff there are two operands that can use the same register, all reg. operands are non-suppressed, there are no memory operands, and the
+# instruction does not use the divider
 def hasCommonRegister(instrNode):
    if 'GATHER' in instrNode.attrib['category'] or 'SCATTER' in instrNode.attrib['category']:
       return False
    if instrNode.find('./operand[@type="mem"]') is not None:
       return False
    if instrNode.find('./operand[@type="reg"][@suppressed="1"]') is not None:
+      return False
+   if isDivOrSqrtInstr(instrNode):
       return False
    return len(findCommonRegisters(instrNode)) > 0
 
@@ -1115,106 +1118,113 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                         paddingTypes.append('redundant prefixes')
 
                   for paddingType in paddingTypes:
-                     instrStr = ''
-                     for i, instr in enumerate(instrIList[0:ic]):
-                        instrStr += depBreakingInstrs + ';' + config.preInstrCode + ';'
-                        if paddingType == 'redundant prefixes':
-                           nPrefixes = max(1, 8 - instrLen) if (not useDepBreakingInstrs and not config.preInstrCode) else (14 - instrLen)
-                           instrStr += '.byte ' + ','.join(['0x40'] * nPrefixes) + ';' # 'empty' REX prefixes
-                        instrStr += instr.asm + ';'
-                        if paddingType == 'long NOPs' and ((i % 4 == 3) or (i == ic - 1)):
-                           instrStr += '.byte 0x66,0x66,0x66,0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;' # 15-Byte NOP
+                     # an lfence is added for measuring DIV_CYCLES accurately
+                     for addLfence in ([False, True] if isDivOrSqrtInstr(instrNode) and (ic == 1) and (repType == 'unrollOnly') else [False]):
+                        instrStr = ''
+                        for i, instr in enumerate(instrIList[0:ic]):
+                           instrStr += depBreakingInstrs + ';' + config.preInstrCode + ';'
+                           if paddingType == 'redundant prefixes':
+                              nPrefixes = max(1, 8 - instrLen) if (not useDepBreakingInstrs and not config.preInstrCode) else (14 - instrLen)
+                              instrStr += '.byte ' + ','.join(['0x40'] * nPrefixes) + ';' # 'empty' REX prefixes
+                           instrStr += instr.asm + ';'
+                           if paddingType == 'long NOPs' and ((i % 4 == 3) or (i == ic - 1)):
+                              instrStr += '.byte 0x66,0x66,0x66,0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;' # 15-Byte NOP
 
-                     if repType == 'unrollOnly':
-                        unrollCount = int(round(500/ic+49, -2)) # should still fit in the icache
-                        if instrNode.attrib['iclass'] in ['RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
-                           unrollCount = 10
-                        loopCount = 0
-                     else:
-                        # we test with a small loop body so that uops may be delivered from the loop stream detector (LSD)
-                        # we also test with a larger loop body to minimize potential overhead from the loop itself
-                        unrollCount = max(1, int(round(10.0/ic)))
-                        if repType == 'loopSmall':
-                           loopCount = 1000
+                        if addLfence:
+                           instrStr += 'lfence;'
+
+                        if repType == 'unrollOnly':
+                           unrollCount = int(round(500/ic+49, -2)) # should still fit in the icache
+                           if instrNode.attrib['iclass'] in ['RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
+                              unrollCount = 10
+                           loopCount = 0
                         else:
-                           loopCount = 100
-                           unrollCount *= 10
-                        if minTP < sys.maxsize and minTP > 100:
-                           unrollCount = 1
-                           loopCount = 10
+                           # we test with a small loop body so that uops may be delivered from the loop stream detector (LSD)
+                           # we also test with a larger loop body to minimize potential overhead from the loop itself
+                           unrollCount = max(1, int(round(10.0/ic)))
+                           if repType == 'loopSmall':
+                              loopCount = 1000
+                           else:
+                              loopCount = 100
+                              unrollCount *= 10
+                           if minTP < sys.maxsize and minTP > 100:
+                              unrollCount = 1
+                              loopCount = 10
 
-                     htmlReports.append('<h4>')
-                     if loopCount > 0:
-                        htmlReports.append('With loop_count=' + str(loopCount) + (',' if paddingType else ' and') +  ' unroll_count=' + str(unrollCount))
-                     else:
-                        htmlReports.append('With unroll_count=' + str(unrollCount) + (',' if paddingType else ' and') + ' no inner loop')
-                     if paddingType:
-                        htmlReports.append(', and padding (' + paddingType + ')')
-                     htmlReports.append('</h4>\n')
+                        htmlReports.append('<h4>')
+                        if loopCount > 0:
+                           htmlReports.append('With loop_count=' + str(loopCount) + (',' if paddingType else ' and') +  ' unroll_count=' + str(unrollCount))
+                        else:
+                           htmlReports.append('With unroll_count=' + str(unrollCount) + (',' if paddingType else ' and') + ' no inner loop')
+                        if paddingType:
+                           htmlReports.append(', and padding (' + paddingType + ')')
+                        htmlReports.append('</h4>\n')
 
-                     htmlReports.append('<ul>\n')
-                     result = runExperiment(instrNode, instrStr, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=(loopCount>0),
-                                            htmlReports=htmlReports)
-                     htmlReports.append('</ul>\n')
+                        htmlReports.append('<ul>\n')
+                        result = runExperiment(instrNode, instrStr, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=(loopCount>0),
+                                               htmlReports=htmlReports)
+                        htmlReports.append('</ul>\n')
 
-                     cycles = fancyRound(result['Core cycles']/ic)
+                        cycles = fancyRound(result['Core cycles']/ic)
 
-                     #invalid = False
-                     #if any('PORT' in e for e in result):
-                     #   maxPortUops = max(v/(len(e)-9) for e,v in result.items() if e.startswith('UOPS_PORT') and not '4' in e)
-                     #   if maxPortUops * .98 > result['Core cycles']:
-                     #      print('More uops on ports than cycles, uops: {}, cycles: {}'.format(maxPortUops, result['Core cycles']))
-                     #       #invalid = True
+                        #invalid = False
+                        #if any('PORT' in e for e in result):
+                        #   maxPortUops = max(v/(len(e)-9) for e,v in result.items() if e.startswith('UOPS_PORT') and not '4' in e)
+                        #   if maxPortUops * .98 > result['Core cycles']:
+                        #      print('More uops on ports than cycles, uops: {}, cycles: {}'.format(maxPortUops, result['Core cycles']))
+                        #       #invalid = True
 
-                     #if not invalid:
-                     minTP = min(minTP, cycles)
-                     if repType == 'unrollOnly':
-                        minTP_noLoop = min(minTP_noLoop, cycles)
-                        if not useDepBreakingInstrs:
-                           minTP_noDepBreaking_noLoop = min(minTP_noDepBreaking_noLoop, cycles)
-                     else:
-                        minTP_loop = min(minTP_loop, cycles)
+                        if not addLfence:
+                           minTP = min(minTP, cycles)
+                           if repType == 'unrollOnly':
+                              minTP_noLoop = min(minTP_noLoop, cycles)
+                              if not useDepBreakingInstrs:
+                                 minTP_noDepBreaking_noLoop = min(minTP_noDepBreaking_noLoop, cycles)
+                           else:
+                              minTP_loop = min(minTP_loop, cycles)
 
-                     if ic == 1 and (minTP == sys.maxsize or cycles == minTP) and not useDepBreakingInstrs and repType == 'unrollOnly':
-                        minConfig = config
-                        minTP_single = min(minTP_single, cycles)
+                           if ic == 1 and (minTP == sys.maxsize or cycles == minTP) and not useDepBreakingInstrs and repType == 'unrollOnly':
+                              minConfig = config
+                              minTP_single = min(minTP_single, cycles)
 
-                        if isIntelCPU():
-                           ports_dict = {int(p[9:]): i for p, i in result.items() if 'UOPS_PORT' in p}
-                        elif isAMDCPU() and not instrNode.attrib['extension'] == 'BASE':
-                           # We ignore BASE instructions, as they sometimes wrongly count floating point uops
-                           ports_dict = {int(p[23:]): i for p, i in result.items() if 'FpuPipeAssignment.Total' in p}
+                              if isIntelCPU():
+                                 ports_dict = {int(p[9:]): i for p, i in result.items() if 'UOPS_PORT' in p}
+                              elif isAMDCPU() and not instrNode.attrib['extension'] == 'BASE':
+                                 # We ignore BASE instructions, as they sometimes wrongly count floating point uops
+                                 ports_dict = {int(p[23:]): i for p, i in result.items() if 'FpuPipeAssignment.Total' in p}
 
-                        uops = int(result['UOPS']+.2)
-                        if 'RETIRE_SLOTS' in result:
-                           uopsFused = int(result['RETIRE_SLOTS']+.2)
+                              uops = int(result['UOPS']+.2)
+                              if 'RETIRE_SLOTS' in result:
+                                 uopsFused = int(result['RETIRE_SLOTS']+.2)
 
-                        if 'UOPS_MITE' in result:
-                           uopsMITE = int(result['UOPS_MITE']+.2)
+                              if 'UOPS_MITE' in result:
+                                 uopsMITE = int(result['UOPS_MITE']+.2)
 
-                        if 'UOPS_MS' in result:
-                           uopsMS = int(result['UOPS_MS']+.2)
+                              if 'UOPS_MS' in result:
+                                 uopsMS = int(result['UOPS_MS']+.2)
 
-                        if 'ILD_STALL.LCP' in result:
-                           ILD_stalls = int(result['ILD_STALL.LCP'])
+                              if 'ILD_STALL.LCP' in result:
+                                 ILD_stalls = int(result['ILD_STALL.LCP'])
 
-                        if 'DIV_CYCLES' in result:
-                           divCycles = int(result['DIV_CYCLES']+.2)
+                              if (not config.preInstrCode) and (((uopsMITE is not None) and (uopsMITE > 1)) or ((uopsMS is not None) and (uopsMS > 0)) or
+                                    (result.get('INST_DECODED.DEC0', 0) > .05) or ((result.get('UOPS_MITE>0', 0) > .95) and (not isBranchInstr(instrNode)))):
+                                 # ToDo: preInstrs
+                                 complexDec = True
 
-                        if (not config.preInstrCode) and ((uopsMITE > 1) or (uopsMS > 0) or (result.get('INST_DECODED.DEC0', 0) > .05) or
-                                                             ((result.get('UOPS_MITE>0', 0) > .95) and (not isBranchInstr(instrNode)))): # ToDo: preInstrs
-                           complexDec = True
-
-                        if complexDec and ('UOPS_MITE>0' in result):
-                           for nNops in count(1):
-                              nopStr = str(nNops) + ' NOP' + ('s' if nNops > 1 else '')
-                              htmlReports.append('<h4>With unroll_count=' + str(unrollCount) +', no inner loop, and ' + nopStr + '</h4>\n')
-                              htmlReports.append('<ul>\n')
-                              resultNops = runExperiment(instrNode, instrStr + ('; nop' * nNops), init=init, unrollCount=unrollCount, htmlReports=htmlReports)
-                              htmlReports.append('</ul>\n')
-                              if resultNops['UOPS_MITE>0'] > result['UOPS_MITE>0'] +.95:
-                                 nAvailableSimpleDecoders = nNops - 1
-                                 break
+                              if complexDec and ('UOPS_MITE>0' in result):
+                                 for nNops in count(1):
+                                    nopStr = str(nNops) + ' NOP' + ('s' if nNops > 1 else '')
+                                    htmlReports.append('<h4>With unroll_count=' + str(unrollCount) +', no inner loop, and ' + nopStr + '</h4>\n')
+                                    htmlReports.append('<ul>\n')
+                                    resultNops = runExperiment(instrNode, instrStr + ('; nop' * nNops), init=init, unrollCount=unrollCount, htmlReports=htmlReports)
+                                    htmlReports.append('</ul>\n')
+                                    if resultNops['UOPS_MITE>0'] > result['UOPS_MITE>0'] +.95:
+                                       nAvailableSimpleDecoders = nNops - 1
+                                       break
+                        else:
+                           if 'DIV_CYCLES' in result:
+                              divCyclesTmp = int(result['DIV_CYCLES']+.2)
+                              divCycles = min(divCycles, divCyclesTmp) if (divCycles is not None) else divCyclesTmp
 
             htmlReports.append('</div>')
 
@@ -3158,7 +3168,7 @@ def main():
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Port Usage' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>']
 
          for useDistinctRegs in ([True, False] if instrNode in tpDictSameReg else [True]):
-            for useIndexedAddr in ([False, True] if useDistinctRegs and (instrNode in tpDictIndexedAddr) else [False]):               
+            for useIndexedAddr in ([False, True] if useDistinctRegs and (instrNode in tpDictIndexedAddr) else [False]):
                tpResult = None
 
                if not useDistinctRegs:
@@ -3190,7 +3200,7 @@ def main():
 
                if not used_ports:
                   htmlReports.append('No uops')
-               elif (rem_uops == 1) and (not tpResult.config.preInstrNodes) and (not tpResult.ILD_stalls > 0):
+               elif (rem_uops == 1) and (not tpResult.config.preInstrNodes) and (tpResult.ILD_stalls in [None, 0]):
                   # one uop instruction
                   uopsCombinationList = [(frozenset(used_ports), 1)]
                   htmlReports.append('<hr>Port usage: 1*' + ('p' if isIntelCPU() else 'FP') + ''.join(str(p) for p in used_ports))
@@ -3331,13 +3341,8 @@ def main():
          computePortStr = lambda lst: '+'.join(str(uops)+'*'+portPrefix+''.join(str(p) for p in sorted(c)) for c, uops in sorted(lst, key=lambda x: sorted(x[0])))
          if portUsageList:
             resultNode.attrib['ports'+suffix] = computePortStr(portUsageList)
-
-            portUsageWithDivList = list(portUsageList)
-            if divCycles:
-               portUsageWithDivList.append((frozenset(['div']), divCycles))
-
             try:
-               resultNode.attrib['TP_ports'+suffix] = "%.2f" % getTP_LP(portUsageWithDivList)
+               resultNode.attrib['TP_ports'+suffix] = "%.2f" % getTP_LP(portUsageList)
             except ValueError as err:
                print('Could not solve LP for ' + instrNode.attrib['string'] + ':')
                print(err)
