@@ -22,6 +22,6 @@ assemble() {
         s/|//g
     " asm-tmp.s
     as asm-tmp.s -o asm-tmp.o || exit
-    objcopy asm-tmp.o -O binary "$filename"
+    objcopy -j .text -O binary asm-tmp.o "$filename"
     rm asm-tmp.*
 }

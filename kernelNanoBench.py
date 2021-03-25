@@ -24,7 +24,7 @@ def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
 
 def objcopy(sourceFile, targetFile):
    try:
-      subprocess.check_call(['objcopy', sourceFile, '-O', 'binary', targetFile])
+      subprocess.check_call(['objcopy', "-j", ".text", '-O', 'binary', sourceFile, targetFile])
    except subprocess.CalledProcessError as e:
       sys.stderr.write("Error (objcopy): " + str(e))
       exit(1)
