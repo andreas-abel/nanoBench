@@ -52,6 +52,9 @@ def main():
          lat = row[9]
          tp = row[10]
 
+         if (ops is None) and (unit is None) and (lat is None) and (tp is None):
+            continue
+
          de = DocEntry(mnemonic, operands, ops, unit, lat, tp)
          docEntrySet.add(de)
          mnemonicMap.setdefault(mnemonic, []).append(de)
@@ -74,9 +77,10 @@ def main():
 
    xmlToDocDict = dict()
 
-   for de in sorted(docEntrySet):
+   for de in docEntrySet:
       if de.mnemonic not in iclassAsmDict:
          print('no XML entry found for ' + str(de))
+         continue
 
       xmlFound = False
       for instrNode in iclassAsmDict[de.mnemonic]:

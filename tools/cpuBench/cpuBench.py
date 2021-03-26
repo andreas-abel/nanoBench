@@ -536,9 +536,9 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
 
       try:
          subprocess.check_output(['as', '/tmp/ramdisk/asm.s', '-o', '/tmp/ramdisk/asm.o'])
-         iacaOut = subprocess.check_output(iacaCMDLine + (['-analysis', 'THROUGHPUT'] if iacaVersion=='2.1' else []) + ['/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT)
+         iacaOut = subprocess.check_output(iacaCMDLine + (['-analysis', 'THROUGHPUT'] if iacaVersion=='2.1' else []) + ['/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
       except subprocess.CalledProcessError as e:
-         print('Error: ' + e.output)
+         print('Error: ' + e.output.decode())
          return None
 
       if not iacaOut or ' !' in iacaOut or ' X' in iacaOut or ' 0X' in iacaOut or not 'Total Num Of Uops' in iacaOut:
@@ -696,9 +696,9 @@ def getThroughputIacaNoInteriteration(instrNode, htmlReports):
    createIacaAsmFile("/tmp/ramdisk/asm.s", "", 0, getInstrInstanceFromNode(instrNode, useDistinctRegs=True).asm)
    try:
       subprocess.check_output(['as', '/tmp/ramdisk/asm.s', '-o', '/tmp/ramdisk/asm.o'])
-      iaca_tp = subprocess.check_output(iacaCMDLine + (['-analysis', 'THROUGHPUT'] if iacaVersion=='2.1' else []) + ['-no_interiteration', '/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT)
+      iaca_tp = subprocess.check_output(iacaCMDLine + (['-analysis', 'THROUGHPUT'] if iacaVersion=='2.1' else []) + ['-no_interiteration', '/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
    except subprocess.CalledProcessError as e:
-      print('Error: ' + e.output)
+      print('Error: ' + e.output.decode())
       return None
 
    if debugOutput:
@@ -1025,11 +1025,11 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
             createIacaAsmFile("/tmp/ramdisk/asm.s", "", 0, instrStr)
             try:
                subprocess.check_output(['as', '/tmp/ramdisk/asm.s', '-o', '/tmp/ramdisk/asm.o'])
-               iaca_out = subprocess.check_output(iacaCMDLine + ['/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT)
+               iaca_out = subprocess.check_output(iacaCMDLine + ['/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
             except subprocess.CalledProcessError as e:
-               logging.warn('Error: ' + e.output)
+               logging.warn('Error: ' + e.output.decode())
                if minTP != sys.maxsize:
-                  htmlReports.append('<pre>' + e.output + '</pre>\n')
+                  htmlReports.append('<pre>' + e.output.decode() + '</pre>\n')
                   continue # on SNB, IACA 2.2 crashes on only some (larger) inputs
                else:
                   return None
@@ -1037,8 +1037,6 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
             if not iaca_out or ' ! ' in iaca_out or ' X ' in iaca_out or ' 0X ' in iaca_out or not 'Total Num Of Uops' in iaca_out:
                print('IACA error')
                return None
-
-            print(instrNode.attrib['iform'] + ' - throughput')
 
             htmlReports.append('<pre>' + iaca_out + '</pre>\n')
 
@@ -1051,7 +1049,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                minTP_single = min(minTP_single, cycles)
 
                unfused_uops_line = iaca_out.split('\n')[-2]
-               unfused_uops = int(unfused_uops_line.split()[4])/ic
+               unfused_uops = int(unfused_uops_line.split()[4])//ic
 
                ports_line = iaca_out.split('\n')[-3]
                fused_uops = '^' in ports_line.split()[1]
@@ -2367,9 +2365,9 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
       if iacaVersion == '2.1':
          try:
             subprocess.check_output(['as', '/tmp/ramdisk/asm.s', '-o', '/tmp/ramdisk/asm.o'])
-            iaca_lat = subprocess.check_output(iacaCMDLine + ['-analysis', 'LATENCY', '/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT)
+            iaca_lat = subprocess.check_output(iacaCMDLine + ['-analysis', 'LATENCY', '/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
          except subprocess.CalledProcessError as e:
-            print('Error: ' + e.output)
+            print('Error: ' + e.output.decode())
             return None
 
          if '!' in iaca_lat or not 'Latency' in iaca_lat:
@@ -2896,7 +2894,7 @@ def main():
       except subprocess.CalledProcessError as e:
          versionString = e.output
       global iacaVersion
-      iacaVersion = re.search('\d\.\d', versionString).group(0)
+      iacaVersion = re.search('\d\.\d', versionString.decode()).group(0)
       global iacaCMDLine
       iacaCMDLine = [args.iaca, '-reduceout', '-arch', arch]
       if iacaVersion == '2.1':
@@ -2981,8 +2979,10 @@ def main():
          tpResult = getThroughputAndUops(instrNode, True, False, htmlReports)
          print(instrNode.attrib['string'] + " - tp: " + str(tpResult))
 
-         if tpResult:
-            tpDict[instrNode] = tpResult
+         if tpResult is None:
+            continue
+
+         tpDict[instrNode] = tpResult
 
          if hasCommonReg:
             htmlReports.append('<hr><h2 id="sameReg">With the same register for for different operands</h2>\n')
@@ -2999,7 +2999,7 @@ def main():
                tpDictIndexedAddr[instrNode] = tpResultIndexed
 
          # Macro-Fusion
-         if tpResult.fused_uops == 1 and (instrNode.find('./operand[@type="flags"][@w="1"]') is not None):
+         if (not useIACA) and tpResult.fused_uops == 1 and (instrNode.find('./operand[@type="flags"][@w="1"]') is not None):
             htmlReports.append('<hr><h2 id="macroFusion">Tests for macro-fusion</h2>\n')
             fusibleInstrList = []
             for brInstr in condBrInstr:
