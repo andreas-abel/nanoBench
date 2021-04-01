@@ -1089,7 +1089,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
          instrIList = config.independentInstrs
          instrLen = getCodeLength(instrIList[0].asm)
          for ic in sorted(set([1, min(4, len(instrIList)), min(8, len(instrIList)), len(instrIList)])):
-            if minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
+            if ic > 1 and minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
 
             if len(instrIList) > 1: htmlReports.append('<h3 style="margin-left: 25px">With ' + str(ic) + ' independent instruction' + ('s' if ic>1 else '') + '</h3>\n')
             htmlReports.append('<div style="margin-left: 50px">\n')
@@ -1097,7 +1097,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
             init = list(chain.from_iterable(i.regMemInit for i in instrIList[0:ic])) + config.init
 
             for useDepBreakingInstrs in ([False, True] if config.depBreakingInstrs else [False]):
-               if minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
+               if ic > 1 and minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
 
                depBreakingInstrs = ''
                if useDepBreakingInstrs:
@@ -1105,7 +1105,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                   htmlReports.append('<h4>With additional dependency-breaking instructions</h4>\n')
 
                for repType in ['unrollOnly', 'loopSmall', 'loopBig']:
-                  if minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
+                  if ic > 1 and minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
 
                   paddingTypes = ['']
                   if ((repType != 'unrollOnly') and (uopsMITE is not None) and (not uopsMS) and (math.ceil(32.0/instrLen) * uopsMITE > 18)
