@@ -65,8 +65,10 @@ echo 0 > /proc/sys/kernel/nmi_watchdog
 
 if [ "$debug" = true ]; then
     gdb -ex=run --args user/nanoBench $@
+    return_value=$?
 else
     user/nanoBench $@
+    return_value=$?
 fi
 
 rm -f asm-*.bin
@@ -85,3 +87,4 @@ fi
 if [[ $iTCO_vendor_support_prev_loaded != 0 ]]; then
     modprobe iTCO_vendor_support &>/dev/null
 fi
+exit $return_value
