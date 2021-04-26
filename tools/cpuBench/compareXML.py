@@ -49,6 +49,7 @@ def main():
                   latStr2 = ET.tostring(latNode2, encoding='utf-8').decode().strip()
                   if latStr1 != latStr2:
                      latDiff += 1
+                     print(instrStr)
                      print('  ' + latStr1)
                      print('  ' + latStr2)
 

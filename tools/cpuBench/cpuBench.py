@@ -1323,6 +1323,9 @@ def getBasicLatencies(instrNodeList):
       kmovq_result = runExperiment(instrNodeDict['KMOVQ (K, K)'], 'KMOVQ K1, K1')
       basicLatency['KMOVQ'] = int(round(kmovq_result['Core cycles']))
 
+      vpandd_result = runExperiment(instrNodeDict['VPANDD (ZMM, ZMM, ZMM)'], 'VPANDD ZMM0, ZMM0, ZMM0')
+      basicLatency['VPANDD'] = int(round(vpandd_result['Core cycles']))
+
       for regType in ['XMM', 'YMM', 'ZMM']:
          vmovups_result = runExperiment(instrNodeDict['VMOVUPS ({0}, K, {0})'.format(regType)], 'VMOVUPS ' + regType + '1 {k1}, ' + regType + '1')
          vmovups_cycles = int(round(vmovups_result['Core cycles']))
@@ -1841,8 +1844,8 @@ def getLatConfigsFromRegToMem(instrNode, instrI, reg, addrReg, memWidth, cRep):
    return result
 
 def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
-   # We use (V)SHUFPD instead of (V)MOV*PD because the latter is a 0-latency operation on some CPUs in some cases
    if cType == 'FP':
+      # We use (V)SHUFPD instead of (V)MOV*PD because the latter is a 0-latency operation on some CPUs in some cases
       if isAVXInstr(instrNode):
          if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
             # on ZEN, all shuffles are integer operations
@@ -1865,14 +1868,17 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
             chainLatencyFP = basicLatency['SHUFPD'] * (cRep+1)
       return (chainInstrFP, chainLatencyFP)
    else:
+      # We use (V)PAND instead of shuffles, because they can use more ports (https://github.com/andreas-abel/nanoBench/issues/23)
       if isAVXInstr(instrNode):
-         chainInstrInt = 'VPSHUFD {}, {}, 0;'.format(targetReg, startReg)
-         chainInstrInt += 'VPSHUFD {0}, {0}, 0;'.format(targetReg) * cRep
-         chainLatencyInt = basicLatency['VPSHUFD'] * (cRep+1)
+         instr = 'VPANDD' if ('ZMM' in targetReg) else 'VPAND'
+         chainInstrInt = '{0} {1}, {2}, {2};'.format(instr, targetReg, startReg)
+         chainInstrInt += '{0}  {1}, {1}, {1};'.format(instr, targetReg) * cRep
+         chainLatencyInt = basicLatency[instr] * (cRep+1)
       else:
+         # we use one shuffle to avoid a read dependency on the target register
          chainInstrInt = 'PSHUFD {}, {}, 0;'.format(targetReg, startReg)
-         chainInstrInt += 'PSHUFD {0}, {0}, 0;'.format(targetReg) * cRep
-         chainLatencyInt = basicLatency['PSHUFD'] * (cRep+1)
+         chainInstrInt += 'PAND {0}, {0};'.format(targetReg) * cRep
+         chainLatencyInt = basicLatency['PSHUFD'] + basicLatency['PAND'] * cRep
       return (chainInstrInt, chainLatencyInt)
 
 
@@ -2496,9 +2502,9 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                               reg = latConfig.instrI.opRegDict[int(opNode.attrib['idx'])]
                               regPrefix = re.sub('\d', '', reg)
                               if (regPrefix in ['XMM', 'YMM', 'ZMM']) and (reg not in globalDoNotWriteRegs):
-                                 for opNode2 in instrNode.findall('./operand[@w="1"][@type="reg"]'):
-                                    if opNode2.text != opNode.text: continue
-                                    regInit += [getInstrInstanceFromNode(instrNode, opRegDict={int(opNode2.attrib['idx']):reg}, computeRegMemInit=False).asm]
+                                 for initOp in instrNode.findall('./operand[@w="1"][@type="reg"]'):
+                                    if initOp.text != opNode.text: continue
+                                    regInit += [getInstrInstanceFromNode(instrNode, opRegDict={int(initOp.attrib['idx']):reg}, computeRegMemInit=False).asm]
                                     break
                            if regInit:
                               newlatConfig = copy.deepcopy(latConfig)
