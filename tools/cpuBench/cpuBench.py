@@ -206,7 +206,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
          elif arch in ['NHM', 'WSM']: evt = 'UOPS_RETIRED.ANY'
          elif arch in ['SNB']: evt = 'UOPS_RETIRED.ALL'
          elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
-         elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: evt = 'UOPS_EXECUTED.THREAD'
+         elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: evt = 'UOPS_EXECUTED.THREAD'
       localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
    localHtmlReports.append('</ul>\n</li>')
 
@@ -271,25 +271,25 @@ def getEventConfig(event):
       if arch in ['NHM', 'WSM', 'SNB' ]: return 'C2.01' # UOPS_RETIRED.ANY
       if arch in ['SNB']: return 'C2.01' # UOPS_RETIRED.ALL
       if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
-      if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'B1.01' # UOPS_EXECUTED.THREAD
+      if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'B1.01' # UOPS_EXECUTED.THREAD
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'C2.02'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'C2.02'
    if event == 'UOPS_MITE':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '79.04'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '79.04'
    if event == 'UOPS_MITE>0':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '79.04.CMSK=1'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '79.04.CMSK=1'
    if event == 'UOPS_MS':
       if arch in ['NHM', 'WSM']: return 'D1.02'
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '79.30'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '79.30'
    if event == 'UOPS_PORT0':
       if arch in ['CON', 'WOL']: return 'A1.01.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.01'
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.01'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.01'
    if event == 'UOPS_PORT1':
       if arch in ['CON', 'WOL']: return 'A1.02.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.02'
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.02'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.02'
    if event == 'UOPS_PORT2':
       if arch in ['CON', 'WOL']: return 'A1.04.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.04'
@@ -309,23 +309,23 @@ def getEventConfig(event):
       if arch in ['CON', 'WOL']: return 'A1.20.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.20'
       if arch in ['SNB', 'IVB']: return 'A1.80'
-      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.20'
+      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.20'
    if event == 'UOPS_PORT6':
-      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return 'A1.40'
+      if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.40'
    if event == 'UOPS_PORT7':
       if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return 'A1.80'
    if event == 'UOPS_PORT23':
-      if arch in ['ICL', 'TGL']: return 'A1.04'
+      if arch in ['ICL', 'TGL', 'RKL']: return 'A1.04'
    if event == 'UOPS_PORT49':
-      if arch in ['ICL', 'TGL']: return 'A1.10'
+      if arch in ['ICL', 'TGL', 'RKL']: return 'A1.10'
    if event == 'UOPS_PORT78':
-      if arch in ['ICL', 'TGL']: return 'A1.80'
+      if arch in ['ICL', 'TGL', 'RKL']: return 'A1.80'
    if event == 'DIV_CYCLES':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01' # undocumented on HSW, but seems to work
-      if arch in ['ICL', 'TGL']: return '14.09'
+      if arch in ['ICL', 'TGL', 'RKL']: return '14.09'
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0D3.00'
    if event == 'ILD_STALL.LCP':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL']: return '87.01'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '87.01'
    if event == 'INST_DECODED.DEC0':
       if arch in ['NHM', 'WSM']: return '18.01'
    if event == 'FpuPipeAssignment.Total0':
@@ -3144,7 +3144,7 @@ def main():
          # mov to mem has always two uops: store address and store data; there is no instruction that uses just one of them
          movMemInstrNode = instrNodeDict['MOV (M64, R64)']
 
-         if arch in ['ICL', 'TGL']:
+         if arch in ['ICL', 'TGL', 'RKL']:
             storeDataPort = 49
          else:
             storeDataPort = 4
