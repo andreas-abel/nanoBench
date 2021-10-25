@@ -743,9 +743,9 @@ int starts_with_magic_bytes(char* c, int64_t magic_bytes) {
 
 void measurement_template_Intel_2() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
@@ -773,10 +773,7 @@ void measurement_template_Intel_2() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov rcx, 0                              \n"
@@ -795,9 +792,9 @@ void measurement_template_Intel_2() {
 
 void measurement_template_Intel_4() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
@@ -835,10 +832,7 @@ void measurement_template_Intel_4() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov rcx, 0                              \n"
@@ -865,15 +859,12 @@ void measurement_template_Intel_4() {
 
 void measurement_template_Intel_noMem_2() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
         "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
@@ -883,10 +874,7 @@ void measurement_template_Intel_noMem_2() {
         "shl rdx, 32; or rdx, rax                \n"
         "sub r9, rdx                             \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
@@ -896,10 +884,7 @@ void measurement_template_Intel_noMem_2() {
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r9, rdx                             \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n"
         "mov rax, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [rax + 0], r8                       \n"
         "mov [rax + 8], r9                       \n"
@@ -910,17 +895,14 @@ void measurement_template_Intel_noMem_2() {
 
 void measurement_template_Intel_noMem_4() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
         "mov r10, 0                              \n"
         "mov r11, 0                              \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
         "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
@@ -938,10 +920,7 @@ void measurement_template_Intel_noMem_4() {
         "shl rdx, 32; or rdx, rax                \n"
         "sub r11, rdx                            \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
@@ -959,10 +938,7 @@ void measurement_template_Intel_noMem_4() {
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r11, rdx                            \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n"
         "mov rax, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [rax + 0], r8                       \n"
         "mov [rax + 8], r9                       \n"
@@ -975,9 +951,9 @@ void measurement_template_Intel_noMem_4() {
 
 void measurement_template_AMD() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
@@ -1025,10 +1001,7 @@ void measurement_template_AMD() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov rcx, 0                              \n"
@@ -1063,19 +1036,16 @@ void measurement_template_AMD() {
 
 void measurement_template_AMD_noMem() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
         "mov r10, 0                              \n"
         "mov r11, 0                              \n"
         "mov r12, 0                              \n"
         "mov r13, 0                              \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
         "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
@@ -1101,10 +1071,7 @@ void measurement_template_AMD_noMem() {
         "shl rdx, 32; or rdx, rax                \n"
         "sub r13, rdx                            \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, 0                              \n"
         "lfence; rdpmc; lfence                   \n"
@@ -1130,10 +1097,7 @@ void measurement_template_AMD_noMem() {
         "lfence; rdpmc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r13, rdx                            \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n"
         "mov rax, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [rax + 0], r8                       \n"
         "mov [rax + 8], r9                       \n"
@@ -1148,9 +1112,9 @@ void measurement_template_AMD_noMem() {
 
 void measurement_FF_template_Intel() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
@@ -1187,10 +1151,7 @@ void measurement_FF_template_Intel() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, 0x40000001                     \n"
         "lfence; rdpmc; lfence                   \n"
@@ -1215,17 +1176,14 @@ void measurement_FF_template_Intel() {
 
 void measurement_FF_template_Intel_noMem() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
         "mov r10, 0                              \n"
         "mov r11, 0                              \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
@@ -1242,10 +1200,7 @@ void measurement_FF_template_Intel_noMem() {
         "shl rdx, 32; or rdx, rax                \n"
         "sub r11, rdx                            \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, 0x40000001                     \n"
         "lfence; rdpmc; lfence                   \n"
@@ -1262,10 +1217,7 @@ void measurement_FF_template_Intel_noMem() {
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         "mov [r15+8], r9                         \n"
@@ -1278,9 +1230,9 @@ void measurement_FF_template_Intel_noMem() {
 
 void measurement_FF_template_AMD() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
@@ -1312,10 +1264,7 @@ void measurement_FF_template_AMD() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, 0x000000E8                     \n"
         "lfence; rdmsr; lfence                   \n"
@@ -1337,16 +1286,13 @@ void measurement_FF_template_AMD() {
 
 void measurement_FF_template_AMD_noMem() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
         "mov r10, 0                              \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
@@ -1358,11 +1304,7 @@ void measurement_FF_template_AMD_noMem() {
         "lfence; rdmsr; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r10, rdx                            \n"
-        "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, 0x000000E8                     \n"
         "lfence; rdmsr; lfence                   \n"
@@ -1375,10 +1317,7 @@ void measurement_FF_template_AMD_noMem() {
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         "mov [r15+8], r9                         \n"
@@ -1390,9 +1329,9 @@ void measurement_FF_template_AMD_noMem() {
 
 void measurement_RDTSC_template() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
@@ -1412,10 +1351,7 @@ void measurement_RDTSC_template() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
@@ -1428,30 +1364,21 @@ void measurement_RDTSC_template() {
 
 void measurement_RDTSC_template_noMem() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         ".att_syntax noprefix                    ");
@@ -1461,9 +1388,9 @@ void measurement_RDTSC_template_noMem() {
 
 void measurement_RDMSR_template() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
         "seto al                                 \n"
@@ -1486,10 +1413,7 @@ void measurement_RDMSR_template() {
         "sahf; lfence                            \n"
         "pop rax;                                \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, "STRINGIFY(MAGIC_BYTES_MSR)"   \n"
         "lfence; rdmsr; lfence                   \n"
@@ -1503,32 +1427,23 @@ void measurement_RDMSR_template() {
 
 void measurement_RDMSR_template_noMem() {
     SAVE_REGS_FLAGS();
-    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
     asm volatile(
         ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_START));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
         "mov rcx, "STRINGIFY(MAGIC_BYTES_MSR)"   \n"
         "lfence; rdmsr; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "sub r8, rdx                             \n"
         "lfence                                  \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_CODE));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
         "lfence                                  \n"
         "mov rcx, "STRINGIFY(MAGIC_BYTES_MSR)"   \n"
         "lfence; rdmsr; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
-        ".att_syntax noprefix                    ");
-    asm(".quad "STRINGIFY(MAGIC_BYTES_PFC_END));
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
         "mov [r15], r8                           \n"
         ".att_syntax noprefix                    ");
