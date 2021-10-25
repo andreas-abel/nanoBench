@@ -10,7 +10,7 @@ fi
 
 if [ ! -e /sys/nb ]; then
     echo "Error: nanoBench kernel module not loaded"
-    echo "Load with \"sudo insmod nb.ko\""
+    echo "Load with \"sudo insmod kernel/nb.ko\""
     exit 1
 fi
 
