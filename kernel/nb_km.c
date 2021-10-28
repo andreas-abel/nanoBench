@@ -577,8 +577,10 @@ static int show(struct seq_file *m, void *v) {
         }
     }
 
-    for (size_t i=0; i<n_pfc_configs; i+=n_programmable_counters) {
-        configure_perf_ctrs_programmable(i, min(i+n_programmable_counters, n_pfc_configs), 1, 1);
+    size_t next_pfc_config = 0;
+    while (next_pfc_config < n_pfc_configs) {
+        char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, 1, 1, pfc_descriptions);
         // on some microarchitectures (e.g., Broadwell), some events (e.g., L1 misses) are not counted properly if only the OS field is set
 
         run_experiment(measurement_template, measurement_results_base, n_programmable_counters, base_unroll_count, base_loop_count);
@@ -591,8 +593,8 @@ static int show(struct seq_file *m, void *v) {
             print_all_measurement_results(measurement_results, n_programmable_counters);
         }
 
-        for (int c=0; c < n_programmable_counters && i + c < n_pfc_configs; c++) {
-            if (!pfc_configs[i+c].invalid) seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), pfc_configs[i+c].description, c));
+        for (size_t c=0; c < n_programmable_counters; c++) {
+            if (pfc_descriptions[c]) seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), pfc_descriptions[c], c));
         }
     }
 

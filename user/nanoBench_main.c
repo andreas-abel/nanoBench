@@ -319,13 +319,10 @@ int main(int argc, char **argv) {
         }
     }
 
-    for (size_t i=0; i<n_pfc_configs; i+=n_programmable_counters) {
-        size_t end = i + n_programmable_counters;
-        if (end > n_pfc_configs) {
-            end = n_pfc_configs;
-        }
-
-        configure_perf_ctrs_programmable(i, end, usr, os);
+    size_t next_pfc_config = 0;
+    while (next_pfc_config < n_pfc_configs) {
+        char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, usr, os, pfc_descriptions);
 
         run_experiment(measurement_template, measurement_results_base, n_programmable_counters, base_unroll_count, base_loop_count);
         run_experiment(measurement_template, measurement_results, n_programmable_counters, main_unroll_count, main_loop_count);
@@ -337,8 +334,8 @@ int main(int argc, char **argv) {
             print_all_measurement_results(measurement_results, n_programmable_counters);
         }
 
-        for (int c=0; c < n_programmable_counters && i + c < n_pfc_configs; c++) {
-            if (!pfc_configs[i+c].invalid) printf("%s", compute_result_str(buf, sizeof(buf), pfc_configs[i+c].description, c));
+        for (size_t c=0; c < n_programmable_counters; c++) {
+            if (pfc_descriptions[c]) printf("%s", compute_result_str(buf, sizeof(buf), pfc_descriptions[c], c));
         }
     }
 

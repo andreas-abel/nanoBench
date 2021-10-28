@@ -148,6 +148,7 @@ void parse_counter_configs() {
         }
 
         pfc_configs[n_pfc_configs] = (struct pfc_config){0};
+        pfc_configs[n_pfc_configs].ctr = -1;
 
         char* config_str = strsep(&line, " \t");
 
@@ -192,15 +193,7 @@ void parse_counter_configs() {
                     print_error("invalid counter: %s\n", ce);
                     continue;
                 }
-                size_t prev_n_pfc_configs = n_pfc_configs;
-                while (n_pfc_configs % n_programmable_counters != counter) {
-                    pfc_configs[n_pfc_configs].invalid = 1;
-                    n_pfc_configs++;
-                }
-                if (prev_n_pfc_configs != n_pfc_configs) {
-                    pfc_configs[n_pfc_configs] = pfc_configs[prev_n_pfc_configs];
-                    pfc_configs[n_pfc_configs].invalid = 0;
-                }
+                pfc_configs[n_pfc_configs].ctr = counter;
             } else if (!strncmp(ce, "CMSK=", 5)) {
                 nb_strtoul(ce+5, 0, &(pfc_configs[n_pfc_configs].cmask));
             } else if (!strncmp(ce, "MSR_3F6H=", 9)) {
@@ -327,32 +320,29 @@ void configure_perf_ctrs_FF(unsigned int usr, unsigned int os) {
     }
 }
 
-void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsigned int os) {
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, unsigned int usr, unsigned int os, char* descriptions[]) {
     if (is_Intel_CPU) {
         uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
         global_ctrl |= ((uint64_t)7 << 32) | 15;
         write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
 
         for (int i=0; i<n_programmable_counters; i++) {
-            uint64_t perfevtselx = read_msr(MSR_IA32_PERFEVTSEL0+i);
-
-            // disable counter i
-            perfevtselx &= ~(((uint64_t)1 << 32) - 1);
-            write_msr(MSR_IA32_PERFEVTSEL0+i, perfevtselx);
-
             // clear
             write_msr(MSR_IA32_PMC0+i, 0);
 
-            if (start+i >= end) {
-                continue;
+            if (next_pfc_config >= n_pfc_configs) {
+                return next_pfc_config;
             }
 
-            // configure counter i
-            struct pfc_config config = pfc_configs[start+i];
-            if (config.invalid) {
+            struct pfc_config config = pfc_configs[next_pfc_config];
+            if ((config.ctr != -1) && (config.ctr != i)) {
                 continue;
             }
-            perfevtselx |= ((config.cmask & 0xFF) << 24);
+            next_pfc_config++;
+
+            descriptions[i] = config.description;
+
+            uint64_t perfevtselx = ((config.cmask & 0xFF) << 24);
             perfevtselx |= (config.inv << 23);
             perfevtselx |= (1ULL << 22);
             perfevtselx |= (config.any << 21);
@@ -366,11 +356,9 @@ void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsi
             if (config.msr_3f6h) {
                 write_msr(0x3f6, config.msr_3f6h);
             }
-
             if (config.msr_pf) {
                 write_msr(MSR_PEBS_FRONTEND, config.msr_pf);
             }
-
             if (config.msr_rsp0) {
                 write_msr(MSR_OFFCORE_RSP0, config.msr_rsp0);
             }
@@ -383,12 +371,15 @@ void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsi
             // clear
             write_msr(CORE_X86_MSR_PERF_CTR+(2*i), 0);
 
-            if (start+i >= end) {
+            if (next_pfc_config >= n_pfc_configs) {
                 write_msr(CORE_X86_MSR_PERF_CTL + (2*i), 0);
                 continue;
             }
 
-            struct pfc_config config = pfc_configs[start+i];
+            struct pfc_config config = pfc_configs[next_pfc_config];
+            next_pfc_config++;
+
+            descriptions[i] = config.description;
 
             uint64_t perf_ctl = 0;
             perf_ctl |= ((config.evt_num) & 0xF00) << 24;
@@ -404,6 +395,7 @@ void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsi
             write_msr(CORE_X86_MSR_PERF_CTL + (2*i), perf_ctl);
         }
     }
+    return next_pfc_config;
 }
 
 void configure_MSRs(struct msr_config config) {

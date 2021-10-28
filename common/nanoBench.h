@@ -149,7 +149,7 @@ struct pfc_config {
     unsigned long msr_pf;
     unsigned long msr_rsp0;
     unsigned long msr_rsp1;
-    unsigned int invalid;
+    unsigned int ctr;
     char* description;
 };
 extern struct pfc_config pfc_configs[];
@@ -215,8 +215,9 @@ void write_msr(unsigned int msr, uint64_t value);
 void configure_perf_ctrs_FF(unsigned int usr, unsigned int os);
 
 // Clears the programmable performance counters and writes the configurations to the corresponding MSRs.
-// start and end are indices into the pfc_configs array.
-void configure_perf_ctrs_programmable(int start, int end, unsigned int usr, unsigned int os);
+// next_pfc_config is an index into the pfc_configs array; the function takes up to n_programmable_counters many configurations from this array;
+// it returns the index of the next configuration, and writes the descriptions of the applicable configurations to the corresponding array.
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, unsigned int usr, unsigned int os, char* descriptions[]);
 
 void configure_MSRs(struct msr_config config);
 
