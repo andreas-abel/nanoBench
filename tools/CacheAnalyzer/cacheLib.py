@@ -479,8 +479,8 @@ def getCodeForCacheExperiment(level, seq, initSeq, cacheSetList, cBox, cSlice, c
 
 def runCacheExperimentCode(code, initCode, oneTimeInitCode, loop, warmUpCount, codeOffset, nMeasurements, agg):
    resetNanoBench()
-   setNanoBenchParameters(config=getDefaultCacheConfig(), msrConfig=getDefaultCacheMSRConfig(), nMeasurements=nMeasurements, unrollCount=1, loopCount=loop,
-                          warmUpCount=warmUpCount, aggregateFunction=agg, basicMode=True, noMem=True, codeOffset=codeOffset, verbose=None)
+   setNanoBenchParameters(config=getDefaultCacheConfig(), msrConfig=getDefaultCacheMSRConfig(), fixedCounters=True, nMeasurements=nMeasurements, unrollCount=1,
+                          loopCount=loop, warmUpCount=warmUpCount, aggregateFunction=agg, basicMode=True, noMem=True, codeOffset=codeOffset, verbose=None)
    return runNanoBench(code=code, init=initCode, oneTimeInit=oneTimeInitCode)
 
 

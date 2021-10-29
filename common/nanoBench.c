@@ -21,6 +21,7 @@ int drain_frontend = DRAIN_FRONTEND_DEFAULT;
 int no_mem = NO_MEM_DEFAULT;
 int no_normalization = NO_NORMALIZATION_DEFAULT;
 int basic_mode = BASIC_MODE_DEFAULT;
+int use_fixed_counters = USE_FIXED_COUNTERS_DEFAULT;
 int aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
 int verbose = VERBOSE_DEFAULT;
 int debug = DEBUG_DEFAULT;
@@ -113,19 +114,13 @@ int check_cpuid() {
             return 1;
         }
 
-        unsigned int n_available_counters = ((eax >> 8) & 0xFF);
-        print_user_verbose("Number of general-purpose performance counters: %u\n", n_available_counters);
-        if (n_available_counters >= 4) {
-            n_programmable_counters = 4;
-        } else if (n_available_counters >= 2) {
-            n_programmable_counters = 2;
-        } else {
-            print_error("Error: only %u programmable counters available; nanoBench requires at least 2\n", n_available_counters);
+        n_programmable_counters = ((eax >> 8) & 0xFF);
+        print_user_verbose("Number of general-purpose performance counters: %u\n", n_programmable_counters);
+        if (n_programmable_counters < 2) {
+            print_error("Error: only %u programmable counters available; nanoBench requires at least 2\n", n_programmable_counters);
             return 1;
         }
-
         print_user_verbose("Bit widths of general-purpose performance counters: %u\n", ((eax >> 16) & 0xFF));
-
     } else if (strcmp(proc_vendor_string, "AuthenticAMD") == 0) {
         is_AMD_CPU = 1;
         n_programmable_counters = 6;
@@ -299,34 +294,32 @@ void write_msr(unsigned int msr, uint64_t value) {
     #endif
 }
 
-void configure_perf_ctrs_FF(unsigned int usr, unsigned int os) {
-    if (is_Intel_CPU) {
-        uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
-        global_ctrl |= ((uint64_t)7 << 32) | 15;
-        write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
+void configure_perf_ctrs_FF_Intel(unsigned int usr, unsigned int os) {
+    uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
+    global_ctrl |= ((uint64_t)7 << 32) | 15;
+    write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
 
-        uint64_t fixed_ctrl = read_msr(MSR_IA32_FIXED_CTR_CTRL);
-        // disable fixed counters
-        fixed_ctrl &= ~((1 << 12) - 1);
-        write_msr(MSR_IA32_FIXED_CTR_CTRL, fixed_ctrl);
-        // clear
-        for (int i=0; i<3; i++) {
-            write_msr(MSR_IA32_FIXED_CTR0+i, 0);
-        }
-        //enable fixed counters
-        fixed_ctrl |= (os << 8) | (os << 4) | os;
-        fixed_ctrl |= (usr << 9) | (usr << 5) | (usr << 1);
-        write_msr(MSR_IA32_FIXED_CTR_CTRL, fixed_ctrl);
+    uint64_t fixed_ctrl = read_msr(MSR_IA32_FIXED_CTR_CTRL);
+    // disable fixed counters
+    fixed_ctrl &= ~((1 << 12) - 1);
+    write_msr(MSR_IA32_FIXED_CTR_CTRL, fixed_ctrl);
+    // clear
+    for (int i=0; i<3; i++) {
+        write_msr(MSR_IA32_FIXED_CTR0+i, 0);
     }
+    //enable fixed counters
+    fixed_ctrl |= (os << 8) | (os << 4) | os;
+    fixed_ctrl |= (usr << 9) | (usr << 5) | (usr << 1);
+    write_msr(MSR_IA32_FIXED_CTR_CTRL, fixed_ctrl);
 }
 
-size_t configure_perf_ctrs_programmable(size_t next_pfc_config, unsigned int usr, unsigned int os, char* descriptions[]) {
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, unsigned int usr, unsigned int os, char* descriptions[]) {
     if (is_Intel_CPU) {
         uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
         global_ctrl |= ((uint64_t)7 << 32) | 15;
         write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
 
-        for (int i=0; i<n_programmable_counters; i++) {
+        for (int i=0; i<n_counters; i++) {
             // clear
             write_msr(MSR_IA32_PMC0+i, 0);
 
@@ -367,7 +360,7 @@ size_t configure_perf_ctrs_programmable(size_t next_pfc_config, unsigned int usr
             }
         }
     } else {
-        for (int i=0; i<n_programmable_counters; i++) {
+        for (int i=0; i<n_counters; i++) {
             // clear
             write_msr(CORE_X86_MSR_PERF_CTR+(2*i), 0);
 
@@ -610,10 +603,10 @@ void create_and_run_one_time_init_code() {
     ((void(*)(void))runtime_one_time_init_code)();
 }
 
-void run_warmup_experiment(char* measurement_template) {
+void run_initial_warmup_experiment() {
     if (!initial_warm_up_count) return;
 
-    create_runtime_code(measurement_template, unroll_count, loop_count);
+    create_runtime_code((char*)&initial_warm_up_template, unroll_count, loop_count);
 
     for (int i=0; i<initial_warm_up_count; i++) {
         ((void(*)(void))runtime_code)();
@@ -735,8 +728,7 @@ int starts_with_magic_bytes(char* c, int64_t magic_bytes) {
 
 void measurement_template_Intel_2() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
@@ -784,8 +776,7 @@ void measurement_template_Intel_2() {
 
 void measurement_template_Intel_4() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
@@ -851,8 +842,7 @@ void measurement_template_Intel_4() {
 
 void measurement_template_Intel_noMem_2() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
@@ -887,8 +877,7 @@ void measurement_template_Intel_noMem_2() {
 
 void measurement_template_Intel_noMem_4() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
@@ -943,8 +932,7 @@ void measurement_template_Intel_noMem_4() {
 
 void measurement_template_AMD() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
@@ -1028,8 +1016,7 @@ void measurement_template_AMD() {
 
 void measurement_template_AMD_noMem() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
@@ -1104,8 +1091,7 @@ void measurement_template_AMD_noMem() {
 
 void measurement_FF_template_Intel() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
@@ -1168,8 +1154,7 @@ void measurement_FF_template_Intel() {
 
 void measurement_FF_template_Intel_noMem() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
@@ -1222,8 +1207,7 @@ void measurement_FF_template_Intel_noMem() {
 
 void measurement_FF_template_AMD() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
@@ -1278,8 +1262,7 @@ void measurement_FF_template_AMD() {
 
 void measurement_FF_template_AMD_noMem() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         "mov r9, 0                               \n"
@@ -1321,8 +1304,7 @@ void measurement_FF_template_AMD_noMem() {
 
 void measurement_RDTSC_template() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
@@ -1356,8 +1338,7 @@ void measurement_RDTSC_template() {
 
 void measurement_RDTSC_template_noMem() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
@@ -1380,8 +1361,7 @@ void measurement_RDTSC_template_noMem() {
 
 void measurement_RDMSR_template() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "push rax                                \n"
         "lahf                                    \n"
@@ -1419,8 +1399,7 @@ void measurement_RDMSR_template() {
 
 void measurement_RDMSR_template_noMem() {
     SAVE_REGS_FLAGS();
-    asm volatile(
-        ".intel_syntax noprefix                  \n"
+    asm(".intel_syntax noprefix                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
         "mov r8, 0                               \n"
         ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
@@ -1446,6 +1425,16 @@ void measurement_RDMSR_template_noMem() {
 void one_time_init_template() {
     SAVE_REGS_FLAGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_INIT));
+    RESTORE_REGS_FLAGS();
+    asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
+}
+
+void initial_warm_up_template() {
+    SAVE_REGS_FLAGS();
+    asm(".quad "STRINGIFY(MAGIC_BYTES_INIT)"     \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_START)"\n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_PFC_END)"  \n");
     RESTORE_REGS_FLAGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }

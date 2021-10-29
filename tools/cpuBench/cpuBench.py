@@ -350,7 +350,7 @@ def configurePFCs(events):
       cfg = getEventConfig(event)
       if cfg is not None:
          content += cfg + ' ' + event + '\n'
-   setNanoBenchParameters(config=content)
+   setNanoBenchParameters(config=content, fixedCounters=True)
 
 
 InstrInstance = namedtuple('InstrInstance', ['instrNode', 'asm', 'readRegs', 'writtenRegs', 'opRegDict', 'regMemInit'])

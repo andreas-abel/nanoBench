@@ -3,8 +3,8 @@ import collections
 import subprocess
 import sys
 
-PFC_START_ASM = '.quad 0xE0b513b1C2813F04'
-PFC_STOP_ASM = '.quad 0xF0b513b1C2813F04'
+PFC_START_ASM = '.quad 0xE0B513B1C2813F04'
+PFC_STOP_ASM = '.quad 0xF0B513B1C2813F04'
 
 def writeFile(fileName, content):
    with open(fileName, 'w') as f:
@@ -53,9 +53,9 @@ paramDict = dict()
 
 # Assumes that no changes to the corresponding files in /sys/nb/ were made since the last call to setNanoBenchParameters().
 # Otherwise, reset() needs to be called first.
-def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConfigFile=None, nMeasurements=None, unrollCount=None, loopCount=None,
-                           warmUpCount=None, initialWarmUpCount=None, alignmentOffset=None, codeOffset=None, drainFrontend=None, aggregateFunction=None,
-                           basicMode=None, noMem=None, noNormalization=None, verbose=None):
+def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConfigFile=None, fixedCounters=None, nMeasurements=None, unrollCount=None,
+                           loopCount=None, warmUpCount=None, initialWarmUpCount=None, alignmentOffset=None, codeOffset=None, drainFrontend=None,
+                           aggregateFunction=None, basicMode=None, noMem=None, noNormalization=None, verbose=None):
    if not ramdiskCreated: createRamdisk()
 
    if config is not None:
@@ -73,6 +73,11 @@ def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConf
          paramDict['msrConfig'] = msrConfig
    if msrConfigFile is not None:
       writeFile('/sys/nb/msr_config', msrConfigFile)
+
+   if fixedCounters is not None:
+      if paramDict.get('fixedCounters', None) != fixedCounters:
+         writeFile('/sys/nb/fixed_counters', str(int(fixedCounters)))
+         paramDict['fixedCounters'] = fixedCounters
 
    if nMeasurements is not None:
       if paramDict.get('nMeasurements', None) != nMeasurements:

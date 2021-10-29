@@ -54,6 +54,9 @@ while [ "$1" ]; do
     elif [[ "$1" == -con* ]]; then
         echo -n "$2" > /sys/nb/config
         shift 2
+    elif [[ "$1" == -f* ]]; then
+        echo "1" > /sys/nb/fixed_counters
+        shift
     elif [[ "$1" == -msr* ]]; then
         echo -n "$2" > /sys/nb/msr_config
         shift 2
@@ -112,6 +115,7 @@ while [ "$1" ]; do
         echo "  -code_init <filename>:      Binary file containing code to be executed once in the beginning."
         echo "  -code_late_init <filename>: Binary file containing code to be executed once immediately before the code to be benchmarked."
         echo "  -config <filename>:         File with performance counter event specifications."
+        echo "  -fixed_counters:            Reads the fixed-function performance counters.\n"
         echo "  -n_measurements <n>:        Number of times the measurements are repeated."
         echo "  -unroll_count <n>:          Number of copies of the benchmark code inside the inner loop."
         echo "  -loop_count <n>:            Number of iterations of the inner loop."
@@ -135,4 +139,9 @@ while [ "$1" ]; do
     fi
 done
 
+prev_nmi_watchdog=$(cat /proc/sys/kernel/nmi_watchdog)
+echo 0 > /proc/sys/kernel/nmi_watchdog
+
 $taskset cat /proc/nanoBench
+
+echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog

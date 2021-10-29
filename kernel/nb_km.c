@@ -219,6 +219,15 @@ static ssize_t msr_config_store(struct kobject *kobj, struct kobj_attribute *att
 }
 static struct kobj_attribute msr_config_attribute =__ATTR(msr_config, 0660, msr_config_show, msr_config_store);
 
+static ssize_t fixed_counters_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%u\n", use_fixed_counters);
+}
+static ssize_t fixed_counters_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%u", &use_fixed_counters);
+    return count;
+}
+static struct kobj_attribute fixed_counters_attribute =__ATTR(fixed_counters, 0660, fixed_counters_show, fixed_counters_store);
+
 static ssize_t unroll_count_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%ld\n", unroll_count);
 }
@@ -455,6 +464,7 @@ static ssize_t reset_show(struct kobject *kobj, struct kobj_attribute *attr, cha
     no_mem = NO_MEM_DEFAULT;
     no_normalization = NO_NORMALIZATION_DEFAULT;
     basic_mode = BASIC_MODE_DEFAULT;
+    use_fixed_counters = USE_FIXED_COUNTERS_DEFAULT;
     aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
     verbose = VERBOSE_DEFAULT;
     alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
@@ -500,61 +510,65 @@ static int show(struct seq_file *m, void *v) {
     char buf[100];
     char* measurement_template;
 
+    create_and_run_one_time_init_code();
+    run_initial_warmup_experiment();
+
     /*********************************
      * Fixed-function counters.
-     ********************************/
-    if (is_AMD_CPU) {
-        if (no_mem) {
-            measurement_template = (char*)&measurement_FF_template_AMD_noMem;
+    ********************************/
+    if (use_fixed_counters) {
+        if (is_AMD_CPU) {
+            if (no_mem) {
+                measurement_template = (char*)&measurement_FF_template_AMD_noMem;
+            } else {
+                measurement_template = (char*)&measurement_FF_template_AMD;
+            }
         } else {
-            measurement_template = (char*)&measurement_FF_template_AMD;
+            if (no_mem) {
+                measurement_template = (char*)&measurement_FF_template_Intel_noMem;
+            } else {
+                measurement_template = (char*)&measurement_FF_template_Intel;
+            }
         }
-    } else {
-        if (no_mem) {
-            measurement_template = (char*)&measurement_FF_template_Intel_noMem;
+
+        if (is_AMD_CPU) {
+            run_experiment(measurement_template, measurement_results_base, 3, base_unroll_count, base_loop_count);
+            run_experiment(measurement_template, measurement_results, 3, main_unroll_count, main_loop_count);
+
+            if (verbose) {
+                pr_debug("\nRDTSC, MPERF, and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+                print_all_measurement_results(measurement_results_base, 3);
+                pr_debug("RDTSC, MPERF, and and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+                print_all_measurement_results(measurement_results, 3);
+            }
+
+            seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
+            seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "MPERF", 1));
+            seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "APERF", 2));
         } else {
-            measurement_template = (char*)&measurement_FF_template_Intel;
+            configure_perf_ctrs_FF_Intel(0, 1);
+
+            run_experiment(measurement_template, measurement_results_base, 4, base_unroll_count, base_loop_count);
+            run_experiment(measurement_template, measurement_results, 4, main_unroll_count, main_loop_count);
+
+            if (verbose) {
+                pr_debug("\nRDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+                print_all_measurement_results(measurement_results_base, 4);
+                pr_debug("RDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+                print_all_measurement_results(measurement_results, 4);
+            }
+
+            seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
+            seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "Instructions retired", 1));
+            seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "Core cycles", 2));
+            seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "Reference cycles", 3));
         }
-    }
-
-    configure_perf_ctrs_FF(0, 1);
-    create_and_run_one_time_init_code();
-    run_warmup_experiment(measurement_template);
-
-    if (is_AMD_CPU) {
-        run_experiment(measurement_template, measurement_results_base, 3, base_unroll_count, base_loop_count);
-        run_experiment(measurement_template, measurement_results, 3, main_unroll_count, main_loop_count);
-
-        if (verbose) {
-            pr_debug("\nRDTSC, MPERF, and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
-            print_all_measurement_results(measurement_results_base, 3);
-            pr_debug("RDTSC, MPERF, and and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
-            print_all_measurement_results(measurement_results, 3);
-        }
-
-        seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
-        seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "MPERF", 1));
-        seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "APERF", 2));
-    } else {
-        run_experiment(measurement_template, measurement_results_base, 4, base_unroll_count, base_loop_count);
-        run_experiment(measurement_template, measurement_results, 4, main_unroll_count, main_loop_count);
-
-        if (verbose) {
-            pr_debug("\nRDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
-            print_all_measurement_results(measurement_results_base, 4);
-            pr_debug("RDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
-            print_all_measurement_results(measurement_results, 4);
-        }
-
-        seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
-        seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "Instructions retired", 1));
-        seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "Core cycles", 2));
-        seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "Reference cycles", 3));
     }
 
     /*********************************
      * Programmable counters.
      ********************************/
+    int n_used_counters = n_programmable_counters;
     if (is_AMD_CPU) {
         if (no_mem) {
             measurement_template = (char*)&measurement_template_AMD_noMem;
@@ -562,15 +576,17 @@ static int show(struct seq_file *m, void *v) {
             measurement_template = (char*)&measurement_template_AMD;
         }
     } else {
-        if (no_mem) {
-            if (n_programmable_counters >= 4) {
-                measurement_template = (char*)&measurement_template_Intel_noMem_4;
+        if (n_used_counters >= 4) {
+            n_used_counters = 4;
+            if (no_mem) {
+                 measurement_template = (char*)&measurement_template_Intel_noMem_4;
             } else {
-                measurement_template = (char*)&measurement_template_Intel_noMem_2;
+                measurement_template = (char*)&measurement_template_Intel_4;
             }
         } else {
-            if (n_programmable_counters >= 4) {
-                measurement_template = (char*)&measurement_template_Intel_4;
+            n_used_counters = 2;
+            if (no_mem) {
+                measurement_template = (char*)&measurement_template_Intel_noMem_2;
             } else {
                 measurement_template = (char*)&measurement_template_Intel_2;
             }
@@ -580,20 +596,20 @@ static int show(struct seq_file *m, void *v) {
     size_t next_pfc_config = 0;
     while (next_pfc_config < n_pfc_configs) {
         char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
-        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, 1, 1, pfc_descriptions);
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, n_used_counters, 1, 1, pfc_descriptions);
         // on some microarchitectures (e.g., Broadwell), some events (e.g., L1 misses) are not counted properly if only the OS field is set
 
-        run_experiment(measurement_template, measurement_results_base, n_programmable_counters, base_unroll_count, base_loop_count);
-        run_experiment(measurement_template, measurement_results, n_programmable_counters, main_unroll_count, main_loop_count);
+        run_experiment(measurement_template, measurement_results_base, n_used_counters, base_unroll_count, base_loop_count);
+        run_experiment(measurement_template, measurement_results, n_used_counters, main_unroll_count, main_loop_count);
 
         if (verbose) {
             pr_debug("\nProgrammable counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
-            print_all_measurement_results(measurement_results_base, n_programmable_counters);
+            print_all_measurement_results(measurement_results_base, n_used_counters);
             pr_debug("Programmable counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
-            print_all_measurement_results(measurement_results, n_programmable_counters);
+            print_all_measurement_results(measurement_results, n_used_counters);
         }
 
-        for (size_t c=0; c < n_programmable_counters; c++) {
+        for (size_t c=0; c < n_used_counters; c++) {
             if (pfc_descriptions[c]) seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), pfc_descriptions[c], c));
         }
     }
@@ -715,6 +731,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &code_one_time_init_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &config_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &msr_config_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &fixed_counters_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &loop_count_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &unroll_count_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &n_measurements_attribute.attr);

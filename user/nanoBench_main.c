@@ -29,6 +29,7 @@ void print_usage() {
     printf("  -code_late_init <filename>:     Binary file containing code to be executed once immediately before the code to be benchmarked.\n");
     printf("  -code_one_time_init <filename>: Binary file containing code to be executed once before the first measurement\n");
     printf("  -config <filename>:             File with performance counter event specifications.\n");
+    printf("  -fixed_counters:                Reads the fixed-function performance counters.\n");
     printf("  -n_measurements <n>:            Number of times the measurements are repeated.\n");
     printf("  -unroll_count <n>:              Number of copies of the benchmark code inside the inner loop.\n");
     printf("  -loop_count <n>:                Number of iterations of the inner loop.\n");
@@ -75,6 +76,7 @@ int main(int argc, char **argv) {
         {"code_late_init", required_argument, 0, 't'},
         {"code_one_time_init", required_argument, 0, 'o'},
         {"config", required_argument, 0, 'f'},
+        {"fixed_counters", no_argument, &use_fixed_counters, 1},
         {"n_measurements", required_argument, 0, 'n'},
         {"unroll_count", required_argument, 0, 'u'},
         {"loop_count", required_argument, 0, 'l'},
@@ -235,9 +237,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    /*************************************
-     * Fixed-function counters
-     ************************************/
     long base_unroll_count = (basic_mode?0:unroll_count);
     long main_unroll_count = (basic_mode?unroll_count:2*unroll_count);
     long base_loop_count = (basic_mode?0:loop_count);
@@ -246,57 +245,63 @@ int main(int argc, char **argv) {
     char buf[100];
     char* measurement_template;
 
-    if (is_AMD_CPU) {
-        if (no_mem) {
-            measurement_template = (char*)&measurement_RDTSC_template_noMem;
-        } else {
-            measurement_template = (char*)&measurement_RDTSC_template;
-        }
-    } else {
-        if (no_mem) {
-            measurement_template = (char*)&measurement_FF_template_Intel_noMem;
-        } else {
-            measurement_template = (char*)&measurement_FF_template_Intel;
-        }
-    }
-
     create_and_run_one_time_init_code();
-    run_warmup_experiment(measurement_template);
+    run_initial_warmup_experiment();
 
-    if (is_AMD_CPU) {
-        run_experiment(measurement_template, measurement_results_base, 1, base_unroll_count, base_loop_count);
-        run_experiment(measurement_template, measurement_results, 1, main_unroll_count, main_loop_count);
-
-        if (verbose) {
-            printf("\nRDTSC results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
-            print_all_measurement_results(measurement_results_base, 1);
-            printf("RDTSC results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
-            print_all_measurement_results(measurement_results, 1);
+    /*************************************
+     * Fixed-function counters
+     ************************************/
+    if (use_fixed_counters) {
+        if (is_AMD_CPU) {
+            if (no_mem) {
+                measurement_template = (char*)&measurement_RDTSC_template_noMem;
+            } else {
+                measurement_template = (char*)&measurement_RDTSC_template;
+            }
+        } else {
+            if (no_mem) {
+                measurement_template = (char*)&measurement_FF_template_Intel_noMem;
+            } else {
+                measurement_template = (char*)&measurement_FF_template_Intel;
+            }
         }
 
-        printf("%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
-    } else {
-        configure_perf_ctrs_FF(usr, os);
+        if (is_AMD_CPU) {
+            run_experiment(measurement_template, measurement_results_base, 1, base_unroll_count, base_loop_count);
+            run_experiment(measurement_template, measurement_results, 1, main_unroll_count, main_loop_count);
 
-        run_experiment(measurement_template, measurement_results_base, 4, base_unroll_count, base_loop_count);
-        run_experiment(measurement_template, measurement_results, 4, main_unroll_count, main_loop_count);
+            if (verbose) {
+                printf("\nRDTSC results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+                print_all_measurement_results(measurement_results_base, 1);
+                printf("RDTSC results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+                print_all_measurement_results(measurement_results, 1);
+            }
 
-        if (verbose) {
-            printf("\nRDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
-            print_all_measurement_results(measurement_results_base, 4);
-            printf("RDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
-            print_all_measurement_results(measurement_results, 4);
+            printf("%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
+        } else {
+            configure_perf_ctrs_FF_Intel(usr, os);
+
+            run_experiment(measurement_template, measurement_results_base, 4, base_unroll_count, base_loop_count);
+            run_experiment(measurement_template, measurement_results, 4, main_unroll_count, main_loop_count);
+
+            if (verbose) {
+                printf("\nRDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+                print_all_measurement_results(measurement_results_base, 4);
+                printf("RDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+                print_all_measurement_results(measurement_results, 4);
+            }
+
+            printf("%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
+            printf("%s", compute_result_str(buf, sizeof(buf), "Instructions retired", 1));
+            printf("%s", compute_result_str(buf, sizeof(buf), "Core cycles", 2));
+            printf("%s", compute_result_str(buf, sizeof(buf), "Reference cycles", 3));
         }
-
-        printf("%s", compute_result_str(buf, sizeof(buf), "RDTSC", 0));
-        printf("%s", compute_result_str(buf, sizeof(buf), "Instructions retired", 1));
-        printf("%s", compute_result_str(buf, sizeof(buf), "Core cycles", 2));
-        printf("%s", compute_result_str(buf, sizeof(buf), "Reference cycles", 3));
     }
 
     /*************************************
      * Programmable counters
      ************************************/
+    int n_used_counters = n_programmable_counters;
     if (is_AMD_CPU) {
         if (no_mem) {
             measurement_template = (char*)&measurement_template_AMD_noMem;
@@ -304,15 +309,17 @@ int main(int argc, char **argv) {
             measurement_template = (char*)&measurement_template_AMD;
         }
     } else {
-        if (no_mem) {
-            if (n_programmable_counters >= 4) {
-                measurement_template = (char*)&measurement_template_Intel_noMem_4;
+        if (n_used_counters >= 4) {
+            n_used_counters = 4;
+            if (no_mem) {
+                 measurement_template = (char*)&measurement_template_Intel_noMem_4;
             } else {
-                measurement_template = (char*)&measurement_template_Intel_noMem_2;
+                measurement_template = (char*)&measurement_template_Intel_4;
             }
         } else {
-            if (n_programmable_counters >= 4) {
-                measurement_template = (char*)&measurement_template_Intel_4;
+            n_used_counters = 2;
+            if (no_mem) {
+                measurement_template = (char*)&measurement_template_Intel_noMem_2;
             } else {
                 measurement_template = (char*)&measurement_template_Intel_2;
             }
@@ -322,19 +329,19 @@ int main(int argc, char **argv) {
     size_t next_pfc_config = 0;
     while (next_pfc_config < n_pfc_configs) {
         char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
-        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, usr, os, pfc_descriptions);
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, n_used_counters, usr, os, pfc_descriptions);
 
-        run_experiment(measurement_template, measurement_results_base, n_programmable_counters, base_unroll_count, base_loop_count);
-        run_experiment(measurement_template, measurement_results, n_programmable_counters, main_unroll_count, main_loop_count);
+        run_experiment(measurement_template, measurement_results_base, n_used_counters, base_unroll_count, base_loop_count);
+        run_experiment(measurement_template, measurement_results, n_used_counters, main_unroll_count, main_loop_count);
 
         if (verbose) {
             printf("\nProgrammable counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
-            print_all_measurement_results(measurement_results_base, n_programmable_counters);
+            print_all_measurement_results(measurement_results_base, n_used_counters);
             printf("Programmable counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
-            print_all_measurement_results(measurement_results, n_programmable_counters);
+            print_all_measurement_results(measurement_results, n_used_counters);
         }
 
-        for (size_t c=0; c < n_programmable_counters; c++) {
+        for (size_t c=0; c < n_used_counters; c++) {
             if (pfc_descriptions[c]) printf("%s", compute_result_str(buf, sizeof(buf), pfc_descriptions[c], c));
         }
     }

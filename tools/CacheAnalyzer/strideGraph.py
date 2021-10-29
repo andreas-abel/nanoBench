@@ -17,7 +17,8 @@ def main():
    args = parser.parse_args()
 
    resetNanoBench()
-   setNanoBenchParameters(config=getDefaultCacheConfig(), nMeasurements=1, warmUpCount=0, unrollCount=1, loopCount=args.loop, basicMode=False, noMem=True)
+   setNanoBenchParameters(config=getDefaultCacheConfig(), fixedCounters=True, nMeasurements=1, warmUpCount=0, unrollCount=1, loopCount=args.loop,
+                          basicMode=False, noMem=True)
 
    nbDicts = []
    xValues = []

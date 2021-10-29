@@ -42,12 +42,11 @@ The following command will benchmark the assembler code sequence "ADD RAX, RBX; 
     sudo ./nanoBench.sh -asm "ADD RAX, RBX; add RBX, RAX" -config configs/cfg_Skylake_common.txt
 
 It will produce an output similar to the following.
-    
-    Instructions retired: 2.00
-    Core cycles: 2.00
-    Reference cycles: 1.85
-    UOPS_ISSUED.ANY: 2.00
-    UOPS_EXECUTED.THREAD: 2.00
+
+    CORE_CYCLES: 2.00
+    INST_RETIRED: 2.00
+    UOPS_ISSUED: 2.00
+    UOPS_EXECUTED: 2.00
     UOPS_DISPATCHED_PORT.PORT_0: 0.49
     UOPS_DISPATCHED_PORT.PORT_1: 0.50
     UOPS_DISPATCHED_PORT.PORT_2: 0.00
@@ -96,7 +95,7 @@ We will now take a look behind the scenes at the code that *nanoBench* generates
 
     int run(code, code_init, local_unroll_count):
         int measurements[n_measurements]
-        
+
         for i=-warm_up_count to n_measurements
             save_regs
             code_init
@@ -111,17 +110,17 @@ We will now take a look behind the scenes at the code that *nanoBench* generates
             restore_regs
             if i >= 0: // ignore warm-up runs
                 measurements[i] = m2 - m1
-                
+
         return agg(measurements) // apply selected aggregate function
 
-`run(...)` is executed twice: The first time with `local_unroll_count = unroll_count`, and the second time with `local_unroll_count = 2 * unroll_count`. If the `-basic_mode` options is used, the first execution is with no instructions between `m1 = read_perf_ctrs` and `m2 = read_perf_ctrs`, and the second with `local_unroll_count = unroll_count`. 
+`run(...)` is executed twice: The first time with `local_unroll_count = unroll_count`, and the second time with `local_unroll_count = 2 * unroll_count`. If the `-basic_mode` options is used, the first execution is with no instructions between `m1 = read_perf_ctrs` and `m2 = read_perf_ctrs`, and the second with `local_unroll_count = unroll_count`.
 
 
-The result that is finally reported by *nanoBench* is the difference between these two executions divided by `max(loop_count * unroll_count, unroll_count)`. 
+The result that is finally reported by *nanoBench* is the difference between these two executions divided by `max(loop_count * unroll_count, unroll_count)`.
 
 Before the first execution of `run(...)`, the performance counters are configured according to the event specifications in the `-config` file. If this file contains more events than there are programmable performance counters available, `run(...)` is executed multiple times with different performance counter configurations.
 
-    
+
 
 ## Command-line Options
 
@@ -137,7 +136,8 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | `-code_init <filename>`      | A binary file containing code to be executed once in the beginning of every benchmark run. *This option cannot be used together with `-asm_init`.* |
 | `-code_late_init <filename>` | A binary file containing code to be executed once immediately before the code to be benchmarked. *This option cannot be used together with `-asm_late_init`.* |
 | `-code_one_time_init <code>` | A binary file containing code to be executed once before the first benchmark run. *This option cannot be used together with `-asm_one_time_init`.*|
-| `-config <file>`             | File with performance counter event specifications. Details are described [below](#performance-counter-config-files).  |
+| `-config <file>`             | File with performance counter event specifications. Details are described [below](#performance-counter-config-files). |
+| `-fixed_counters`            | Reads the fixed-function performance counters. |
 | `-n_measurements <n>`        | Number of times the measurements are repeated. `[Default: n=10]` |
 | `-unroll_count <n>`          | Number of copies of the benchmark code inside the inner loop. `[Default: n=1000]` |
 | `-loop_count <n>`            | Number of iterations of the inner loop. If n>0, the code to be benchmarked **must not modify R15**, as this register contains the loop counter. If n=0, the instructions for the loop are omitted; the loop body is then executed once. `[Default: n=0]` |
@@ -196,7 +196,7 @@ can be used to count the number of last-level cache lookups in C-Box 0 on a Skyl
 
 ## Pausing Performance Counting
 
-If the `-no_mem` option is used, nanoBench provides a feature to temporarily pause performance counting. This is enabled by including the *magic* byte sequences `0xF0b513b1C2813F04` (for stopping the counters), and `0xE0b513b1C2813F04` (for restarting them) in the code of the microbenchmark.
+If the `-no_mem` option is used, nanoBench provides a feature to temporarily pause performance counting. This is enabled by including the *magic* byte sequences `0xF0B513B1C2813F04` (for stopping the counters), and `0xE0B513B1C2813F04` (for restarting them) in the code of the microbenchmark.
 
 Using this feature incurs a certain timing overhead that will be included in the measurement results. It is therefore, in particular, useful for microbenchmarks that do not measure the time, but e.g., cache hits or misses, such as the microbenchmarks generated by the tools in [tools/CacheAnalyzer](tools/CacheAnalyzer).
 

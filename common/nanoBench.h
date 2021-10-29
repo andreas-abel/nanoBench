@@ -115,6 +115,10 @@ extern int no_normalization;
 extern int basic_mode;
 #define BASIC_MODE_DEFAULT 0;
 
+// If enabled, the result includes measurements using the fixed-function performance counters and the RDTSC instruction.
+extern int use_fixed_counters;
+#define USE_FIXED_COUNTERS_DEFAULT 0;
+
 enum agg_enum {AVG_20_80, MIN, MAX, MED};
 extern int aggregate_function;
 #define AGGREGATE_FUNCTION_DEFAULT AVG_20_80;
@@ -170,7 +174,7 @@ extern char* msr_config_file_content;
 extern int is_Intel_CPU;
 extern int is_AMD_CPU;
 
-#define MAX_PROGRAMMABLE_COUNTERS 6
+#define MAX_PROGRAMMABLE_COUNTERS 8
 extern int n_programmable_counters;
 
 // Pointers to a memory regions that are writable and executable.
@@ -212,19 +216,19 @@ uint64_t read_msr(unsigned int msr);
 void write_msr(unsigned int msr, uint64_t value);
 
 // Enables and clears the fixed-function performance counters.
-void configure_perf_ctrs_FF(unsigned int usr, unsigned int os);
+void configure_perf_ctrs_FF_Intel(unsigned int usr, unsigned int os);
 
 // Clears the programmable performance counters and writes the configurations to the corresponding MSRs.
-// next_pfc_config is an index into the pfc_configs array; the function takes up to n_programmable_counters many configurations from this array;
+// next_pfc_config is an index into the pfc_configs array; the function takes up to n_counters many configurations from this array;
 // it returns the index of the next configuration, and writes the descriptions of the applicable configurations to the corresponding array.
-size_t configure_perf_ctrs_programmable(size_t next_pfc_config, unsigned int usr, unsigned int os, char* descriptions[]);
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, unsigned int usr, unsigned int os, char* descriptions[]);
 
 void configure_MSRs(struct msr_config config);
 
 size_t get_required_runtime_code_length(void);
 
 void create_runtime_code(char* measurement_template, long local_unroll_count, long local_loop_count);
-void run_warmup_experiment(char* measurement_template);
+void run_initial_warmup_experiment(void);
 void run_experiment(char* measurement_template, int64_t* results[], int n_counters, long local_unroll_count, long local_loop_count);
 void create_and_run_one_time_init_code(void);
 
@@ -236,22 +240,22 @@ long long ll_abs(long long val);
 void print_all_measurement_results(int64_t* results[], int n_counters);
 
 
-#define MAGIC_BYTES_INIT 0x10b513b1C2813F04
-#define MAGIC_BYTES_CODE 0x20b513b1C2813F04
-#define MAGIC_BYTES_RSP_ADDRESS 0x30b513b1C2813F04
-#define MAGIC_BYTES_RUNTIME_R14 0x40b513b1C2813F04
-#define MAGIC_BYTES_RUNTIME_RBP 0x50b513b1C2813F04
-#define MAGIC_BYTES_RUNTIME_RDI 0x60b513b1C2813F04
-#define MAGIC_BYTES_RUNTIME_RSI 0x70b513b1C2813F04
-#define MAGIC_BYTES_RUNTIME_RSP 0x80b513b1C2813F04
-#define MAGIC_BYTES_PFC 0x90b513b1C2813F04
-#define MAGIC_BYTES_MSR 0xA0b513b1C2813F04
-#define MAGIC_BYTES_TEMPLATE_END 0xB0b513b1C2813F04
-#define MAGIC_BYTES_PFC_START 0xC0b513b1C2813F04
-#define MAGIC_BYTES_PFC_END 0xD0b513b1C2813F04
+#define MAGIC_BYTES_INIT 0x10B513B1C2813F04
+#define MAGIC_BYTES_CODE 0x20B513B1C2813F04
+#define MAGIC_BYTES_RSP_ADDRESS 0x30B513B1C2813F04
+#define MAGIC_BYTES_RUNTIME_R14 0x40B513B1C2813F04
+#define MAGIC_BYTES_RUNTIME_RBP 0x50B513B1C2813F04
+#define MAGIC_BYTES_RUNTIME_RDI 0x60B513B1C2813F04
+#define MAGIC_BYTES_RUNTIME_RSI 0x70B513B1C2813F04
+#define MAGIC_BYTES_RUNTIME_RSP 0x80B513B1C2813F04
+#define MAGIC_BYTES_PFC 0x90B513B1C2813F04
+#define MAGIC_BYTES_MSR 0xA0B513B1C2813F04
+#define MAGIC_BYTES_TEMPLATE_END 0xB0B513B1C2813F04
+#define MAGIC_BYTES_PFC_START 0xC0B513B1C2813F04
+#define MAGIC_BYTES_PFC_END 0xD0B513B1C2813F04
 
-#define MAGIC_BYTES_CODE_PFC_START 0xE0b513b1C2813F04
-#define MAGIC_BYTES_CODE_PFC_STOP 0xF0b513b1C2813F04
+#define MAGIC_BYTES_CODE_PFC_START 0xE0B513B1C2813F04
+#define MAGIC_BYTES_CODE_PFC_STOP 0xF0B513B1C2813F04
 
 
 #define STRINGIFY2(X) #X
@@ -275,6 +279,7 @@ void measurement_RDTSC_template_noMem(void);
 void measurement_RDMSR_template(void);
 void measurement_RDMSR_template_noMem(void);
 void one_time_init_template(void);
+void initial_warm_up_template(void);
 
 // RBX, RBP, and R12–R15 are callee saved registers according to the "System V AMD64 ABI" (https://en.wikipedia.org/wiki/X86_calling_conventions)
 #define SAVE_REGS_FLAGS()                                 \
