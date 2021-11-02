@@ -75,9 +75,8 @@ The `asm-init` code is executed once in the beginning. It first sets RAX to R14-
 
 We will get an output similar to the following.
 
-    Instructions retired: 1.00
-    Core cycles: 4.00
-    Reference cycles: 3.52
+    CORE_CYCLES: 4.00
+    INST_RETIRED: 1.00
     UOPS_ISSUED.ANY: 1.00
     UOPS_EXECUTED.THREAD: 1.00
     UOPS_DISPATCHED_PORT.PORT_0: 0.00
