@@ -546,7 +546,7 @@ static int show(struct seq_file *m, void *v) {
             seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "MPERF", 1));
             seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), "APERF", 2));
         } else {
-            configure_perf_ctrs_FF_Intel(0, 1);
+            configure_perf_ctrs_FF_Intel(false, true);
 
             run_experiment(measurement_template, measurement_results_base, 4, base_unroll_count, base_loop_count);
             run_experiment(measurement_template, measurement_results, 4, main_unroll_count, main_loop_count);
@@ -596,7 +596,7 @@ static int show(struct seq_file *m, void *v) {
     size_t next_pfc_config = 0;
     while (next_pfc_config < n_pfc_configs) {
         char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
-        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, n_used_counters, 1, 1, pfc_descriptions);
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, n_used_counters, true, true, pfc_descriptions);
         // on some microarchitectures (e.g., Broadwell), some events (e.g., L1 misses) are not counted properly if only the OS field is set
 
         run_experiment(measurement_template, measurement_results_base, n_used_counters, base_unroll_count, base_loop_count);

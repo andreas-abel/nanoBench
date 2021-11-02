@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
      * Parse command-line options
      ************************************/
     char* config_file_name = NULL;
-    int usr = 1;
-    int os = 0;
+    bool usr = 1;
+    bool os = 0;
 
     struct option long_opts[] = {
         {"code", required_argument, 0, 'c'},
@@ -76,26 +76,26 @@ int main(int argc, char **argv) {
         {"code_late_init", required_argument, 0, 't'},
         {"code_one_time_init", required_argument, 0, 'o'},
         {"config", required_argument, 0, 'f'},
-        {"fixed_counters", no_argument, &use_fixed_counters, 1},
+        {"fixed_counters", no_argument, &use_fixed_counters, true},
         {"n_measurements", required_argument, 0, 'n'},
         {"unroll_count", required_argument, 0, 'u'},
         {"loop_count", required_argument, 0, 'l'},
         {"warm_up_count", required_argument, 0, 'w'},
         {"initial_warm_up_count", required_argument, 0, 'a'},
         {"alignment_offset", required_argument, 0, 'm'},
-        {"df", no_argument, &drain_frontend, 1},
+        {"df", no_argument, &drain_frontend, true},
         {"avg", no_argument, &aggregate_function, AVG_20_80},
         {"median", no_argument, &aggregate_function, MED},
         {"min", no_argument, &aggregate_function, MIN},
         {"max", no_argument, &aggregate_function, MAX},
-        {"basic_mode", no_argument, &basic_mode, 1},
-        {"no_mem", no_argument, &no_mem, 1},
-        {"no_normalization", no_argument, &no_normalization, 1},
-        {"verbose", no_argument, &verbose, 1},
+        {"basic_mode", no_argument, &basic_mode, true},
+        {"no_mem", no_argument, &no_mem, true},
+        {"no_normalization", no_argument, &no_normalization, true},
+        {"verbose", no_argument, &verbose, true},
         {"cpu", required_argument, 0, 'p'},
         {"usr", required_argument, 0, 'r'},
         {"os", required_argument, 0, 's'},
-        {"debug", no_argument, &debug, 1},
+        {"debug", no_argument, &debug, true},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };

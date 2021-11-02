@@ -24,6 +24,7 @@
     #include <string.h>
 #endif
 
+#include <stdbool.h>
 #include <cpuid.h>
 
 #ifdef __KERNEL__
@@ -97,38 +98,38 @@ extern size_t alignment_offset;
 
 // If enabled, the front-end buffers are drained between code_late_init and code by executing a sequence of 128 15-Byte NOP instructions.
 extern int drain_frontend;
-#define DRAIN_FRONTEND_DEFAULT 0;
+#define DRAIN_FRONTEND_DEFAULT false;
 
 // If enabled, the temporary performance counter values are stored in registers instead of in memory;
 // the code to be measured must then not use registers R8-R13
 extern int no_mem;
-#define NO_MEM_DEFAULT 0;
+#define NO_MEM_DEFAULT false;
 
 // If enabled, the measurement results are not divided by the number of repetitions.
 extern int no_normalization;
-#define NO_NORMALIZATION_DEFAULT 0;
+#define NO_NORMALIZATION_DEFAULT false;
 
 // If disabled, the first measurement is performed with 2*unroll_count and the second with unroll_count; the reported result is the difference between the two
 // measurements.
 // If enabled, the first measurement is performed with unroll_count and the second with an empty measurement body; the reported result is the difference
 // between the two measurements.
 extern int basic_mode;
-#define BASIC_MODE_DEFAULT 0;
+#define BASIC_MODE_DEFAULT false;
 
 // If enabled, the result includes measurements using the fixed-function performance counters and the RDTSC instruction.
 extern int use_fixed_counters;
-#define USE_FIXED_COUNTERS_DEFAULT 0;
+#define USE_FIXED_COUNTERS_DEFAULT false;
 
 enum agg_enum {AVG_20_80, MIN, MAX, MED};
 extern int aggregate_function;
 #define AGGREGATE_FUNCTION_DEFAULT AVG_20_80;
 
 extern int verbose;
-#define VERBOSE_DEFAULT 0;
+#define VERBOSE_DEFAULT false;
 
 // Whether to generate a breakpoint trap after executing the code to be benchmarked.
 extern int debug;
-#define DEBUG_DEFAULT 0;
+#define DEBUG_DEFAULT false;
 
 extern char* code;
 extern size_t code_length;
@@ -146,9 +147,9 @@ struct pfc_config {
     unsigned long evt_num;
     unsigned long umask;
     unsigned long cmask;
-    unsigned int any;
-    unsigned int edge;
-    unsigned int inv;
+    bool any;
+    bool edge;
+    bool inv;
     unsigned long msr_3f6h;
     unsigned long msr_pf;
     unsigned long msr_rsp0;
@@ -171,8 +172,8 @@ extern struct msr_config msr_configs[];
 extern size_t n_msr_configs;
 extern char* msr_config_file_content;
 
-extern int is_Intel_CPU;
-extern int is_AMD_CPU;
+extern bool is_Intel_CPU;
+extern bool is_AMD_CPU;
 
 #define MAX_PROGRAMMABLE_COUNTERS 8
 extern int n_programmable_counters;
@@ -205,7 +206,7 @@ extern int cpu;
 
 // Checks whether we have an Intel or AMD CPU and determines the number of programmable counters.
 // Returns 0 if successful, 1 otherwise.
-int check_cpuid(void);
+bool check_cpuid(void);
 
 void parse_counter_configs(void);
 void parse_msr_configs(void);
@@ -216,12 +217,12 @@ uint64_t read_msr(unsigned int msr);
 void write_msr(unsigned int msr, uint64_t value);
 
 // Enables and clears the fixed-function performance counters.
-void configure_perf_ctrs_FF_Intel(unsigned int usr, unsigned int os);
+void configure_perf_ctrs_FF_Intel(bool usr, bool os);
 
 // Clears the programmable performance counters and writes the configurations to the corresponding MSRs.
 // next_pfc_config is an index into the pfc_configs array; the function takes up to n_counters many configurations from this array;
 // it returns the index of the next configuration, and writes the descriptions of the applicable configurations to the corresponding array.
-size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, unsigned int usr, unsigned int os, char* descriptions[]);
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, bool usr, bool os, char* descriptions[]);
 
 void configure_MSRs(struct msr_config config);
 
@@ -257,11 +258,10 @@ void print_all_measurement_results(int64_t* results[], int n_counters);
 #define MAGIC_BYTES_CODE_PFC_START 0xE0B513B1C2813F04
 #define MAGIC_BYTES_CODE_PFC_STOP 0xF0B513B1C2813F04
 
-
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
 
-int starts_with_magic_bytes(char* c, int64_t magic_bytes);
+bool starts_with_magic_bytes(char* c, int64_t magic_bytes);
 
 // The following functions must not use global variables (or anything that uses RIP-relative addressing)
 void measurement_template_Intel_2(void);
@@ -283,8 +283,7 @@ void initial_warm_up_template(void);
 
 // RBX, RBP, and R12–R15 are callee saved registers according to the "System V AMD64 ABI" (https://en.wikipedia.org/wiki/X86_calling_conventions)
 #define SAVE_REGS_FLAGS()                                 \
-    asm volatile(                                         \
-        ".intel_syntax noprefix\n"                        \
+    asm(".intel_syntax noprefix\n"                        \
         "push rbx\n"                                      \
         "push rbp\n"                                      \
         "push r12\n"                                      \
@@ -313,8 +312,7 @@ void initial_warm_up_template(void);
         ".att_syntax noprefix");
 
 #define RESTORE_REGS_FLAGS()                              \
-    asm volatile(                                         \
-        ".intel_syntax noprefix\n"                        \
+    asm(".intel_syntax noprefix\n"                        \
         "mov r15, "STRINGIFY(MAGIC_BYTES_RSP_ADDRESS)"\n" \
         "mov rsp, [r15]\n"                                \
         "popfq\n"                                         \

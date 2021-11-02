@@ -47,8 +47,8 @@ size_t n_msr_configs = 0;
 char* msr_config_file_content = NULL;
 unsigned long cur_rdmsr = 0;
 
-int is_Intel_CPU = 0;
-int is_AMD_CPU = 0;
+bool is_Intel_CPU = false;
+bool is_AMD_CPU = false;
 
 int n_programmable_counters;
 
@@ -74,7 +74,7 @@ void build_cpuid_string(char* buf, unsigned int r0, unsigned int r1, unsigned in
     memcpy(buf+12, (char*)&r3, 4);
 }
 
-int check_cpuid() {
+bool check_cpuid() {
     unsigned int eax, ebx, ecx, edx;
     __cpuid(0, eax, ebx, ecx, edx);
 
@@ -104,32 +104,32 @@ int check_cpuid() {
     print_user_verbose("Stepping ID: %u\n", (eax & 0xF));
 
     if (strcmp(proc_vendor_string, "GenuineIntel") == 0) {
-        is_Intel_CPU = 1;
+        is_Intel_CPU = true;
 
         __cpuid(0x0A, eax, ebx, ecx, edx);
         unsigned int perf_mon_ver = (eax & 0xFF);
         print_user_verbose("Performance monitoring version: %u\n", perf_mon_ver);
         if (perf_mon_ver < 2) {
             print_error("Error: performance monitoring version >= 2 required\n");
-            return 1;
+            return true;
         }
 
         n_programmable_counters = ((eax >> 8) & 0xFF);
         print_user_verbose("Number of general-purpose performance counters: %u\n", n_programmable_counters);
         if (n_programmable_counters < 2) {
             print_error("Error: only %u programmable counters available; nanoBench requires at least 2\n", n_programmable_counters);
-            return 1;
+            return true;
         }
         print_user_verbose("Bit widths of general-purpose performance counters: %u\n", ((eax >> 16) & 0xFF));
     } else if (strcmp(proc_vendor_string, "AuthenticAMD") == 0) {
-        is_AMD_CPU = 1;
+        is_AMD_CPU = true;
         n_programmable_counters = 6;
     } else {
         print_error("Error: unsupported CPU found\n");
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 void parse_counter_configs() {
@@ -176,11 +176,11 @@ void parse_counter_configs() {
         char* ce;
         while ((ce = strsep(&tok, ".")) != NULL) {
             if (!strcmp(ce, "AnyT")) {
-                pfc_configs[n_pfc_configs].any = 1;
+                pfc_configs[n_pfc_configs].any = true;
             } else if (!strcmp(ce, "EDG")) {
-                pfc_configs[n_pfc_configs].edge = 1;
+                pfc_configs[n_pfc_configs].edge = true;
             } else if (!strcmp(ce, "INV")) {
-                pfc_configs[n_pfc_configs].inv = 1;
+                pfc_configs[n_pfc_configs].inv = true;
             } else if (!strncmp(ce, "CTR=", 4)) {
                 unsigned long counter;
                 nb_strtoul(ce+4, 0, &counter);
@@ -294,7 +294,7 @@ void write_msr(unsigned int msr, uint64_t value) {
     #endif
 }
 
-void configure_perf_ctrs_FF_Intel(unsigned int usr, unsigned int os) {
+void configure_perf_ctrs_FF_Intel(bool usr, bool os) {
     uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
     global_ctrl |= ((uint64_t)7 << 32) | 15;
     write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
@@ -313,7 +313,7 @@ void configure_perf_ctrs_FF_Intel(unsigned int usr, unsigned int os) {
     write_msr(MSR_IA32_FIXED_CTR_CTRL, fixed_ctrl);
 }
 
-size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, unsigned int usr, unsigned int os, char* descriptions[]) {
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, bool usr, bool os, char* descriptions[]) {
     if (is_Intel_CPU) {
         uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
         global_ctrl |= ((uint64_t)7 << 32) | 15;
@@ -722,7 +722,7 @@ void print_all_measurement_results(int64_t* results[], int n_counters) {
     print_verbose("\n");
 }
 
-int starts_with_magic_bytes(char* c, int64_t magic_bytes) {
+bool starts_with_magic_bytes(char* c, int64_t magic_bytes) {
     return (*((int64_t*)c) == magic_bytes);
 }
 
