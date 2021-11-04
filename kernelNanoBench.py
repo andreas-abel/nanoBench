@@ -1,5 +1,6 @@
 import atexit
 import collections
+import os
 import subprocess
 import sys
 
@@ -8,7 +9,12 @@ PFC_STOP_ASM = '.quad 0xF0B513B1C2813F04'
 
 def writeFile(fileName, content):
    with open(fileName, 'w') as f:
-      f.write(content);
+      f.write(content)
+
+def readFile(fileName):
+   with open(fileName) as f:
+      return f.read()
+
 
 def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
    try:
@@ -48,7 +54,6 @@ def getR14Size():
    return getR14Size.r14Size
 
 
-ramdiskCreated = False
 paramDict = dict()
 
 # Assumes that no changes to the corresponding files in /sys/nb/ were made since the last call to setNanoBenchParameters().
@@ -56,8 +61,6 @@ paramDict = dict()
 def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConfigFile=None, fixedCounters=None, nMeasurements=None, unrollCount=None,
                            loopCount=None, warmUpCount=None, initialWarmUpCount=None, alignmentOffset=None, codeOffset=None, drainFrontend=None,
                            aggregateFunction=None, basicMode=None, noMem=None, noNormalization=None, verbose=None):
-   if not ramdiskCreated: createRamdisk()
-
    if config is not None:
       if paramDict.get('config', None) != config:
          configFile = '/tmp/ramdisk/config'
@@ -154,8 +157,8 @@ def resetNanoBench():
 def runNanoBench(code='', codeObjFile=None, codeBinFile=None,
                  init='', initObjFile=None, initBinFile=None,
                  lateInit='', lateInitObjFile=None, lateInitBinFile=None,
-                 oneTimeInit='', oneTimeInitObjFile=None, oneTimeInitBinFile=None):
-   if not ramdiskCreated: createRamdisk()
+                 oneTimeInit='', oneTimeInitObjFile=None, oneTimeInitBinFile=None,
+                 cpu=None):
    with open('/sys/nb/clear') as clearFile: clearFile.read()
 
    if code:
@@ -194,11 +197,16 @@ def runNanoBench(code='', codeObjFile=None, codeBinFile=None,
    elif oneTimeInitBinFile is not None:
       writeFile('/sys/nb/one_time_init', oneTimeInitBinFile)
 
-   with open('/proc/nanoBench') as resultFile:
-      output = resultFile.read().split('\n')
+   if cpu is None:
+      output = readFile('/proc/nanoBench')
+   else:
+      try:
+         output = subprocess.check_output(['taskset', '-c', str(cpu), 'cat', '/proc/nanoBench']).decode()
+      except subprocess.CalledProcessError as e:
+         sys.exit(e)
 
    ret = collections.OrderedDict()
-   for line in output:
+   for line in output.split('\n'):
       if not ':' in line: continue
       line_split = line.split(':')
       counter = line_split[0].strip()
@@ -210,18 +218,31 @@ def runNanoBench(code='', codeObjFile=None, codeBinFile=None,
 
 def createRamdisk():
    try:
-      subprocess.check_output('mkdir -p /tmp/ramdisk; sudo mount -t tmpfs -o size=100M none /tmp/ramdisk/', shell=True)
-      global ramdiskCreated
-      ramdiskCreated = True
+      subprocess.check_output('mkdir -p /tmp/ramdisk; mount -t tmpfs -o size=100M none /tmp/ramdisk/', shell=True)
    except subprocess.CalledProcessError as e:
-      sys.stderr.write('Could not create ramdisk ' + e.output + '\n')
-      exit(1)
+      sys.exit('Could not create ramdisk ' + e.output)
 
 def deleteRamdisk():
-   if ramdiskCreated:
-      try:
-         subprocess.check_output('umount -l /tmp/ramdisk/', shell=True)
-      except subprocess.CalledProcessError as e:
-         sys.stderr.write('Could not delete ramdisk ' + e.output + '\n')
+   try:
+      subprocess.check_output('umount -l /tmp/ramdisk/', shell=True)
+   except subprocess.CalledProcessError as e:
+      sys.exit('Could not delete ramdisk ' + e.output)
 
-atexit.register(deleteRamdisk)
+
+def cleanup():
+   writeFile('/proc/sys/kernel/nmi_watchdog', prevNMIWatchdogState)
+   deleteRamdisk()
+
+
+if os.geteuid() != 0:
+   sys.exit('Error: nanoBench requires root privileges\nTry "sudo ' + sys.argv[0] + ' ..."')
+
+if not os.path.exists('/sys/nb'):
+   sys.exit('Error: nanoBench kernel module not loaded\nLoad with "sudo insmod kernel/nb.ko"')
+
+prevNMIWatchdogState = readFile('/proc/sys/kernel/nmi_watchdog')
+writeFile('/proc/sys/kernel/nmi_watchdog', '0')
+
+resetNanoBench()
+createRamdisk()
+atexit.register(cleanup)
