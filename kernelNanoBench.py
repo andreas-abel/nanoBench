@@ -240,6 +240,9 @@ if os.geteuid() != 0:
 if not os.path.exists('/sys/nb'):
    sys.exit('Error: nanoBench kernel module not loaded\nLoad with "sudo insmod kernel/nb.ko"')
 
+if readFile('/sys/devices/system/cpu/smt/active').startswith('1'):
+   print('Note: Hyper-threading is enabled; it can be disabled with "sudo ./disable-HT.sh"', file=sys.stderr)
+
 prevNMIWatchdogState = readFile('/proc/sys/kernel/nmi_watchdog')
 writeFile('/proc/sys/kernel/nmi_watchdog', '0')
 

@@ -3,15 +3,19 @@
 source utils.sh
 
 if [ "$EUID" -ne 0 ]; then
-    echo "Error: nanoBench requires root privileges" 1>&2
-    echo "Try \"sudo ./nanoBench-asm.sh ...\"" 1>&2
+    echo "Error: nanoBench requires root privileges" >&2
+    echo "Try \"sudo ./nanoBench-asm.sh ...\"" >&2
     exit 1
 fi
 
 if ! command -v rdmsr &>/dev/null; then
-    echo "Error: nanoBench requires msr-tools"
-    echo "Install with \"sudo apt install msr-tools\""
+    echo "Error: nanoBench requires msr-tools" >&2
+    echo "Install with \"sudo apt install msr-tools\"" >&2
     exit 1
+fi
+
+if [ $(cat /sys/devices/system/cpu/smt/active) -ne 0 ]; then
+    echo "Note: Hyper-threading is enabled; it can be disabled with \"sudo ./disable-HT.sh\"" >&2
 fi
 
 debug=false

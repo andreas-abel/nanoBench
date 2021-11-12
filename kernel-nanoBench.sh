@@ -3,15 +3,19 @@
 source utils.sh
 
 if [ "$EUID" -ne 0 ]; then
-    echo "Error: nanoBench requires root privileges"
-    echo "Try \"sudo ./kernel-nanoBench.sh ...\""
+    echo "Error: nanoBench requires root privileges" >&2
+    echo "Try \"sudo ./kernel-nanoBench.sh ...\"" >&2
     exit 1
 fi
 
 if [ ! -e /sys/nb ]; then
-    echo "Error: nanoBench kernel module not loaded"
-    echo "Load with \"sudo insmod kernel/nb.ko\""
+    echo "Error: nanoBench kernel module not loaded" >&2
+    echo "Load with \"sudo insmod kernel/nb.ko\"" >&2
     exit 1
+fi
+
+if [ $(cat /sys/devices/system/cpu/smt/active) -ne 0 ]; then
+    echo "Note: Hyper-threading is enabled; it can be disabled with \"sudo ./disable-HT.sh\"" >&2
 fi
 
 cat /sys/nb/reset
