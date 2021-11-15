@@ -181,6 +181,8 @@ void parse_counter_configs() {
                 pfc_configs[n_pfc_configs].edge = true;
             } else if (!strcmp(ce, "INV")) {
                 pfc_configs[n_pfc_configs].inv = true;
+            } else if (!strcmp(ce, "TakenAlone")) {
+                pfc_configs[n_pfc_configs].taken_alone = true;
             } else if (!strncmp(ce, "CTR=", 4)) {
                 unsigned long counter;
                 nb_strtoul(ce+4, 0, &counter);
@@ -319,15 +321,19 @@ size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, 
         global_ctrl |= ((uint64_t)7 << 32) | 15;
         write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
 
+        bool evt_added = false;
         for (int i=0; i<n_counters; i++) {
             // clear
             write_msr(MSR_IA32_PMC0+i, 0);
 
             if (next_pfc_config >= n_pfc_configs) {
-                return next_pfc_config;
+                break;
             }
 
             struct pfc_config config = pfc_configs[next_pfc_config];
+            if (config.taken_alone && evt_added) {
+                break;
+            }
             if ((config.ctr != -1) && (config.ctr != i)) {
                 continue;
             }
@@ -357,6 +363,11 @@ size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, 
             }
             if (config.msr_rsp1) {
                 write_msr(MSR_OFFCORE_RSP1, config.msr_rsp1);
+            }
+
+            evt_added = true;
+            if (config.taken_alone) {
+                break;
             }
         }
     } else {

@@ -177,9 +177,9 @@ We provide provide performance counter configuration files (for counters that ca
 
 The format of the entries in the configuration files is
 
-    EvtSel.UMASK(.CMSK=...)(.AnyT)(.EDG)(.INV)(.CTR=...)(.MSR_3F6H=...)(.MSR_PF=...)(.MSR_RSP0=...)(.MSR_RSP1=...) Name
+    EvtSel.UMASK(.CMSK=...)(.AnyT)(.EDG)(.INV)(.TakenAlone)(.CTR=...)(.MSR_3F6H=...)(.MSR_PF=...)(.MSR_RSP0=...)(.MSR_RSP1=...) Name
 
-You can find details on the meanings of the different parts of the entries in chapters 18 and 19 of [Intel's System Programming Guide](https://software.intel.com/sites/default/files/managed/a4/60/325384-sdm-vol-3abcd.pdf).
+You can find details on the meanings of the different parts of the entries in chapter 18 of [Intel's System Programming Guide](https://www.intel.com/content/www/us/en/develop/download/intel-64-and-ia-32-architectures-sdm-combined-volumes-3a-3b-3c-and-3d-system-programming-guide.html) and at <https://download.01.org/perfmon/readme.txt>.
 
 ## MSR Performance Counter Config Files
 

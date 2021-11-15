@@ -150,6 +150,7 @@ struct pfc_config {
     bool any;
     bool edge;
     bool inv;
+    bool taken_alone;
     unsigned long msr_3f6h;
     unsigned long msr_pf;
     unsigned long msr_rsp0;
