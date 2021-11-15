@@ -433,6 +433,20 @@ static ssize_t code_offset_store(struct kobject *kobj, struct kobj_attribute *at
 }
 static struct kobj_attribute code_offset_attribute =__ATTR(code_offset, 0660, code_offset_show, code_offset_store);
 
+static ssize_t addresses_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    size_t count = 0;
+    count += sprintf(&(buf[count]), "R14: 0x%px\n", runtime_r14);
+    count += sprintf(&(buf[count]), "RDI: 0x%px\n", runtime_rdi);
+    count += sprintf(&(buf[count]), "RSI: 0x%px\n", runtime_rsi);
+    count += sprintf(&(buf[count]), "RBP: 0x%px\n", runtime_rbp);
+    count += sprintf(&(buf[count]), "RSP: 0x%px\n", runtime_rsp);
+    return count;
+}
+static ssize_t addresses_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    return 0;
+}
+static struct kobj_attribute addresses_attribute =__ATTR(addresses, 0660, addresses_show, addresses_store);
+
 static ssize_t verbose_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%u\n", verbose);
 }
@@ -746,6 +760,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &r14_size_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &print_r14_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &code_offset_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &addresses_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &verbose_attribute.attr);
 
     if (error) {

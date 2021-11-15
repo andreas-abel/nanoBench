@@ -54,6 +54,16 @@ def getR14Size():
    return getR14Size.r14Size
 
 
+# Returns the address that is stored in R14, RDI, RSI, RBP, or RSP as a hex string.
+def getAddress(reg):
+   with open('/sys/nb/addresses') as f:
+      for line in f:
+         lReg, addr = line.strip().split(': ')
+         if reg.upper() == lReg:
+            return addr
+   raise ValueError('Address not found')
+
+
 paramDict = dict()
 
 # Assumes that no changes to the corresponding files in /sys/nb/ were made since the last call to setNanoBenchParameters().
