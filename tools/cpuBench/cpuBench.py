@@ -444,14 +444,17 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
          if asmprefix != '':
             asm += ' '
 
-         address = getAddrReg(instrNode, operandNode)
-         readRegs.add(address)
-         if useIndexedAddr or operandNode.attrib.get('VSIB', '0') != '0':
-            indexReg = getIndexReg(instrNode, operandNode)
-            address += '+' + indexReg
-            readRegs.add(indexReg)
+         if operandNode.attrib.get('moffs', '0') == '1':
+            asm += '[' + getAddress('R14') + ']'
+         else:
+            address = getAddrReg(instrNode, operandNode)
+            readRegs.add(address)
+            if useIndexedAddr or operandNode.attrib.get('VSIB', '0') != '0':
+               indexReg = getIndexReg(instrNode, operandNode)
+               address += '+' + indexReg
+               readRegs.add(indexReg)
 
-         asm += '[' + address + ('+'+str(memOffset) if memOffset else '') + ']'
+            asm += '[' + address + ('+'+str(memOffset) if memOffset else '') + ']'
 
          memorySuffix = operandNode.attrib.get('memory-suffix', '')
          if memorySuffix:
@@ -834,7 +837,7 @@ def getPreInstr(instrNode):
 
    if iform in ['CALL_NEAR_MEMv', 'JMP_MEMv']:
       preInstrCode = 'lea RAX, [RIP+6]; mov [R14], RAX'
-      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, RAX)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, R64)']]
 
    if iform == 'LEAVE':
       preInstrCode = 'lea RBP, [R14]'
@@ -850,11 +853,11 @@ def getPreInstr(instrNode):
 
    if iform == 'RET_NEAR':
       preInstrCode = 'lea RAX, [RIP+5]; mov [RSP], RAX'
-      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, RAX)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, R64)']]
 
    if iform == 'RET_NEAR_IMMw':
       preInstrCode = 'lea RAX, [RIP+7]; mov [RSP], RAX'
-      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, RAX)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, R64)']]
 
    return (preInstrCode, preInstrNodes)
 
@@ -1252,15 +1255,18 @@ def canMacroFuse(flagInstrNode, branchInstrNode, htmlReports):
 basicLatency = {}
 
 def getBasicLatencies(instrNodeList):
-   movsxResult = runExperiment(instrNodeDict['MOVSXD (R64, R32)'], 'MOVSX RAX, EAX')
-   movsxCycles = int(round(movsxResult['Core cycles']))
-   if movsxCycles != 1:
-      print('Latency of MOVSX must be 1')
-      sys.exit()
-   basicLatency['MOVSX'] = movsxCycles
+   for t in [16, 32, 64]:
+      for s in [8,16,32]:
+         if s >= t:
+            continue
+         movsxResult = runExperiment(None, 'MOVSX {}, {}'.format(regToSize('RAX', t), regToSize('RAX', s)))
+         basicLatency['MOVSX_R{}_R{}'.format(t,s)] = int(round(movsxResult['Core cycles']))
+      if t < 64:
+         movsxResult = runExperiment(None, 'MOVSX {}, ah'.format(regToSize('RAX', t)))
+         basicLatency['MOVSX_R{}_R8h'.format(t)] = int(round(movsxResult['Core cycles']))
 
-   movsxR8hResult = runExperiment(None, 'MOV AH, AL')
-   basicLatency['MOV_R8h_R8l'] = max(1, int(round(movsxR8hResult['Core cycles'])))
+   movR8hResult = runExperiment(None, 'MOV AH, AL')
+   basicLatency['MOV_R8h_R8l'] = max(1, int(round(movR8hResult['Core cycles'])))
 
    movR8hR8hResult = runExperiment(instrNodeDict['MOV_88 (R8h, R8h)'], 'MOV AH, AH')
    basicLatency['MOV_R8h_R8h'] = int(round(movR8hR8hResult['Core cycles']))
@@ -1503,9 +1509,10 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
             if opNode == opNode1:
                if opNode == divisorNode:
                   if memDivisor:
-                     chainInstrs = 'MOVSX R12, ' + regToSize(opNode2.text, min(getRegSize(opNode2.text), 32)) + '; '
+                     reg2Size = min(getRegSize(opNode2.text), 32)
+                     chainInstrs = 'MOVSX R12, ' + regToSize(opNode2.text, reg2Size) + '; '
                      chainInstrs += ('XOR R14, R12; ') * cRep # cRep is a power of two
-                     chainLatency = basicLatency['MOVSX'] + basicLatency['XOR'] * cRep
+                     chainLatency = basicLatency['MOVSX_R64_R' + str(reg2Size)] + basicLatency['XOR'] * cRep
                   else:
                      chainInstrs = 'AND {0}, {1}; AND {0}, {2}; OR {0}, {2}; '.format(divisorReg, regToSize(opNode2.text, getRegSize(divisorReg)),
                                                                                      regToSize(immReg['divisor'], getRegSize(divisorReg)))
@@ -1930,13 +1937,13 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
       if startNode.text and targetNode.text and 'BP' in startNode.text and 'BP' in targetNode.text:
          chainInstrs = 'MOVSX RBP, BP; ' * cRep
          chainInstrs += 'AND RBP, R14; OR RBP, R14; '
-         chainLatency = basicLatency['MOVSX'] * cRep + basicLatency['AND'] + basicLatency['OR']
+         chainLatency = basicLatency['MOVSX_R64_R8'] * cRep + basicLatency['AND'] + basicLatency['OR']
          configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
       elif startNode.text and targetNode.text and 'BP' in startNode.text and 'SP' in targetNode.text:
          chainInstrs = 'MOVSX RBP, SP; '
          chainInstrs += 'MOVSX RBP, BP; ' * cRep
          chainInstrs += 'AND RBP, R14; OR RBP, R14; '
-         chainLatency = basicLatency['MOVSX'] + basicLatency['MOVSX'] * cRep + basicLatency['AND'] + basicLatency['OR']
+         chainLatency = basicLatency['MOVSX_R64_R8'] + basicLatency['MOVSX_R64_R8'] * cRep + basicLatency['AND'] + basicLatency['OR']
          configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
       else:
          return None
@@ -1953,7 +1960,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          chainInstrs = 'MOVSX ECX, {}; '.format(regTo16(targetNode.text))
          chainInstrs += 'MOVSX ECX, CX; ' * cRep
          chainInstrs += 'AND ECX, 0; '
-         chainLatency = basicLatency['MOVSX'] * (cRep + 1) + basicLatency['AND']
+         chainLatency = basicLatency['MOVSX_R32_R16'] * (cRep + 1) + basicLatency['AND']
          configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
       else:
          return None
@@ -2026,18 +2033,24 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                   chainInstrs += 'MOV {}, {};'.format(reg1, reg1) * cRep
                   configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=basicLatency['MOV_R8h_R8l'] + basicLatency['MOV_R8h_R8h']*cRep))
                else:
-                  chainInstrs = 'MOVSX {}, {};'.format(regTo64(reg1), regToSize(reg2, min(32, getRegSize(reg2))))
+                  reg2Size = min(32, getRegSize(reg2))
+                  chainInstrs = 'MOVSX {}, {};'.format(regTo64(reg1), regToSize(reg2, reg2Size))
                   chainInstrs += 'MOV {}, {};'.format(reg1, regTo8(reg1))
                   chainInstrs += 'MOV {}, {};'.format(reg1, reg1) * cRep
-                  configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=basicLatency['MOVSX'] + basicLatency['MOV_R8h_R8l']
-                                                                                               + basicLatency['MOV_R8h_R8h']*cRep))
+                  configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=basicLatency['MOVSX_R64_R'+str(reg2Size)]
+                                                                                            + basicLatency['MOV_R8h_R8l'] + basicLatency['MOV_R8h_R8h']*cRep))
             else:
                # MOVSX avoids partial reg stalls and cannot be eliminated by "move elimination"
-               reg1s = regTo32(reg1) if (reg2 in High8Regs) else regTo64(reg1)
-               reg2s = reg2 if (reg2 in High8Regs) else regToSize(reg2, min(32, getRegSize(reg2)))
-               chainInstrs = 'MOVSX {}, {};'.format(reg1s, reg2s)
-               chainInstrs += 'MOVSX {}, {};'.format(regTo64(reg1), regTo32(reg1)) * cRep
-               configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=basicLatency['MOVSX']*(cRep+1)))
+               if reg2 in High8Regs:
+                  chainInstrs = 'MOVSX {}, {};'.format(regTo32(reg1), reg2)
+                  chainInstrs += 'MOVSX {}, {};'.format(regTo64(reg1), regTo32(reg1)) * cRep
+                  configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=basicLatency['MOVSX_R32_R8h'] + basicLatency['MOVSX_R64_R32']*cRep))
+               else:
+                  reg2Size = min(32, getRegSize(reg2))
+                  chainInstrs = 'MOVSX {}, {};'.format(regTo64(reg1), regToSize(reg2, reg2Size))
+                  chainInstrs += 'MOVSX {}, {};'.format(regTo64(reg1), regTo32(reg1)) * cRep
+                  configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=basicLatency['MOVSX_R64_R'+str(reg2Size)]
+                                                                                            + basicLatency['MOVSX_R64_R32']*cRep))
          elif reg1Prefix == 'K' and reg2Prefix == 'K':
             chainInstr = 'KMOVQ {}, {};'.format(reg1, reg2)
             chainInstr += 'KMOVQ {0}, {0};'.format(reg1) * cRep
@@ -2100,8 +2113,9 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                      chainLatency = basicLatency['SET' + flag[0]]
                else:
                   chainInstr = 'CMOV{} {}, {};'.format(flag[0], regToSize('R15', regSize), regToSize('R15', regSize))
-                  chainInstr += 'MOVSX {}, {};'.format(regTo64(reg), regToSize('R15', min(32, regSize)))
-                  chainLatency = basicLatency['CMOV' + flag[0]] + basicLatency['MOVSX']
+                  r15Size = min(32, regSize)
+                  chainInstr += 'MOVSX {}, {};'.format(regTo64(reg), regToSize('R15', r15Size))
+                  chainLatency = basicLatency['CMOV' + flag[0]] + basicLatency['MOVSX_R64_R'+str(r15Size)]
                instrI = getInstrInstanceFromNode(instrNode, ['R15'], ['R15'], useDistinctRegs, {startNodeIdx:reg})
 
                if reg in High8Regs:
@@ -2109,9 +2123,10 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                   chainInstrs = chainInstr + movInstr * cRep
                   chainLatency = chainLatency + basicLatency['MOV_R8h_R8h'] * cRep
                else:
-                  movsxInstr = 'MOVSX {}, {};'.format(regTo64(reg), regToSize(reg, min(32, regSize)))
+                  reg2Size =  min(32, regSize)
+                  movsxInstr = 'MOVSX {}, {};'.format(regTo64(reg), regToSize(reg, reg2Size))
                   chainInstrs = chainInstr + movsxInstr * cRep
-                  chainLatency = chainLatency + basicLatency['MOVSX'] * cRep
+                  chainLatency = chainLatency + basicLatency['MOVSX_R64_R'+str(reg2Size)] * cRep
 
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
             elif 'MM' in reg:
@@ -2139,8 +2154,9 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                chainInstrs += 'MOV {}, {};'.format(reg, reg) * cRep
                chainLatency = basicLatency['MOV_R8h_R8h'] * cRep
             else:
-               chainInstrs += 'MOVSX {}, {};'.format(regTo64(reg), regToSize(reg, min(32, getRegSize(reg)))) * cRep
-               chainLatency = basicLatency['MOVSX'] * cRep
+               reg2Size = min(32, getRegSize(reg))
+               chainInstrs += 'MOVSX {}, {};'.format(regTo64(reg), regToSize(reg, reg2Size)) * cRep
+               chainLatency = basicLatency['MOVSX_R64_R'+str(reg2Size)] * cRep
             chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(getRegSize(reg))] >= 12) # 0 if CPU supports zero-latency store forwarding
 
             if re.search('BT.*MEMv_GPRv', instrNode.attrib['iform']):
@@ -2190,8 +2206,9 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                chainInstrs = 'MOV {}, {};'.format(reg, reg) * cRep + chainInstrs
                chainLatency += basicLatency['MOV_R8h_R8h'] * cRep
             else:
-               chainInstrs = 'MOVSX {}, {};'.format(regTo64(reg), regToSize(reg, min(32, getRegSize(reg)))) * cRep + chainInstrs
-               chainLatency += basicLatency['MOVSX'] * cRep
+               reg2Size = min(32, getRegSize(reg))
+               chainInstrs = 'MOVSX {}, {};'.format(regTo64(reg), regToSize(reg, reg2Size)) * cRep + chainInstrs
+               chainLatency += basicLatency['MOVSX_R64_R'+str(reg2Size)] * cRep
             configList.append(LatConfig(instrI,  chainInstrs=chainInstrs, chainLatency=chainLatency))
          else:
             # ToDo: there is no instruction from flag to vector reg; the only non-GPR that is possible are ST(0) and X87STATUS
@@ -2250,22 +2267,24 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
             if addrMem in ['addr', 'addr_index']:
                # addr -> reg
                chainReg = (addrReg if addrMem == 'addr' else indexReg)
-               chainInstrs = 'MOVSX ' + regTo64(reg) + ', ' + regToSize(reg, min(32, regSize)) + ';'
+               reg2Size = min(32, regSize)
+               chainInstrs = 'MOVSX ' + regTo64(reg) + ', ' + regToSize(reg, reg2Size) + ';'
                chainInstrs += 'XOR {}, {};'.format(chainReg, regTo64(reg)) * cRep + ('TEST R15, R15;' if instrReadsFlags else '') # cRep is a multiple of 2
-               chainLatency = basicLatency['MOVSX'] + basicLatency['XOR'] * cRep
+               chainLatency = basicLatency['MOVSX_R64_R'+str(reg2Size)] + basicLatency['XOR'] * cRep
             else:
                # mem -> reg
                configList = LatConfigList()
                configList.isUpperBound = True
-               chainInstrs = 'MOVSX R12, {};'.format(regToSize(reg, min(32, regSize)))
+               reg2Size = min(32, regSize)
+               chainInstrs = 'MOVSX R12, {};'.format(regToSize(reg, reg2Size))
                chainInstrs += 'MOVSX R12, R12d;' * (cRep-1)
                chainInstrs += 'mov [{}], {};'.format(addrReg, regToSize('R12', regSize))
-               chainLatency = basicLatency['MOVSX'] * cRep
+               chainLatency = basicLatency['MOVSX_R64_R'+str(reg2Size)] + basicLatency['MOVSX_R64_R32'] * (cRep-1)
                chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(regSize)] >= 12) # 0 if CPU supports zero-latency store forwarding
             if reg in High8Regs:
                chainInstrs = 'MOVSX {}, {};'.format(regTo32(reg), reg) + chainInstrs
                chainInstrs += 'MOV {}, {}'.format(reg, reg) # 'clean' reg again; this is not on the critical path
-               chainLatency += basicLatency['MOVSX']
+               chainLatency += basicLatency['MOVSX_R32_R8h']
             configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
          elif 'MM' in reg:
             if addrMem in ['addr', 'addr_index']:
@@ -2312,7 +2331,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                   chainInstrs = 'CMOV' + flag[0] + ' R12, R12;'
                   chainInstrs += 'MOVSX R12, R12d;' * cRep
                   chainInstrs += 'mov [' + addrReg + '], ' + regToSize('R12', memWidth)
-                  chainLatency = basicLatency['CMOV' + flag[0]] + basicLatency['MOVSX'] * cRep
+                  chainLatency = basicLatency['CMOV' + flag[0]] + basicLatency['MOVSX_R64_R32'] * cRep
                   chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(memWidth)] >= 12) # 0 if CPU supports zero-latency store forwarding
                   configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency))
                else:
@@ -2332,9 +2351,10 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                chainReg = (addrReg if addrMem == 'addr' else indexReg)
                memStr = addrReg + ('+'+indexReg if addrMem == 'addr_index' else '')
                chainInstrs = 'MOV ' + regToSize('R12', min(64, memWidth)) + ', [' + memStr + '];'
-               chainInstrs += ('MOVSX R12, ' + regToSize('R12', min(32, memWidth)) + ';') * cRep
+               reg2Size = min(32, memWidth)
+               chainInstrs += ('MOVSX R12, ' + regToSize('R12', reg2Size) + ';') * cRep
                chainInstrs += 'XOR ' + chainReg + ', R12; XOR ' + chainReg + ', R12;' + ('TEST R15, R15;' if instrReadsFlags else '')
-               chainLatency = basicLatency['MOVSX'] * cRep + 2*basicLatency['XOR']
+               chainLatency = basicLatency['MOVSX_R64_R'+str(reg2Size)] * cRep + 2*basicLatency['XOR']
                chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(min(64, memWidth))] >= 12) # 0 if CPU supports zero-latency store forwarding
                # we use basicMode, as the measurements for these benchmarks are often not very stable, in particular on, e.g., HSW
                configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency, basicMode=True))
@@ -2409,7 +2429,8 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
             outputOpnds.append(opNode)
             if opNode.attrib.get('r', '0') == '0':
                if opNode.attrib['type'] == 'mem':
-                  inputOpnds.append(opNode) # address of memory write
+                  if 'moffs' not in opNode.attrib:
+                     inputOpnds.append(opNode) # address of memory write
                elif opNode.attrib.get('conditionalWrite', '0') == '1':
                   inputOpnds.append(opNode)
                elif opNode.attrib['type'] == 'reg':
@@ -2437,11 +2458,12 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
 
             addrMemList = ['']
             if opNode1.attrib['type']=='mem':
-               addrMemList = ['addr']
-               if 'VSIB' in opNode1.attrib:
-                  addrMemList.append('addr_VSIB')
-               elif opNode1.attrib.get('suppressed', '') != '1':
-                  addrMemList.append('addr_index')
+               if 'moffs' not in opNode1.attrib:
+                  addrMemList = ['addr']
+                  if 'VSIB' in opNode1.attrib:
+                     addrMemList.append('addr_VSIB')
+                  elif opNode1.attrib.get('suppressed', '') != '1':
+                     addrMemList.append('addr_index')
                addrMemList.append('mem') # mem added last; order is relevant for html output
             elif opNode1.attrib['type']=='agen' and ('B' in instrNode.attrib['agen'] or 'I' in instrNode.attrib['agen']):
                addrMemList = []
@@ -2715,6 +2737,10 @@ def filterInstructions(XMLRoot):
          instrSet.discard(XMLInstr)
       if extension in ['MCOMMIT', 'WBNOINVD']: instrSet.discard(XMLInstr)
 
+      # Not supported any more by gnu as 2.36.1
+      if (isaSet == 'MPX') and ('R' in XMLInstr.attrib.get('agen', '')):
+         instrSet.discard(XMLInstr)
+
       # Only supported by VIA
       if 'VIA_' in extension:
          instrSet.discard(XMLInstr)
@@ -2818,6 +2844,7 @@ def filterInstructions(XMLRoot):
       if isaSet.startswith('AVX512_VP2INTERSECT') and not cpuid.get_bit(edx7, 8): instrSet.discard(XMLInstr)
       if extension == 'PCONFIG' and not cpuid.get_bit(edx7, 18): instrSet.discard(XMLInstr)
       if extension == 'AMX_BF16' and not cpuid.get_bit(edx7, 22): instrSet.discard(XMLInstr)
+      if isaSet.startswith('AVX512_FP16') and not cpuid.get_bit(edx7, 23): instrSet.discard(XMLInstr)
       if extension == 'AMX_TILE' and not cpuid.get_bit(edx7, 24): instrSet.discard(XMLInstr)
       if extension == 'AMX_INT8' and not cpuid.get_bit(edx7, 25): instrSet.discard(XMLInstr)
       if extension == 'AVX_VNNI' and not cpuid.get_bit(eax7_1, 4): instrSet.discard(XMLInstr)
