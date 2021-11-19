@@ -38,6 +38,8 @@
     #define print_verbose(...) if (verbose) printf(__VA_ARGS__);
     #define print_user_verbose(...) if (verbose) printf(__VA_ARGS__);
     #define nb_strtoul(s, base, res) *res = strtoul(s, NULL, base)
+    #define max(a,b) (((a) > (b)) ? (a) : (b))
+    #define min(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
 #ifndef MSR_IA32_PMC0

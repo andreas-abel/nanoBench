@@ -67,6 +67,25 @@ int64_t* measurement_results_base[MAX_PROGRAMMABLE_COUNTERS];
 
 int cpu = -1;
 
+const char* NOPS[] = {
+    "",
+    "\x90",
+    "\x66\x90",
+    "\x0f\x1f\x00",
+    "\x0f\x1f\x40\x00",
+    "\x0f\x1f\x44\x00\x00",
+    "\x66\x0f\x1f\x44\x00\x00",
+    "\x0f\x1f\x80\x00\x00\x00\x00",
+    "\x0f\x1f\x84\x00\x00\x00\x00\x00",
+    "\x66\x0f\x1f\x84\x00\x00\x00\x00\x00",
+    "\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00",
+    "\x66\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00",
+    "\x66\x66\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00",
+    "\x66\x66\x66\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00",
+    "\x66\x66\x66\x66\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00",
+    "\x66\x66\x66\x66\x66\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00"
+};
+
 void build_cpuid_string(char* buf, unsigned int r0, unsigned int r1, unsigned int r2, unsigned int r3) {
     memcpy(buf,    (char*)&r0, 4);
     memcpy(buf+4,  (char*)&r1, 4);
@@ -416,11 +435,11 @@ size_t get_required_runtime_code_length() {
             req_code_length += 100;
         }
     }
-    return code_init_length + code_late_init_length + (drain_frontend?128*15:0) + 2*unroll_count*req_code_length + 10000;
+    return code_init_length + code_late_init_length + (drain_frontend?3*64*15:0) + 2*unroll_count*req_code_length + 10000;
 }
 
-size_t get_distance_to_code(char* measurement_template, size_t templateI) {
-    size_t dist = 0;
+int get_distance_to_code(char* measurement_template, size_t templateI) {
+    int dist = 0;
     while (!starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_CODE)) {
         if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC_START)) {
             templateI += 8;
@@ -460,15 +479,24 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             rcI += code_init_length;
 
             if (local_loop_count > 0) {
-                runtime_code[rcI++] = '\x49'; runtime_code[rcI++] = '\xC7'; runtime_code[rcI++] = '\xC7';
+                strcpy(&runtime_code[rcI], "\x49\xC7\xC7"); rcI += 3;
                 *(int32_t*)(&runtime_code[rcI]) = (int32_t)local_loop_count; rcI += 4; // mov R15, local_loop_count
             }
 
-            size_t dist = get_distance_to_code(measurement_template, templateI) + code_late_init_length;
-            size_t nFill = (64 - ((uintptr_t)&runtime_code[rcI+dist] % 64)) % 64;
-            nFill += alignment_offset;
-            for (size_t i=0; i<nFill; i++) {
-                runtime_code[rcI++] = '\x90';
+            if (drain_frontend) {
+                strcpy(&runtime_code[rcI], "\x0F\xAE\xE8"); rcI += 3; // lfence
+                for (int i=0; i<64; i++) {
+                    strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;
+                }
+            }
+
+            int dist = get_distance_to_code(measurement_template, templateI) + code_late_init_length;
+            int n_fill = (64 - ((uintptr_t)&runtime_code[rcI+dist] % 64)) % 64;
+            n_fill += alignment_offset;
+            while (n_fill > 0) {
+                int nop_len = min(15, n_fill);
+                strcpy(&runtime_code[rcI], NOPS[nop_len]); rcI += nop_len;
+                n_fill -= nop_len;
             }
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC_START)) {
             magic_bytes_pfc_start_I = templateI;
@@ -477,21 +505,20 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             magic_bytes_code_I = templateI;
             templateI += 8;
 
-            if (code_late_init_length > 0) {
-                memcpy(&runtime_code[rcI], code_late_init, code_late_init_length);
-                rcI += code_late_init_length;
-            }
-
-            if (drain_frontend) {
-                // the length of the following code sequence is a multiple of 64, and thus doesn't affect the alignment
-                for (size_t i=0; i<128; i++) {
-                    strncpy(&runtime_code[rcI], "\x66\x66\x66\x66\x66\x66\x2e\x0f\x1f\x84\x00\x00\x00\x00\x00", 15);
-                    rcI += 15;
-                }
-            }
-
             if (unrollI == 0 && codeI == 0) {
                 rcI_code_start = rcI;
+
+                if (code_late_init_length > 0) {
+                    memcpy(&runtime_code[rcI], code_late_init, code_late_init_length);
+                    rcI += code_late_init_length;
+                }
+
+                if (drain_frontend) {
+                    // the length of the following code sequence is a multiple of 64, and thus doesn't affect the alignment
+                    for (int i=0; i<64; i++) {
+                        strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;
+                    }
+                }
             }
 
             if (!code_contains_magic_bytes) {
@@ -522,9 +549,31 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
 
             if (unrollI >= local_unroll_count) {
                 if (local_loop_count > 0) {
-                    runtime_code[rcI++] = '\x49'; runtime_code[rcI++] = '\xFF'; runtime_code[rcI++] = '\xCF'; // dec R15
-                    runtime_code[rcI++] = '\x0F'; runtime_code[rcI++] = '\x85';
+                    strcpy(&runtime_code[rcI], "\x49\xFF\xCF"); rcI += 3; // dec R15
+                    strcpy(&runtime_code[rcI], "\x0F\x85"); rcI += 2;
                     *(int32_t*)(&runtime_code[rcI]) = (int32_t)(rcI_code_start-rcI-4); rcI += 4; // jnz loop_start
+                }
+
+                if (drain_frontend) {
+                    // add an lfence and 64 nops s.t. the front end gets drained and the following instruction begins on a 32-byte boundary.
+                    strcpy(&runtime_code[rcI], "\x0F\xAE\xE8"); rcI += 3; // lfence
+
+                    for (int i=0; i<61; i++) {
+                        strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;
+                    }
+
+                    int dist_to_32Byte_boundary = 32 - ((uintptr_t)&runtime_code[rcI] % 32);
+                    if (dist_to_32Byte_boundary <= (3*15) - 32) {
+                        dist_to_32Byte_boundary += 32;
+                    }
+
+                    int len_nop1 = min(15, dist_to_32Byte_boundary - 2);
+                    int len_nop2 = min(15, dist_to_32Byte_boundary - len_nop1 - 1);
+                    int len_nop3 = dist_to_32Byte_boundary - len_nop1 - len_nop2;
+
+                    strcpy(&runtime_code[rcI], NOPS[len_nop1]); rcI += len_nop1;
+                    strcpy(&runtime_code[rcI], NOPS[len_nop2]); rcI += len_nop2;
+                    strcpy(&runtime_code[rcI], NOPS[len_nop3]); rcI += len_nop3;
                 }
 
                 if (debug) {
@@ -1337,7 +1386,6 @@ void measurement_RDTSC_template() {
         "pop rax;                                \n"
         "lfence                                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
-        "lfence                                  \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "mov r15, "STRINGIFY(MAGIC_BYTES_PFC)"   \n"
@@ -1358,7 +1406,6 @@ void measurement_RDTSC_template_noMem() {
         "sub r8, rdx                             \n"
         "lfence                                  \n"
         ".quad "STRINGIFY(MAGIC_BYTES_CODE)"     \n"
-        "lfence                                  \n"
         "lfence; rdtsc; lfence                   \n"
         "shl rdx, 32; or rdx, rax                \n"
         "add r8, rdx                             \n"
