@@ -47,7 +47,6 @@ specialRegs = {'ES', 'CS', 'SS', 'DS', 'FS', 'GS', 'IP', 'EIP', 'FSBASEy', 'GDTR
    'BND0', 'BND1', 'BND2', 'BND3'}
 
 
-
 maxTPRep = 16
 
 #iforms of serializing and memory-ordering instructions according to Ch. 8.3 of the Intel manual
@@ -70,7 +69,9 @@ def getAddrReg(instrNode, opNode):
       return 'R14'
 
 def getIndexReg(instrNode, opNode):
-   if opNode.attrib.get('VSIB', '0') != '0':
+   if (opNode.attrib.get('suppressed', '0') == '1') and ('index' in opNode.attrib):
+      return regTo64(opNode.attrib['index'])
+   elif opNode.attrib.get('VSIB', '0') != '0':
       return opNode.attrib.get('VSIB') + '14'
    elif instrNode.attrib.get('rex', '1') == '0':
       return 'RSI'
@@ -2269,8 +2270,10 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                chainReg = (addrReg if addrMem == 'addr' else indexReg)
                reg2Size = min(32, regSize)
                chainInstrs = 'MOVSX ' + regTo64(reg) + ', ' + regToSize(reg, reg2Size) + ';'
-               chainInstrs += 'XOR {}, {};'.format(chainReg, regTo64(reg)) * cRep + ('TEST R15, R15;' if instrReadsFlags else '') # cRep is a multiple of 2
-               chainLatency = basicLatency['MOVSX_R64_R'+str(reg2Size)] + basicLatency['XOR'] * cRep
+               chainLatency = basicLatency['MOVSX_R64_R'+str(reg2Size)]
+               if chainReg != regTo64(reg):
+                  chainInstrs += 'XOR {}, {};'.format(chainReg, regTo64(reg)) * cRep + ('TEST R15, R15;' if instrReadsFlags else '') # cRep is a multiple of 2
+                  chainLatency += basicLatency['XOR'] * cRep
             else:
                # mem -> reg
                configList = LatConfigList()
@@ -2462,7 +2465,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                   addrMemList = ['addr']
                   if 'VSIB' in opNode1.attrib:
                      addrMemList.append('addr_VSIB')
-                  elif opNode1.attrib.get('suppressed', '') != '1':
+                  elif (opNode1.attrib.get('suppressed', '') != '1') or ('index' in opNode1.attrib):
                      addrMemList.append('addr_index')
                addrMemList.append('mem') # mem added last; order is relevant for html output
             elif opNode1.attrib['type']=='agen' and ('B' in instrNode.attrib['agen'] or 'I' in instrNode.attrib['agen']):
