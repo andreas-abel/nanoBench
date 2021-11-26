@@ -20,11 +20,11 @@ CFLAGS_nanoBench.o := -DDEBUG
 
 ccflags-y+=-std=gnu99 -Wno-declaration-after-statement -DDEBUG
 
-all: 
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+OBJECT_FILES_NON_STANDARD := y
 
+all:
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 clean:
 	rm -f ../common/*.o ../common/*.ur-safe
 	rm -rf *.o *.ko *.mod.c .tmp_versions modules.order Module.symvers
-

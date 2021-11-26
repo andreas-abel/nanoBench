@@ -182,7 +182,7 @@ void parse_counter_configs() {
         char* tok = buf;
 
         char* evt_num = strsep(&tok, ".");
-        nb_strtoul(evt_num, 16, &(pfc_configs[n_pfc_configs].evt_num));
+        pfc_configs[n_pfc_configs].evt_num = strtoul(evt_num, NULL, 16);
 
         if (!tok) {
             print_error("invalid configuration: %s\n", config_str);
@@ -190,7 +190,7 @@ void parse_counter_configs() {
         }
 
         char* umask = strsep(&tok, ".");
-        nb_strtoul(umask, 16, &(pfc_configs[n_pfc_configs].umask));
+        pfc_configs[n_pfc_configs].umask = strtoul(umask, NULL, 16);
 
         char* ce;
         while ((ce = strsep(&tok, ".")) != NULL) {
@@ -204,22 +204,22 @@ void parse_counter_configs() {
                 pfc_configs[n_pfc_configs].taken_alone = true;
             } else if (!strncmp(ce, "CTR=", 4)) {
                 unsigned long counter;
-                nb_strtoul(ce+4, 0, &counter);
+                counter = strtoul(ce+4, NULL, 0);
                 if (counter > n_programmable_counters) {
                     print_error("invalid counter: %s\n", ce);
                     continue;
                 }
                 pfc_configs[n_pfc_configs].ctr = counter;
             } else if (!strncmp(ce, "CMSK=", 5)) {
-                nb_strtoul(ce+5, 0, &(pfc_configs[n_pfc_configs].cmask));
+                pfc_configs[n_pfc_configs].cmask = strtoul(ce+5, NULL, 0);
             } else if (!strncmp(ce, "MSR_3F6H=", 9)) {
-                nb_strtoul(ce+9, 0, &(pfc_configs[n_pfc_configs].msr_3f6h));
+                pfc_configs[n_pfc_configs].msr_3f6h = strtoul(ce+9, NULL, 0);
             } else if (!strncmp(ce, "MSR_PF=", 7)) {
-                nb_strtoul(ce+7, 0, &(pfc_configs[n_pfc_configs].msr_pf));
+                pfc_configs[n_pfc_configs].msr_pf = strtoul(ce+7, NULL, 0);
             } else if (!strncmp(ce, "MSR_RSP0=", 9)) {
-                nb_strtoul(ce+9, 0, &(pfc_configs[n_pfc_configs].msr_rsp0));
+                pfc_configs[n_pfc_configs].msr_rsp0 = strtoul(ce+9, NULL, 0);
             } else if (!strncmp(ce, "MSR_RSP1=", 9)) {
-                nb_strtoul(ce+9, 0, &(pfc_configs[n_pfc_configs].msr_rsp1));
+                pfc_configs[n_pfc_configs].msr_rsp1 = strtoul(ce+9, NULL, 0);
             }
         }
         n_pfc_configs++;
@@ -249,7 +249,7 @@ void parse_msr_configs() {
         }
 
         strreplace(rdmsr_str, 'h', '\0'); strreplace(rdmsr_str, 'H', '\0');
-        nb_strtoul(rdmsr_str+4, 16, &(msr_configs[n_msr_configs].rdmsr));
+        msr_configs[n_msr_configs].rdmsr = strtoul(rdmsr_str+4, NULL, 16);
 
         size_t n_wrmsr = 0;
         char* tok = wrmsr_str;
@@ -263,9 +263,9 @@ void parse_msr_configs() {
             char* msr_str = strsep(&ce, "=")+4;
             pr_debug("msr_str: %s", msr_str);
             strreplace(msr_str, 'h', '\0'); strreplace(msr_str, 'H', '\0');
-            nb_strtoul(msr_str, 16, &(msr_configs[n_msr_configs].wrmsr[n_wrmsr]));
+            msr_configs[n_msr_configs].wrmsr[n_wrmsr] = strtoul(msr_str, NULL, 16);
             strreplace(ce, 'h', '\0'); strreplace(ce, 'H', '\0');
-            nb_strtoul(ce, 0, &(msr_configs[n_msr_configs].wrmsr_val[n_wrmsr]));
+            msr_configs[n_msr_configs].wrmsr_val[n_wrmsr] = strtoul(ce, NULL, 0);
             n_wrmsr++;
         }
         msr_configs[n_msr_configs].n_wrmsr = n_wrmsr;
@@ -287,7 +287,7 @@ uint64_t read_value_from_cmd(char* cmd) {
     pclose(fp);
 
     uint64_t val;
-    nb_strtoul(buf, 0, &val);
+    val = strtoul(buf, NULL, 0);
     return val;
 }
 #endif

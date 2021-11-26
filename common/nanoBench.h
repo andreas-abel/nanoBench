@@ -31,13 +31,12 @@
     #define print_error(...) pr_debug(__VA_ARGS__)
     #define print_verbose(...) if (verbose) pr_debug(__VA_ARGS__)
     #define print_user_verbose(...) pr_debug(__VA_ARGS__)
-    #define nb_strtoul(s, base, res) kstrtoul(s, base, res)
+    #define strtoul(s, base, res) simple_strtoul(s, base, res)
     #define qsort(base, n, size, comp) sort(base, n, size, comp, NULL)
 #else
     #define print_error(...) fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n");
     #define print_verbose(...) if (verbose) printf(__VA_ARGS__);
     #define print_user_verbose(...) if (verbose) printf(__VA_ARGS__);
-    #define nb_strtoul(s, base, res) *res = strtoul(s, NULL, base)
     #define max(a,b) (((a) > (b)) ? (a) : (b))
     #define min(a,b) (((a) < (b)) ? (a) : (b))
 #endif
