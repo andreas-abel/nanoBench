@@ -28,9 +28,9 @@
 #include <cpuid.h>
 
 #ifdef __KERNEL__
-    #define print_error(...) pr_debug(__VA_ARGS__)
-    #define print_verbose(...) if (verbose) pr_debug(__VA_ARGS__)
-    #define print_user_verbose(...) pr_debug(__VA_ARGS__)
+    #define print_error(...) pr_err(__VA_ARGS__)
+    #define print_verbose(...) if (verbose) pr_info(__VA_ARGS__)
+    #define print_user_verbose(...) pr_info(__VA_ARGS__)
     #define strtoul(s, base, res) simple_strtoul(s, base, res)
     #define qsort(base, n, size, comp) sort(base, n, size, comp, NULL)
 #else

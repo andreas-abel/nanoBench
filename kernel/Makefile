@@ -15,10 +15,7 @@ $(MODULE_NAME)-objs += $(SRC:.c=.o)
 
 obj-m += $(MODULE_NAME).o
 
-CFLAGS_nb_km.o := -DDEBUG
-CFLAGS_nanoBench.o := -DDEBUG
-
-ccflags-y+=-std=gnu99 -Wno-declaration-after-statement -DDEBUG
+ccflags-y+=-std=gnu99 -Wno-declaration-after-statement -Wno-vla -isystem $(shell $(CC) -print-file-name=include)
 
 OBJECT_FILES_NON_STANDARD := y
 
@@ -26,5 +23,5 @@ all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 clean:
-	rm -f ../common/*.o ../common/*.ur-safe
-	rm -rf *.o *.ko *.mod.c .tmp_versions modules.order Module.symvers
+	rm -f ../common/*.o ../common/*.ur-safe ../common/*.dwo
+	rm -rf *.o *.ko *.mod *.mod.c *.ur-safe *.dwo .tmp_versions modules.order Module.symvers

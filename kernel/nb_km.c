@@ -86,7 +86,7 @@ static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_
     struct file *filp = NULL;
     filp = filp_open(file_name, O_RDONLY, 0);
     if (IS_ERR(filp)) {
-        pr_debug("Error opening file %s\n", file_name);
+        pr_err("Error opening file %s\n", file_name);
         return -1;
     }
 
@@ -99,7 +99,7 @@ static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_
 #else
 	if (vfs_getattr(&p, &ks, 0, 0)) {
 #endif
-        pr_debug("Error getting file attributes\n");
+        pr_err("Error getting file attributes\n");
         return -1;
     }
 
@@ -111,7 +111,7 @@ static int read_file_into_buffer(const char *file_name, char **buf, size_t *buf_
         *buf_memory_size = max(2*(file_size + 1), PAGE_SIZE);
         *buf = kmalloc(*buf_memory_size, GFP_KERNEL);
         if (!*buf) {
-            printk(KERN_ERR "Could not allocate memory for %s\n", file_name);
+            pr_err("Could not allocate memory for %s\n", file_name);
             *buf_memory_size = 0;
             filp_close(filp, NULL);
             return -1;
@@ -170,7 +170,7 @@ static ssize_t one_time_init_store(struct kobject *kobj, struct kobj_attribute *
         #endif
         if (!runtime_one_time_init_code) {
             runtime_one_time_init_code_memory_size = 0;
-            pr_debug("failed to allocate executable memory\n");
+            pr_err("failed to allocate executable memory\n");
         }
     }
     return count;
@@ -260,7 +260,7 @@ static ssize_t n_measurements_store(struct kobject *kobj, struct kobj_attribute 
             measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
             measurement_results_base[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
             if (!measurement_results[i] || !measurement_results_base[i]) {
-                printk(KERN_ERR "Could not allocate memory for measurement_results\n");
+                pr_err("Could not allocate memory for measurement_results\n");
                 return 0;
             }
             memset(measurement_results[i], 0, n_measurements*sizeof(int64_t));
@@ -371,8 +371,8 @@ static ssize_t r14_size_show(struct kobject *kobj, struct kobj_attribute *attr, 
         phys_addr_t cur_phys_addr = virt_to_phys(cur_virt_addr);
 
         if ((cur_virt_addr - prev_virt_addr != KMALLOC_MAX) || (cur_phys_addr - prev_phys_addr != KMALLOC_MAX)) {
-            pr_debug("No physically contiguous memory area of the requested size found.\n");
-            pr_debug("Try rebooting your computer.\n");
+            pr_err("No physically contiguous memory area of the requested size found.\n");
+            pr_err("Try rebooting your computer.\n");
             break;
         }
 
@@ -502,14 +502,14 @@ static struct kobj_attribute reset_attribute =__ATTR(reset, 0660, reset_show, re
 static int show(struct seq_file *m, void *v) {
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         if (!measurement_results[i] || !measurement_results_base[i]) {
-            printk(KERN_ERR "Could not allocate memory for measurement_results\n");
+            pr_err("Could not allocate memory for measurement_results\n");
             return -1;
         }
     }
 
     size_t req_code_length = code_offset + get_required_runtime_code_length();
     if (req_code_length > runtime_code_base_memory_size) {
-        printk(KERN_ERR "Maximum supported code size %zu kB; requested %zu kB\n", runtime_code_base_memory_size/1024, req_code_length/1024);
+        pr_err("Maximum supported code size %zu kB; requested %zu kB\n", runtime_code_base_memory_size/1024, req_code_length/1024);
         return -1;
     }
     runtime_code = runtime_code_base + code_offset;
@@ -550,9 +550,9 @@ static int show(struct seq_file *m, void *v) {
             run_experiment(measurement_template, measurement_results, 3, main_unroll_count, main_loop_count);
 
             if (verbose) {
-                pr_debug("\nRDTSC, MPERF, and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+                pr_info("\nRDTSC, MPERF, and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
                 print_all_measurement_results(measurement_results_base, 3);
-                pr_debug("RDTSC, MPERF, and and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+                pr_info("RDTSC, MPERF, and and APERF results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
                 print_all_measurement_results(measurement_results, 3);
             }
 
@@ -566,9 +566,9 @@ static int show(struct seq_file *m, void *v) {
             run_experiment(measurement_template, measurement_results, 4, main_unroll_count, main_loop_count);
 
             if (verbose) {
-                pr_debug("\nRDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+                pr_info("\nRDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
                 print_all_measurement_results(measurement_results_base, 4);
-                pr_debug("RDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+                pr_info("RDTSC and fixed-function counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
                 print_all_measurement_results(measurement_results, 4);
             }
 
@@ -617,9 +617,9 @@ static int show(struct seq_file *m, void *v) {
         run_experiment(measurement_template, measurement_results, n_used_counters, main_unroll_count, main_loop_count);
 
         if (verbose) {
-            pr_debug("\nProgrammable counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+            pr_info("\nProgrammable counter results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
             print_all_measurement_results(measurement_results_base, n_used_counters);
-            pr_debug("Programmable counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+            pr_info("Programmable counter results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
             print_all_measurement_results(measurement_results, n_used_counters);
         }
 
@@ -645,9 +645,9 @@ static int show(struct seq_file *m, void *v) {
         run_experiment(measurement_template, measurement_results, 1, main_unroll_count, main_loop_count);
 
         if (verbose) {
-            pr_debug("\nMSR results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
+            pr_info("\nMSR results (unroll_count=%ld, loop_count=%ld):\n\n", base_unroll_count, base_loop_count);
             print_all_measurement_results(measurement_results_base, 1);
-            pr_debug("MSR results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
+            pr_info("MSR results (unroll_count=%ld, loop_count=%ld):\n\n", main_unroll_count, main_loop_count);
             print_all_measurement_results(measurement_results, 1);
         }
 
@@ -683,7 +683,7 @@ static const struct file_operations proc_file_fops = {
 static struct kobject* nb_kobject;
 
 static int __init nb_init(void) {
-    pr_debug("Initializing nanoBench kernel module...\n");
+    pr_info("Initializing nanoBench kernel module...\n");
     #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
     set_memory_x = (void*)kallsyms_lookup_name("set_memory_x");
     set_memory_nx = (void*)kallsyms_lookup_name("set_memory_nx");
@@ -699,7 +699,7 @@ static int __init nb_init(void) {
         measurement_results[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
         measurement_results_base[i] = kmalloc(n_measurements*sizeof(int64_t), GFP_KERNEL);
         if (!measurement_results[i] || !measurement_results_base[i]) {
-            printk(KERN_ERR "Could not allocate memory for measurement_results\n");
+            pr_err("Could not allocate memory for measurement_results\n");
             return -1;
         }
         memset(measurement_results[i], 0, n_measurements*sizeof(int64_t));
@@ -713,7 +713,7 @@ static int __init nb_init(void) {
     runtime_rsi = vmalloc(RUNTIME_R_SIZE);
     runtime_rsp = vmalloc(RUNTIME_R_SIZE);
     if (!runtime_r14 || !runtime_rbp || !runtime_rdi || !runtime_rsi || !runtime_rsp) {
-        printk(KERN_ERR "Could not allocate memory for runtime_r*\n");
+        pr_err("Could not allocate memory for runtime_r*\n");
         return -1;
     }
     runtime_r14 += RUNTIME_R_SIZE/2;
@@ -724,7 +724,7 @@ static int __init nb_init(void) {
 
     runtime_code_base = kmalloc(KMALLOC_MAX, GFP_KERNEL);
     if (!runtime_code_base) {
-        printk(KERN_ERR "Could not allocate memory for runtime_code\n");
+        pr_err("Could not allocate memory for runtime_code\n");
         return -1;
     }
     runtime_code_base_memory_size = KMALLOC_MAX;
@@ -733,7 +733,7 @@ static int __init nb_init(void) {
 
     nb_kobject = kobject_create_and_add("nb", kernel_kobj->parent);
     if (!nb_kobject) {
-        pr_debug("failed to create and add nb\n");
+        pr_err("failed to create and add nb\n");
         return -1;
     }
 
@@ -764,13 +764,13 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &verbose_attribute.attr);
 
     if (error) {
-        pr_debug("failed to create file in /sys/nb/\n");
+        pr_err("failed to create file in /sys/nb/\n");
         return error;
     }
 
     struct proc_dir_entry* proc_file_entry = proc_create("nanoBench", 0, NULL, &proc_file_fops);
     if(proc_file_entry == NULL) {
-        pr_debug("failed to create file in /proc/\n");
+        pr_err("failed to create file in /proc/\n");
         return -1;
     }
 
