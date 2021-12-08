@@ -38,11 +38,11 @@ size_t code_late_init_length = 0;
 char* code_one_time_init = NULL;
 size_t code_one_time_init_length = 0;
 
-struct pfc_config pfc_configs[1000] = {{0}};
+struct pfc_config pfc_configs[2000] = {{0}};
 size_t n_pfc_configs = 0;
 char* pfc_config_file_content = NULL;
 
-struct msr_config msr_configs[1000] = {{0}};
+struct msr_config msr_configs[2000] = {{0}};
 size_t n_msr_configs = 0;
 char* msr_config_file_content = NULL;
 unsigned long cur_rdmsr = 0;

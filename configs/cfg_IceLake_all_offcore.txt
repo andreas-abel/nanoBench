@@ -1,0 +1,215 @@
+# Based on https://download.01.org/perfmon/ICL/icelake_core_v1.12.json
+# Applies to processors with family-model in {6-7E}
+
+# Counts demand data reads that have any type of response.
+B7.01.MSR_RSP0=0x10001.TakenAlone OCR.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that have any type of response.
+B7.01.MSR_RSP0=0x10002.TakenAlone OCR.DEMAND_RFO.ANY_RESPONSE
+
+# Counts demand data reads that hit a cacheline in the L3 where a snoop hit in another cores caches, data forwarding is required as the data is modified.
+B7.01.MSR_RSP0=0x10003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HITM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit a cacheline in the L3 where a snoop hit in another cores caches, data forwarding is required as the data is modified.
+B7.01.MSR_RSP0=0x10003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_HITM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit a cacheline in the L3 where a snoop hit in another cores caches, data forwarding is required as the data is modified.
+B7.01.MSR_RSP0=0x10003C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT.SNOOP_HITM
+
+# Counts hardware prefetch data reads (which bring data to L2)  that hit a cacheline in the L3 where a snoop hit in another cores caches, data forwarding is required as the data is modified.
+B7.01.MSR_RSP0=0x10003C0010.TakenAlone OCR.HWPF_L2_DATA_RD.L3_HIT.SNOOP_HITM
+
+# Counts hardware prefetch RFOs (which bring data to L2) that hit a cacheline in the L3 where a snoop hit in another cores caches, data forwarding is required as the data is modified.
+B7.01.MSR_RSP0=0x10003C0020.TakenAlone OCR.HWPF_L2_RFO.L3_HIT.SNOOP_HITM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that have any type of response.
+B7.01.MSR_RSP0=0x10004.TakenAlone OCR.DEMAND_CODE_RD.ANY_RESPONSE
+
+# Counts hardware prefetch data reads (which bring data to L2)  that have any type of response.
+B7.01.MSR_RSP0=0x10010.TakenAlone OCR.HWPF_L2_DATA_RD.ANY_RESPONSE
+
+# Counts hardware prefetch RFOs (which bring data to L2) that have any type of response.
+B7.01.MSR_RSP0=0x10020.TakenAlone OCR.HWPF_L2_RFO.ANY_RESPONSE
+
+# Counts demand data reads that hit a cacheline in the L3 where a snoop was not needed to satisfy the request.
+B7.01.MSR_RSP0=0x1003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_NOT_NEEDED
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit a cacheline in the L3 where a snoop was not needed to satisfy the request.
+B7.01.MSR_RSP0=0x1003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_NOT_NEEDED
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit a cacheline in the L3 where a snoop was not needed to satisfy the request.
+B7.01.MSR_RSP0=0x1003C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT.SNOOP_NOT_NEEDED
+
+# Counts hardware prefetch data reads (which bring data to L2)  that hit a cacheline in the L3 where a snoop was not needed to satisfy the request.
+B7.01.MSR_RSP0=0x1003C0010.TakenAlone OCR.HWPF_L2_DATA_RD.L3_HIT.SNOOP_NOT_NEEDED
+
+# Counts hardware prefetch RFOs (which bring data to L2) that hit a cacheline in the L3 where a snoop was not needed to satisfy the request.
+B7.01.MSR_RSP0=0x1003C0020.TakenAlone OCR.HWPF_L2_RFO.L3_HIT.SNOOP_NOT_NEEDED
+
+# Counts L1 data cache prefetch requests and software prefetches (except PREFETCHW) that hit a cacheline in the L3 where a snoop was not needed to satisfy the request.
+B7.01.MSR_RSP0=0x1003C0400.TakenAlone OCR.HWPF_L1D_AND_SWPF.L3_HIT.SNOOP_NOT_NEEDED
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that hit a cacheline in the L3 where a snoop was not needed to satisfy the request.
+B7.01.MSR_RSP0=0x1003C8000.TakenAlone OCR.OTHER.L3_HIT.SNOOP_NOT_NEEDED
+
+# Counts L1 data cache prefetch requests and software prefetches (except PREFETCHW) that have any type of response.
+B7.01.MSR_RSP0=0x10400.TakenAlone OCR.HWPF_L1D_AND_SWPF.ANY_RESPONSE
+
+# Counts streaming stores that have any type of response.
+B7.01.MSR_RSP0=0x10800.TakenAlone OCR.STREAMING_WR.ANY_RESPONSE
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that have any type of response.
+B7.01.MSR_RSP0=0x18000.TakenAlone OCR.OTHER.ANY_RESPONSE
+
+# Counts demand data reads that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000001.TakenAlone OCR.DEMAND_DATA_RD.DRAM
+
+# Counts demand data reads that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000001.TakenAlone OCR.DEMAND_DATA_RD.LOCAL_DRAM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000002.TakenAlone OCR.DEMAND_RFO.DRAM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000002.TakenAlone OCR.DEMAND_RFO.LOCAL_DRAM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000004.TakenAlone OCR.DEMAND_CODE_RD.DRAM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000004.TakenAlone OCR.DEMAND_CODE_RD.LOCAL_DRAM
+
+# Counts hardware prefetch data reads (which bring data to L2)  that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000010.TakenAlone OCR.HWPF_L2_DATA_RD.DRAM
+
+# Counts hardware prefetch data reads (which bring data to L2)  that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000010.TakenAlone OCR.HWPF_L2_DATA_RD.LOCAL_DRAM
+
+# Counts hardware prefetch RFOs (which bring data to L2) that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000020.TakenAlone OCR.HWPF_L2_RFO.DRAM
+
+# Counts hardware prefetch RFOs (which bring data to L2) that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000020.TakenAlone OCR.HWPF_L2_RFO.LOCAL_DRAM
+
+# Counts L1 data cache prefetch requests and software prefetches (except PREFETCHW) that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000400.TakenAlone OCR.HWPF_L1D_AND_SWPF.DRAM
+
+# Counts L1 data cache prefetch requests and software prefetches (except PREFETCHW) that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000400.TakenAlone OCR.HWPF_L1D_AND_SWPF.LOCAL_DRAM
+
+# Counts streaming stores that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000800.TakenAlone OCR.STREAMING_WR.DRAM
+
+# Counts streaming stores that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184000800.TakenAlone OCR.STREAMING_WR.LOCAL_DRAM
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184008000.TakenAlone OCR.OTHER.DRAM
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that DRAM supplied the request.
+B7.01.MSR_RSP0=0x184008000.TakenAlone OCR.OTHER.LOCAL_DRAM
+
+# Counts demand data reads that hit a cacheline in the L3 where a snoop was sent.
+B7.01.MSR_RSP0=0x1E003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_SENT
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit a cacheline in the L3 where a snoop was sent.
+B7.01.MSR_RSP0=0x1E003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_SENT
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit a cacheline in the L3 where a snoop was sent.
+B7.01.MSR_RSP0=0x1E003C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT.SNOOP_SENT
+
+# Counts hardware prefetch data reads (which bring data to L2)  that hit a cacheline in the L3 where a snoop was sent.
+B7.01.MSR_RSP0=0x1E003C0010.TakenAlone OCR.HWPF_L2_DATA_RD.L3_HIT.SNOOP_SENT
+
+# Counts hardware prefetch RFOs (which bring data to L2) that hit a cacheline in the L3 where a snoop was sent.
+B7.01.MSR_RSP0=0x1E003C0020.TakenAlone OCR.HWPF_L2_RFO.L3_HIT.SNOOP_SENT
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that hit a cacheline in the L3 where a snoop was sent.
+B7.01.MSR_RSP0=0x1E003C8000.TakenAlone OCR.OTHER.L3_HIT.SNOOP_SENT
+
+# Counts demand data reads that hit a cacheline in the L3 where a snoop was sent but no other cores had the data.
+B7.01.MSR_RSP0=0x2003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_MISS
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit a cacheline in the L3 where a snoop was sent but no other cores had the data.
+B7.01.MSR_RSP0=0x2003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_MISS
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit a cacheline in the L3 where a snoop was sent but no other cores had the data.
+B7.01.MSR_RSP0=0x2003C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT.SNOOP_MISS
+
+# Counts hardware prefetch data reads (which bring data to L2)  that hit a cacheline in the L3 where a snoop was sent but no other cores had the data.
+B7.01.MSR_RSP0=0x2003C0010.TakenAlone OCR.HWPF_L2_DATA_RD.L3_HIT.SNOOP_MISS
+
+# Counts hardware prefetch RFOs (which bring data to L2) that hit a cacheline in the L3 where a snoop was sent but no other cores had the data.
+B7.01.MSR_RSP0=0x2003C0020.TakenAlone OCR.HWPF_L2_RFO.L3_HIT.SNOOP_MISS
+
+# Counts L1 data cache prefetch requests and software prefetches (except PREFETCHW) that hit a cacheline in the L3 where a snoop was sent but no other cores had the data.
+B7.01.MSR_RSP0=0x2003C0400.TakenAlone OCR.HWPF_L1D_AND_SWPF.L3_HIT.SNOOP_MISS
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that hit a cacheline in the L3 where a snoop was sent but no other cores had the data.
+B7.01.MSR_RSP0=0x2003C8000.TakenAlone OCR.OTHER.L3_HIT.SNOOP_MISS
+
+# Counts demand data reads that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.ANY
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.ANY
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT.ANY
+
+# Counts hardware prefetch data reads (which bring data to L2)  that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C0010.TakenAlone OCR.HWPF_L2_DATA_RD.L3_HIT.ANY
+
+# Counts hardware prefetch RFOs (which bring data to L2) that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C0020.TakenAlone OCR.HWPF_L2_RFO.L3_HIT.ANY
+
+# Counts L1 data cache prefetch requests and software prefetches (except PREFETCHW) that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C0400.TakenAlone OCR.HWPF_L1D_AND_SWPF.L3_HIT.ANY
+
+# Counts streaming stores that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C0800.TakenAlone OCR.STREAMING_WR.L3_HIT.ANY
+
+# Counts hardware prefetches to the L3 only that hit a cacheline in the L3 where a snoop was sent or not.
+B7.01.MSR_RSP0=0x3FC03C2380.TakenAlone OCR.HWPF_L3.L3_HIT.ANY
+
+# Counts demand data reads that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC00001.TakenAlone OCR.DEMAND_DATA_RD.L3_MISS
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC00002.TakenAlone OCR.DEMAND_RFO.L3_MISS
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC00004.TakenAlone OCR.DEMAND_CODE_RD.L3_MISS
+
+# Counts hardware prefetch data reads (which bring data to L2)  that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC00010.TakenAlone OCR.HWPF_L2_DATA_RD.L3_MISS
+
+# Counts hardware prefetch RFOs (which bring data to L2) that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC00020.TakenAlone OCR.HWPF_L2_RFO.L3_MISS
+
+# Counts L1 data cache prefetch requests and software prefetches (except PREFETCHW) that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC00400.TakenAlone OCR.HWPF_L1D_AND_SWPF.L3_MISS
+
+# Counts streaming stores that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC00800.TakenAlone OCR.STREAMING_WR.L3_MISS
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that was not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3FFFC08000.TakenAlone OCR.OTHER.L3_MISS
+
+# Counts demand data reads that hit a cacheline in the L3 where a snoop hit in another core, data forwarding is not required.
+B7.01.MSR_RSP0=0x4003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HIT_NO_FWD
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit a cacheline in the L3 where a snoop hit in another core, data forwarding is not required.
+B7.01.MSR_RSP0=0x4003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_HIT_NO_FWD
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit a cacheline in the L3 where a snoop hit in another core, data forwarding is not required.
+B7.01.MSR_RSP0=0x4003C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT.SNOOP_HIT_NO_FWD
+
+# Counts hardware prefetch data reads (which bring data to L2)  that hit a cacheline in the L3 where a snoop hit in another core, data forwarding is not required.
+B7.01.MSR_RSP0=0x4003C0010.TakenAlone OCR.HWPF_L2_DATA_RD.L3_HIT.SNOOP_HIT_NO_FWD
+
+# Counts hardware prefetch RFOs (which bring data to L2) that hit a cacheline in the L3 where a snoop hit in another core, data forwarding is not required.
+B7.01.MSR_RSP0=0x4003C0020.TakenAlone OCR.HWPF_L2_RFO.L3_HIT.SNOOP_HIT_NO_FWD
+
+# Counts miscellaneous requests, such as I/O and un-cacheable accesses that hit a cacheline in the L3 where a snoop hit in another core, data forwarding is not required.
+B7.01.MSR_RSP0=0x4003C8000.TakenAlone OCR.OTHER.L3_HIT.SNOOP_HIT_NO_FWD

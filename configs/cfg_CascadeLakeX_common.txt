@@ -1,5 +1,5 @@
-# Based on https://download.01.org/perfmon/SKL/skylake_core_v52.json
-# Applies to processors with family-model in {6-4E, 6-5E, 6-8E, 6-9E, 6-A5, 6-A6}
+# Based on https://download.01.org/perfmon/CLX/cascadelakex_core_v1.14.json
+# Applies to processors with family-model in {6-55-[56789ABCDEF]}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED

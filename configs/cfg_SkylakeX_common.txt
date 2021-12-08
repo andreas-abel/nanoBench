@@ -1,11 +1,15 @@
-# Performance monitoring events for the Intel Xeon Processor Scalable Family.
-# Applies to processors with DisplayFamily_DisplayModel of 06_55H.
-# See Table 19-3 of Intel's "System Programming Guide" (Jan. 2019)
+# Based on https://download.01.org/perfmon/SKX/skylakex_core_v1.26.json
+# Applies to processors with family-model in {6-55-[01234]}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED
+79.04 IDQ.MITE_UOPS
+79.08 IDQ.DSB_UOPS
+79.30 IDQ.MS_UOPS
+A8.01 LSD.UOPS
 0E.01 UOPS_ISSUED
 B1.01 UOPS_EXECUTED
+C2.02 UOPS_RETIRED.RETIRE_SLOTS
 A1.01 UOPS_DISPATCHED_PORT.PORT_0
 A1.02 UOPS_DISPATCHED_PORT.PORT_1
 A1.04 UOPS_DISPATCHED_PORT.PORT_2

@@ -1,0 +1,101 @@
+# Based on https://download.01.org/perfmon/IVB/ivybridge_core_v21.json
+# Applies to processors with family-model in {6-3A}
+
+# Counts all demand data reads 
+B7.01.MSR_RSP0=0x00010001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts all demand rfo's 
+B7.01.MSR_RSP0=0x00010002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.ANY_RESPONSE
+
+# Counts all demand code reads
+B7.01.MSR_RSP0=0x00010004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.ANY_RESPONSE
+
+# Counts all demand & prefetch prefetch RFOs 
+B7.01.MSR_RSP0=0x00010122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.ANY_RESPONSE
+
+# Counts all demand & prefetch data reads
+B7.01.MSR_RSP0=0x000105B3.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.ANY_RESPONSE
+
+# Counts all data/code/rfo references (demand & prefetch) 
+B7.01.MSR_RSP0=0x000107F7.TakenAlone OFFCORE_RESPONSE.ALL_READS.ANY_RESPONSE
+
+# Counts demand data reads that hit in the LLC and the snoop to one of the sibling cores hits the line in M state and the line is forwarded
+B7.01.MSR_RSP0=0x10003c0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_HIT.HITM_OTHER_CORE
+
+# Counts demand data writes (RFOs) that hit in the LLC and the snoop to one of the sibling cores hits the line in M state and the line is forwarded
+B7.01.MSR_RSP0=0x10003c0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LLC_HIT.HITM_OTHER_CORE
+
+# Counts demand & prefetch data reads that hit in the LLC and the snoop to one of the sibling cores hits the line in M state and the line is forwarded
+B7.01.MSR_RSP0=0x10003c0091.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.LLC_HIT.HITM_OTHER_CORE
+
+# Counts all writebacks from the core to the LLC
+B7.01.MSR_RSP0=0x10008.TakenAlone OFFCORE_RESPONSE.COREWB.ANY_RESPONSE
+
+# Counts demand data reads that hit in the LLC and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores
+B7.01.MSR_RSP0=0x1003c0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_HIT.NO_SNOOP_NEEDED
+
+# Counts demand data writes (RFOs) that hit in the LLC and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores
+B7.01.MSR_RSP0=0x1003c0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LLC_HIT.NO_SNOOP_NEEDED
+
+# Counts demand code reads that hit in the LLC and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores
+B7.01.MSR_RSP0=0x1003c0004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.LLC_HIT.NO_SNOOP_NEEDED
+
+# Counts demand & prefetch data reads that hit in the LLC and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores
+B7.01.MSR_RSP0=0x1003c0091.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.LLC_HIT.NO_SNOOP_NEEDED
+
+# Counts demand & prefetch RFOs that hit in the LLC and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores
+B7.01.MSR_RSP0=0x1003c0122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.LLC_HIT.NO_SNOOP_NEEDED
+
+# Counts demand & prefetch code reads that hit in the LLC and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores
+B7.01.MSR_RSP0=0x1003c0244.TakenAlone OFFCORE_RESPONSE.ALL_CODE_RD.LLC_HIT.NO_SNOOP_NEEDED
+
+# Counts requests where the address of an atomic lock instruction spans a cache line boundary or the lock instruction is executed on uncacheable address 
+B7.01.MSR_RSP0=0x10400.TakenAlone OFFCORE_RESPONSE.SPLIT_LOCK_UC_LOCK.ANY_RESPONSE
+
+# Counts non-temporal stores
+B7.01.MSR_RSP0=0x10800.TakenAlone OFFCORE_RESPONSE.STREAMING_STORES.ANY_RESPONSE
+
+# Counts miscellaneous accesses that include port i/o, MMIO and uncacheable memory accesses. It also includes L2 hints sent to LLC to keep a line from being evicted out of the core caches
+B7.01.MSR_RSP0=0x18000.TakenAlone OFFCORE_RESPONSE.OTHER.ANY_RESPONSE
+
+# Counts demand data reads that miss the LLC and the data returned from dram
+B7.01.MSR_RSP0=0x300400001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_MISS.DRAM
+
+# Counts demand code reads that miss the LLC and the data returned from dram
+B7.01.MSR_RSP0=0x300400004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.LLC_MISS.DRAM
+
+# Counts all demand & prefetch data reads that miss the LLC  and the data returned from dram
+B7.01.MSR_RSP0=0x300400091.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.LLC_MISS.DRAM
+
+# Counts all demand & prefetch code reads that miss the LLC  and the data returned from dram
+B7.01.MSR_RSP0=0x300400244.TakenAlone OFFCORE_RESPONSE.ALL_CODE_RD.LLC_MISS.DRAM
+
+# Counts all data/code/rfo reads (demand & prefetch) that miss the LLC  and the data returned from dram
+B7.01.MSR_RSP0=0x3004003f7.TakenAlone OFFCORE_RESPONSE.ALL_READS.LLC_MISS.DRAM
+
+# Counts all demand data reads that hit in the LLC
+B7.01.MSR_RSP0=0x3f803c0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_HIT.ANY_RESPONSE
+
+# Counts all demand data writes (RFOs) that hit in the LLC
+B7.01.MSR_RSP0=0x3f803c0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LLC_HIT.ANY_RESPONSE
+
+# Counts all demand code reads that hit in the LLC
+B7.01.MSR_RSP0=0x3f803c0004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.LLC_HIT.ANY_RESPONSE
+
+# Counts all demand & prefetch data reads that hit in the LLC
+B7.01.MSR_RSP0=0x3f803c0091.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.LLC_HIT.ANY_RESPONSE
+
+# Counts all demand & prefetch RFOs that hit in the LLC
+B7.01.MSR_RSP0=0x3f803c0122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.LLC_HIT.ANY_RESPONSE
+
+# Counts all demand & prefetch code reads that hit in the LLC
+B7.01.MSR_RSP0=0x3f803c0244.TakenAlone OFFCORE_RESPONSE.ALL_CODE_RD.LLC_HIT.ANY_RESPONSE
+
+# Counts demand data reads that hit in the LLC and the snoops to sibling cores hit in either E/S state and the line is not forwarded
+B7.01.MSR_RSP0=0x4003c0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts demand & prefetch data reads that hit in the LLC and the snoops to sibling cores hit in either E/S state and the line is not forwarded
+B7.01.MSR_RSP0=0x4003c0091.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.LLC_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts LLC replacements
+B7.01.MSR_RSP0=0x6004001b3.TakenAlone OFFCORE_RESPONSE.DATA_IN_SOCKET.LLC_MISS.LOCAL_DRAM

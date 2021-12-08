@@ -1,0 +1,434 @@
+# Based on https://download.01.org/perfmon/SKX/skylakex_core_v1.26.json
+# Applies to processors with family-model in {6-55-[01234]}
+
+# Counts demand data reads that have any response type.
+B7.01.MSR_RSP0=0x10001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts all demand data writes (RFOs) that have any response type.
+B7.01.MSR_RSP0=0x10002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.ANY_RESPONSE
+
+# Counts demand data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_HIT.HITM_OTHER_CORE
+
+# Counts all demand data writes (RFOs) that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_HIT.HITM_OTHER_CORE
+
+# Counts all demand code reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_HIT.HITM_OTHER_CORE
+
+# Counts prefetch (that bring data to L2) data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_HIT.HITM_OTHER_CORE
+
+# Counts all prefetch (that bring data to L2) RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_HIT.HITM_OTHER_CORE
+
+# Counts all prefetch (that bring data to LLC only) data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_HIT.HITM_OTHER_CORE
+
+# Counts all prefetch (that bring data to LLC only) RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_HIT.HITM_OTHER_CORE
+
+# Counts prefetch RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_HIT.HITM_OTHER_CORE
+
+# Counts all demand & prefetch RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_HIT.HITM_OTHER_CORE
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_HIT.HITM_OTHER_CORE
+
+# Counts all prefetch data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_HIT.HITM_OTHER_CORE
+
+# Counts all demand & prefetch data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x10003C0491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_HIT.HITM_OTHER_CORE
+
+# Counts all demand code reads that have any response type.
+B7.01.MSR_RSP0=0x10004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.ANY_RESPONSE
+
+# Counts prefetch (that bring data to L2) data reads that have any response type.
+B7.01.MSR_RSP0=0x10010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.ANY_RESPONSE
+
+# Counts all prefetch (that bring data to L2) RFOs that have any response type.
+B7.01.MSR_RSP0=0x10020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.ANY_RESPONSE
+
+# Counts demand data reads that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all demand data writes (RFOs) that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all demand code reads that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts prefetch (that bring data to L2) data reads that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all prefetch (that bring data to L2) RFOs that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all prefetch (that bring data to LLC only) data reads that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all prefetch (that bring data to LLC only) RFOs that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts prefetch RFOs that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all demand & prefetch RFOs that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all prefetch data reads that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all demand & prefetch data reads that hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+B7.01.MSR_RSP0=0x1003C0491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_HIT.NO_SNOOP_NEEDED
+
+# Counts all prefetch (that bring data to LLC only) data reads that have any response type.
+B7.01.MSR_RSP0=0x10080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.ANY_RESPONSE
+
+# Counts all prefetch (that bring data to LLC only) RFOs that have any response type.
+B7.01.MSR_RSP0=0x10100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.ANY_RESPONSE
+
+# Counts prefetch RFOs that have any response type.
+B7.01.MSR_RSP0=0x10120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.ANY_RESPONSE
+
+# Counts all demand & prefetch RFOs that have any response type.
+B7.01.MSR_RSP0=0x10122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.ANY_RESPONSE
+
+# Counts demand data reads that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_MISS.REMOTE_HITM
+
+# Counts all demand data writes (RFOs) that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_MISS.REMOTE_HITM
+
+# Counts all demand code reads that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_MISS.REMOTE_HITM
+
+# Counts prefetch (that bring data to L2) data reads that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_MISS.REMOTE_HITM
+
+# Counts all prefetch (that bring data to L2) RFOs that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_MISS.REMOTE_HITM
+
+# Counts all prefetch (that bring data to LLC only) data reads that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_MISS.REMOTE_HITM
+
+# Counts all prefetch (that bring data to LLC only) RFOs that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_MISS.REMOTE_HITM
+
+# Counts prefetch RFOs that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_MISS.REMOTE_HITM
+
+# Counts all demand & prefetch RFOs that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_MISS.REMOTE_HITM
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_MISS.REMOTE_HITM
+
+# Counts all prefetch data reads that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_MISS.REMOTE_HITM
+
+# Counts all demand & prefetch data reads that miss the L3 and the modified data is transferred from remote cache.
+B7.01.MSR_RSP0=0x103FC00491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_MISS.REMOTE_HITM
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that have any response type.
+B7.01.MSR_RSP0=0x10400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.ANY_RESPONSE
+
+# Counts all prefetch data reads that have any response type.
+B7.01.MSR_RSP0=0x10490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.ANY_RESPONSE
+
+# Counts all demand & prefetch data reads that have any response type.
+B7.01.MSR_RSP0=0x10491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.ANY_RESPONSE
+
+# Counts demand data reads that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_HIT.ANY_SNOOP
+
+# Counts all demand data writes (RFOs) that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_HIT.ANY_SNOOP
+
+# Counts all demand code reads that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_HIT.ANY_SNOOP
+
+# Counts prefetch (that bring data to L2) data reads that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_HIT.ANY_SNOOP
+
+# Counts all prefetch (that bring data to L2) RFOs that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_HIT.ANY_SNOOP
+
+# Counts all prefetch (that bring data to LLC only) data reads that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_HIT.ANY_SNOOP
+
+# Counts all prefetch (that bring data to LLC only) RFOs that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_HIT.ANY_SNOOP
+
+# Counts prefetch RFOs that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_HIT.ANY_SNOOP
+
+# Counts all demand & prefetch RFOs that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_HIT.ANY_SNOOP
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_HIT.ANY_SNOOP
+
+# Counts all prefetch data reads that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_HIT.ANY_SNOOP
+
+# Counts all demand & prefetch data reads that hit in the L3.
+B7.01.MSR_RSP0=0x3F803C0491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_HIT.ANY_SNOOP
+
+# Counts demand data reads that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_MISS.ANY_SNOOP
+
+# Counts all demand data writes (RFOs) that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_MISS.ANY_SNOOP
+
+# Counts all demand code reads that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_MISS.ANY_SNOOP
+
+# Counts prefetch (that bring data to L2) data reads that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_MISS.ANY_SNOOP
+
+# Counts all prefetch (that bring data to L2) RFOs that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_MISS.ANY_SNOOP
+
+# Counts all prefetch (that bring data to LLC only) data reads that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_MISS.ANY_SNOOP
+
+# Counts all prefetch (that bring data to LLC only) RFOs that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_MISS.ANY_SNOOP
+
+# Counts prefetch RFOs that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_MISS.ANY_SNOOP
+
+# Counts all demand & prefetch RFOs that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_MISS.ANY_SNOOP
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_MISS.ANY_SNOOP
+
+# Counts all prefetch data reads that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_MISS.ANY_SNOOP
+
+# Counts all demand & prefetch data reads that miss in the L3.
+B7.01.MSR_RSP0=0x3FBC000491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_MISS.ANY_SNOOP
+
+# Counts demand data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all demand data writes (RFOs) that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all demand code reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts prefetch (that bring data to L2) data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all prefetch (that bring data to L2) RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts prefetch RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all demand & prefetch RFOs that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all prefetch data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts all demand & prefetch data reads that hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+B7.01.MSR_RSP0=0x4003C0491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_HIT.HIT_OTHER_CORE_NO_FWD
+
+# Counts demand data reads that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand data writes (RFOs) that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand code reads that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts prefetch (that bring data to L2) data reads that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to L2) RFOs that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) data reads that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) RFOs that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts prefetch RFOs that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand & prefetch RFOs that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch data reads that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand & prefetch data reads that miss the L3 and the data is returned from local dram.
+B7.01.MSR_RSP0=0x604000491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts demand data reads that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand data writes (RFOs) that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand code reads that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts prefetch (that bring data to L2) data reads that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to L2) RFOs that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) data reads that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) RFOs that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts prefetch RFOs that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand & prefetch RFOs that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch data reads that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand & prefetch data reads that miss the L3 and the data is returned from remote dram.
+B7.01.MSR_RSP0=0x63B800491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD
+
+# Counts demand data reads that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand data writes (RFOs) that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand code reads that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts prefetch (that bring data to L2) data reads that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to L2) RFOs that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) data reads that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch (that bring data to LLC only) RFOs that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts prefetch RFOs that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand & prefetch RFOs that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all prefetch data reads that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# Counts all demand & prefetch data reads that miss the L3 and the data is returned from local or remote dram.
+B7.01.MSR_RSP0=0x63FC00491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_MISS.SNOOP_MISS_OR_NO_FWD
+
+# OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.DEMAND_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.PF_L2_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.PF_L3_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.ALL_PF_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.ALL_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# OFFCORE_RESPONSE.ALL_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+B7.01.MSR_RSP0=0x8003C0491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# Counts demand data reads that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all demand data writes (RFOs) that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all demand code reads that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00004.TakenAlone OFFCORE_RESPONSE.DEMAND_CODE_RD.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts prefetch (that bring data to L2) data reads that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00010.TakenAlone OFFCORE_RESPONSE.PF_L2_DATA_RD.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all prefetch (that bring data to L2) RFOs that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00020.TakenAlone OFFCORE_RESPONSE.PF_L2_RFO.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all prefetch (that bring data to LLC only) data reads that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00080.TakenAlone OFFCORE_RESPONSE.PF_L3_DATA_RD.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all prefetch (that bring data to LLC only) RFOs that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00100.TakenAlone OFFCORE_RESPONSE.PF_L3_RFO.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts prefetch RFOs that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00120.TakenAlone OFFCORE_RESPONSE.ALL_PF_RFO.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all demand & prefetch RFOs that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00122.TakenAlone OFFCORE_RESPONSE.ALL_RFO.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts L1 data cache hardware prefetch requests and software prefetch requests that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00400.TakenAlone OFFCORE_RESPONSE.PF_L1D_AND_SW.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all prefetch data reads that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00490.TakenAlone OFFCORE_RESPONSE.ALL_PF_DATA_RD.L3_MISS.REMOTE_HIT_FORWARD
+
+# Counts all demand & prefetch data reads that miss the L3 and clean or shared data is transferred from remote cache.
+B7.01.MSR_RSP0=0x83FC00491.TakenAlone OFFCORE_RESPONSE.ALL_DATA_RD.L3_MISS.REMOTE_HIT_FORWARD

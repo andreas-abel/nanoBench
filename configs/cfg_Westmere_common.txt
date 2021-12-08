@@ -1,6 +1,5 @@
-# Performance monitoring events for processors based on the Westmere microarchitecture.
-# Applies to processors with DisplayFamily_DisplayModel of 06_25H and 06_2CH.
-# See Table 19-22 of Intel's "System Programming Guide" (Jan. 2019)
+# Based on https://download.01.org/perfmon/WSM-EP-SP/WestmereEP-SP_core_V2.json
+# Applies to processors with family-model in {6-25}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED
@@ -13,9 +12,9 @@ B1.04 UOPS_EXECUTED.PORT2_CORE
 B1.08 UOPS_EXECUTED.PORT3_CORE
 B1.10 UOPS_EXECUTED.PORT4_CORE
 B1.20 UOPS_EXECUTED.PORT5
-C4.00 BR_INST_RETIRED.ALL_BRANCHES
-C5.00 BR_MISP_RETIRED.ALL_BRANCHES
+C4.04 BR_INST_RETIRED.ALL_BRANCHES
+C5.04 BR_MISP_RETIRED.ALL_BRANCHES
 CB.01 MEM_LOAD_RETIRED.L1D_HIT
 CB.02 MEM_LOAD_RETIRED.L2_HIT
-CB.04 MEM_LOAD_RETIRED.L3_UNSHARED_HIT
-CB.10 MEM_LOAD_RETIRED.L3_MISS
+CB.04 MEM_LOAD_RETIRED.LLC_UNSHARED_HIT
+CB.10 MEM_LOAD_RETIRED.LLC_MISS

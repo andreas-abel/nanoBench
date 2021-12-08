@@ -1,9 +1,12 @@
-# Performance monitoring events for processors based on the Sandy Bridge microarchitecture.
-# Applies to processors with DisplayFamily_DisplayModel of 06_2AH and 06_2DH.
-# See Table 19-16 of Intel's "System Programming Guide" (Jan. 2019)
+# Based on https://download.01.org/perfmon/SNB/sandybridge_core_v16.json
+# Applies to processors with family-model in {6-2A}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED
+79.04 IDQ.MITE_UOPS
+79.08 IDQ.DSB_UOPS
+79.30 IDQ.MS_UOPS
+A8.01 LSD.UOPS
 0E.01 UOPS_ISSUED
 B1.01 UOPS_DISPATCHED
 C2.01 UOPS_RETIRED

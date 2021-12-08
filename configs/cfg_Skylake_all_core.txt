@@ -1,0 +1,857 @@
+# Based on https://download.01.org/perfmon/SKL/skylake_core_v52.json
+# Applies to processors with family-model in {6-4E, 6-5E, 6-8E, 6-9E, 6-A5, 6-A6}
+
+# Loads blocked due to overlapping with a preceding store that cannot be forwarded.
+03.02 LD_BLOCKS.STORE_FORWARD
+
+# The number of times that split load operations are temporarily blocked because all resources for handling the split accesses are in use
+03.08 LD_BLOCKS.NO_SR
+
+# False dependencies in MOB due to partial compare on address.
+07.01 LD_BLOCKS_PARTIAL.ADDRESS_ALIAS
+
+# Load misses in all DTLB levels that cause page walks
+08.01 DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK
+
+# Page walk completed due to a demand data load to a 4K page
+08.02 DTLB_LOAD_MISSES.WALK_COMPLETED_4K
+
+# Page walk completed due to a demand data load to a 2M/4M page
+08.04 DTLB_LOAD_MISSES.WALK_COMPLETED_2M_4M
+
+# Page walk completed due to a demand data load to a 1G page
+08.08 DTLB_LOAD_MISSES.WALK_COMPLETED_1G
+
+# Load miss in all TLB levels causes a page walk that completes. (All page sizes)
+08.0E DTLB_LOAD_MISSES.WALK_COMPLETED
+
+# Counts 1 per cycle for each PMH that is busy with a page walk for a load. EPT page walk duration are excluded in Skylake.
+08.10 DTLB_LOAD_MISSES.WALK_PENDING
+
+# Cycles when at least one PMH is busy with a page walk for a load. EPT page walk duration are excluded in Skylake.
+08.10.CMSK=1 DTLB_LOAD_MISSES.WALK_ACTIVE
+
+# Loads that miss the DTLB and hit the STLB.
+08.20 DTLB_LOAD_MISSES.STLB_HIT
+
+# tbd
+09.01 MEMORY_DISAMBIGUATION.HISTORY_RESET
+
+# Core cycles the allocator was stalled due to recovery from earlier clear event for this thread (e.g. misprediction or memory nuke)
+0D.01 INT_MISC.RECOVERY_CYCLES
+
+# Core cycles the allocator was stalled due to recovery from earlier clear event for any thread running on the physical core (e.g. misprediction or memory nuke).
+0D.01.AnyT INT_MISC.RECOVERY_CYCLES_ANY
+
+# Cycles the issue-stage is waiting for front-end to fetch from resteered path following branch misprediction or machine clear events.
+0D.80 INT_MISC.CLEAR_RESTEER_CYCLES
+
+# Uops that Resource Allocation Table (RAT) issues to Reservation Station (RS)
+0E.01 UOPS_ISSUED.ANY
+
+# Cycles when Resource Allocation Table (RAT) does not issue Uops to Reservation Station (RS) for the thread
+0E.01.CMSK=1.INV UOPS_ISSUED.STALL_CYCLES
+
+# Uops inserted at issue-stage in order to preserve upper bits of vector registers.
+0E.02 UOPS_ISSUED.VECTOR_WIDTH_MISMATCH
+
+# Number of slow LEA uops being allocated. A uop is generally considered SlowLea if it has 3 sources (e.g. 2 sources + immediate) regardless if as a result of LEA instruction or not.
+0E.20 UOPS_ISSUED.SLOW_LEA
+
+# Cycles when divide unit is busy executing divide or square root operations. Accounts for integer and floating-point operations.
+14.01.CMSK=1 ARITH.DIVIDER_ACTIVE
+
+# Demand Data Read miss L2, no rejects
+24.21 L2_RQSTS.DEMAND_DATA_RD_MISS
+
+# RFO requests that miss L2 cache
+24.22 L2_RQSTS.RFO_MISS
+
+# L2 cache misses when fetching instructions
+24.24 L2_RQSTS.CODE_RD_MISS
+
+# Demand requests that miss L2 cache
+24.27 L2_RQSTS.ALL_DEMAND_MISS
+
+# Requests from the L1/L2/L3 hardware prefetchers or Load software prefetches that miss L2 cache
+24.38 L2_RQSTS.PF_MISS
+
+# All requests that miss L2 cache
+24.3F L2_RQSTS.MISS
+
+# Demand Data Read requests that hit L2 cache
+24.C1 L2_RQSTS.DEMAND_DATA_RD_HIT
+
+# RFO requests that hit L2 cache
+24.C2 L2_RQSTS.RFO_HIT
+
+# L2 cache hits when fetching instructions, code reads.
+24.C4 L2_RQSTS.CODE_RD_HIT
+
+# Requests from the L1/L2/L3 hardware prefetchers or Load software prefetches that hit L2 cache
+24.D8 L2_RQSTS.PF_HIT
+
+# Demand Data Read requests
+24.E1 L2_RQSTS.ALL_DEMAND_DATA_RD
+
+# RFO requests to L2 cache
+24.E2 L2_RQSTS.ALL_RFO
+
+# L2 code requests
+24.E4 L2_RQSTS.ALL_CODE_RD
+
+# Demand requests to L2 cache
+24.E7 L2_RQSTS.ALL_DEMAND_REFERENCES
+
+# Requests from the L1/L2/L3 hardware prefetchers or Load software prefetches
+24.F8 L2_RQSTS.ALL_PF
+
+# All L2 requests
+24.FF L2_RQSTS.REFERENCES
+
+# Core-originated cacheable demand requests missed L3
+2E.41 LONGEST_LAT_CACHE.MISS
+
+# Core-originated cacheable demand requests that refer to L3
+2E.4F LONGEST_LAT_CACHE.REFERENCE
+
+# Number of PREFETCHNTA instructions executed.
+32.01 SW_PREFETCH_ACCESS.NTA
+
+# Number of PREFETCHT0 instructions executed.
+32.02 SW_PREFETCH_ACCESS.T0
+
+# Number of PREFETCHT1 or PREFETCHT2 instructions executed.
+32.04 SW_PREFETCH_ACCESS.T1_T2
+
+# Number of PREFETCHW instructions executed.
+32.08 SW_PREFETCH_ACCESS.PREFETCHW
+
+# Thread cycles when thread is not in halt state
+3C.00 CPU_CLK_UNHALTED.THREAD_P
+
+# Core cycles when at least one thread on the physical core is not in halt state.
+3C.00.AnyT CPU_CLK_UNHALTED.THREAD_P_ANY
+
+# Counts when there is a transition from ring 1, 2 or 3 to ring 0.
+3C.00.CMSK=1.EDG CPU_CLK_UNHALTED.RING0_TRANS
+
+# Core crystal clock cycles when the thread is unhalted.
+3C.01 CPU_CLK_THREAD_UNHALTED.REF_XCLK
+
+# Core crystal clock cycles when the thread is unhalted.
+3C.01 CPU_CLK_UNHALTED.REF_XCLK
+
+# Core crystal clock cycles when at least one thread on the physical core is unhalted.
+3C.01.AnyT CPU_CLK_THREAD_UNHALTED.REF_XCLK_ANY
+
+# Core crystal clock cycles when at least one thread on the physical core is unhalted.
+3C.01.AnyT CPU_CLK_UNHALTED.REF_XCLK_ANY
+
+# Core crystal clock cycles when this thread is unhalted and the other thread is halted.
+3C.02 CPU_CLK_THREAD_UNHALTED.ONE_THREAD_ACTIVE
+
+# Core crystal clock cycles when this thread is unhalted and the other thread is halted.
+3C.02 CPU_CLK_UNHALTED.ONE_THREAD_ACTIVE
+
+# L1D miss outstandings duration in cycles
+48.01 L1D_PEND_MISS.PENDING
+
+# Cycles with L1D load Misses outstanding.
+48.01.CMSK=1 L1D_PEND_MISS.PENDING_CYCLES
+
+# Cycles with L1D load Misses outstanding from any thread on physical core.
+48.01.CMSK=1.AnyT L1D_PEND_MISS.PENDING_CYCLES_ANY
+
+# Number of times a request needed a FB entry but there was no entry available for it. That is the FB unavailability was dominant reason for blocking the request. A request includes cacheable/uncacheable demands that is load, store or SW prefetch.
+48.02 L1D_PEND_MISS.FB_FULL
+
+# Store misses in all DTLB levels that cause page walks
+49.01 DTLB_STORE_MISSES.MISS_CAUSES_A_WALK
+
+# Page walk completed due to a demand data store to a 4K page
+49.02 DTLB_STORE_MISSES.WALK_COMPLETED_4K
+
+# Page walk completed due to a demand data store to a 2M/4M page
+49.04 DTLB_STORE_MISSES.WALK_COMPLETED_2M_4M
+
+# Page walk completed due to a demand data store to a 1G page
+49.08 DTLB_STORE_MISSES.WALK_COMPLETED_1G
+
+# Store misses in all TLB levels causes a page walk that completes. (All page sizes)
+49.0E DTLB_STORE_MISSES.WALK_COMPLETED
+
+# Counts 1 per cycle for each PMH that is busy with a page walk for a store. EPT page walk duration are excluded in Skylake.
+49.10 DTLB_STORE_MISSES.WALK_PENDING
+
+# Cycles when at least one PMH is busy with a page walk for a store. EPT page walk duration are excluded in Skylake.
+49.10.CMSK=1 DTLB_STORE_MISSES.WALK_ACTIVE
+
+# Stores that miss the DTLB and hit the STLB.
+49.20 DTLB_STORE_MISSES.STLB_HIT
+
+# Demand load dispatches that hit L1D fill buffer (FB) allocated for software prefetch.
+4C.01 LOAD_HIT_PRE.SW_PF
+
+# Counts 1 per cycle for each PMH that is busy with a EPT (Extended Page Table) walk for any request type.
+4F.10 EPT.WALK_PENDING
+
+# L1D data line replacements
+51.01 L1D.REPLACEMENT
+
+# Number of times a transactional abort was signaled due to a data conflict on a transactionally accessed address
+54.01 TX_MEM.ABORT_CONFLICT
+
+# Number of times a transactional abort was signaled due to a data capacity limitation for transactional reads or writes.
+54.02 TX_MEM.ABORT_CAPACITY
+
+# Number of times a HLE transactional region aborted due to a non XRELEASE prefixed instruction writing to an elided lock in the elision buffer
+54.04 TX_MEM.ABORT_HLE_STORE_TO_ELIDED_LOCK
+
+# Number of times an HLE transactional execution aborted due to NoAllocatedElisionBuffer being non-zero.
+54.08 TX_MEM.ABORT_HLE_ELISION_BUFFER_NOT_EMPTY
+
+# Number of times an HLE transactional execution aborted due to XRELEASE lock not satisfying the address and value requirements in the elision buffer
+54.10 TX_MEM.ABORT_HLE_ELISION_BUFFER_MISMATCH
+
+# Number of times an HLE transactional execution aborted due to an unsupported read alignment from the elision buffer.
+54.20 TX_MEM.ABORT_HLE_ELISION_BUFFER_UNSUPPORTED_ALIGNMENT
+
+# Number of times HLE lock could not be elided due to ElisionBufferAvailable being zero.
+54.40 TX_MEM.HLE_ELISION_BUFFER_FULL
+
+# Cycles where the pipeline is stalled due to serializing operations.
+59.01 PARTIAL_RAT_STALLS.SCOREBOARD
+
+# Counts the number of times a class of instructions that may cause a transactional abort was executed. Since this is the count of execution, it may not always cause a transactional abort.
+5D.01 TX_EXEC.MISC1
+
+# Counts the number of times a class of instructions (e.g., vzeroupper) that may cause a transactional abort was executed inside a transactional region
+5D.02 TX_EXEC.MISC2
+
+# Counts the number of times an instruction execution caused the transactional nest count supported to be exceeded
+5D.04 TX_EXEC.MISC3
+
+# Counts the number of times a XBEGIN instruction was executed inside an HLE transactional region.
+5D.08 TX_EXEC.MISC4
+
+# Counts the number of times an HLE XACQUIRE instruction was executed inside an RTM transactional region
+5D.10 TX_EXEC.MISC5
+
+# Cycles when Reservation Station (RS) is empty for the thread
+5E.01 RS_EVENTS.EMPTY_CYCLES
+
+# Counts end of periods where the Reservation Station (RS) was empty. Could be useful to precisely locate Frontend Latency Bound issues.
+5E.01.CMSK=1.EDG.INV RS_EVENTS.EMPTY_END
+
+# Offcore outstanding Demand Data Read transactions in uncore queue.
+60.01 OFFCORE_REQUESTS_OUTSTANDING.DEMAND_DATA_RD
+
+# Cycles when offcore outstanding Demand Data Read transactions are present in SuperQueue (SQ), queue to uncore
+60.01.CMSK=1 OFFCORE_REQUESTS_OUTSTANDING.CYCLES_WITH_DEMAND_DATA_RD
+
+# Cycles with at least 6 offcore outstanding Demand Data Read transactions in uncore queue.
+60.01.CMSK=6 OFFCORE_REQUESTS_OUTSTANDING.DEMAND_DATA_RD_GE_6
+
+# Offcore outstanding Code Reads transactions in the SuperQueue (SQ), queue to uncore, every cycle.
+60.02 OFFCORE_REQUESTS_OUTSTANDING.DEMAND_CODE_RD
+
+# Cycles with offcore outstanding Code Reads transactions in the SuperQueue (SQ), queue to uncore.
+60.02.CMSK=1 OFFCORE_REQUESTS_OUTSTANDING.CYCLES_WITH_DEMAND_CODE_RD
+
+# Offcore outstanding demand rfo reads transactions in SuperQueue (SQ), queue to uncore, every cycle
+60.04 OFFCORE_REQUESTS_OUTSTANDING.DEMAND_RFO
+
+# Cycles with offcore outstanding demand rfo reads transactions in SuperQueue (SQ), queue to uncore.
+60.04.CMSK=1 OFFCORE_REQUESTS_OUTSTANDING.CYCLES_WITH_DEMAND_RFO
+
+# Offcore outstanding cacheable Core Data Read transactions in SuperQueue (SQ), queue to uncore
+60.08 OFFCORE_REQUESTS_OUTSTANDING.ALL_DATA_RD
+
+# Cycles when offcore outstanding cacheable Core Data Read transactions are present in SuperQueue (SQ), queue to uncore.
+60.08.CMSK=1 OFFCORE_REQUESTS_OUTSTANDING.CYCLES_WITH_DATA_RD
+
+# Counts number of Offcore outstanding Demand Data Read requests that miss L3 cache in the superQ every cycle.
+60.10 OFFCORE_REQUESTS_OUTSTANDING.L3_MISS_DEMAND_DATA_RD
+
+# Cycles with at least 1 Demand Data Read requests who miss L3 cache in the superQ.
+60.10.CMSK=1 OFFCORE_REQUESTS_OUTSTANDING.CYCLES_WITH_L3_MISS_DEMAND_DATA_RD
+
+# Cycles with at least 6 Demand Data Read requests that miss L3 cache in the superQ.
+60.10.CMSK=6 OFFCORE_REQUESTS_OUTSTANDING.L3_MISS_DEMAND_DATA_RD_GE_6
+
+# Uops delivered to Instruction Decode Queue (IDQ) from MITE path
+79.04 IDQ.MITE_UOPS
+
+# Cycles when uops are being delivered to Instruction Decode Queue (IDQ) from MITE path
+79.04.CMSK=1 IDQ.MITE_CYCLES
+
+# Uops delivered to Instruction Decode Queue (IDQ) from the Decode Stream Buffer (DSB) path
+79.08 IDQ.DSB_UOPS
+
+# Cycles when uops are being delivered to Instruction Decode Queue (IDQ) from Decode Stream Buffer (DSB) path
+79.08.CMSK=1 IDQ.DSB_CYCLES
+
+# Cycles when uops initiated by Decode Stream Buffer (DSB) are being delivered to Instruction Decode Queue (IDQ) while Microcode Sequenser (MS) is busy
+79.10.CMSK=1 IDQ.MS_DSB_CYCLES
+
+# Cycles Decode Stream Buffer (DSB) is delivering any Uop
+79.18.CMSK=1 IDQ.ALL_DSB_CYCLES_ANY_UOPS
+
+# Cycles Decode Stream Buffer (DSB) is delivering 4 Uops
+79.18.CMSK=4 IDQ.ALL_DSB_CYCLES_4_UOPS
+
+# Uops initiated by MITE and delivered to Instruction Decode Queue (IDQ) while Microcode Sequenser (MS) is busy
+79.20 IDQ.MS_MITE_UOPS
+
+# Cycles MITE is delivering any Uop
+79.24.CMSK=1 IDQ.ALL_MITE_CYCLES_ANY_UOPS
+
+# Cycles MITE is delivering 4 Uops
+79.24.CMSK=4 IDQ.ALL_MITE_CYCLES_4_UOPS
+
+# Uops delivered to Instruction Decode Queue (IDQ) while Microcode Sequenser (MS) is busy
+79.30 IDQ.MS_UOPS
+
+# Cycles when uops are being delivered to Instruction Decode Queue (IDQ) while Microcode Sequenser (MS) is busy
+79.30.CMSK=1 IDQ.MS_CYCLES
+
+# Number of switches from DSB (Decode Stream Buffer) or MITE (legacy decode pipeline) to the Microcode Sequencer
+79.30.CMSK=1.EDG IDQ.MS_SWITCHES
+
+# Cycles where a code fetch is stalled due to L1 instruction cache miss.
+80.04 ICACHE_16B.IFDATA_STALL
+
+# Instruction fetch tag lookups that hit in the instruction cache (L1I). Counts at 64-byte cache-line granularity.
+83.01 ICACHE_64B.IFTAG_HIT
+
+# Instruction fetch tag lookups that miss in the instruction cache (L1I). Counts at 64-byte cache-line granularity.
+83.02 ICACHE_64B.IFTAG_MISS
+
+# Cycles where a code fetch is stalled due to L1 instruction cache tag miss.
+83.04 ICACHE_64B.IFTAG_STALL
+
+# Misses at all ITLB levels that cause page walks
+85.01 ITLB_MISSES.MISS_CAUSES_A_WALK
+
+# Code miss in all TLB levels causes a page walk that completes. (4K)
+85.02 ITLB_MISSES.WALK_COMPLETED_4K
+
+# Code miss in all TLB levels causes a page walk that completes. (2M/4M)
+85.04 ITLB_MISSES.WALK_COMPLETED_2M_4M
+
+# Code miss in all TLB levels causes a page walk that completes. (1G)
+85.08 ITLB_MISSES.WALK_COMPLETED_1G
+
+# Code miss in all TLB levels causes a page walk that completes. (All page sizes)
+85.0E ITLB_MISSES.WALK_COMPLETED
+
+# Counts 1 per cycle for each PMH that is busy with a page walk for an instruction fetch request. EPT page walk duration are excluded in Skylake.
+85.10 ITLB_MISSES.WALK_PENDING
+
+# Cycles when at least one PMH is busy with a page walk for code (instruction fetch) request. EPT page walk duration are excluded in Skylake.
+85.10.CMSK=1 ITLB_MISSES.WALK_ACTIVE
+
+# Instruction fetch requests that miss the ITLB and hit the STLB.
+85.20 ITLB_MISSES.STLB_HIT
+
+# Stalls caused by changing prefix length of the instruction.
+87.01 ILD_STALL.LCP
+
+# Uops not delivered to Resource Allocation Table (RAT) per thread when backend of the machine is not stalled
+9C.01 IDQ_UOPS_NOT_DELIVERED.CORE
+
+# Cycles with less than 3 uops delivered by the front end.
+9C.01.CMSK=1 IDQ_UOPS_NOT_DELIVERED.CYCLES_LE_3_UOP_DELIV.CORE
+
+# Counts cycles FE delivered 4 uops or Resource Allocation Table (RAT) was stalling FE.
+9C.01.CMSK=1.INV IDQ_UOPS_NOT_DELIVERED.CYCLES_FE_WAS_OK
+
+# Cycles with less than 2 uops delivered by the front end.
+9C.01.CMSK=2 IDQ_UOPS_NOT_DELIVERED.CYCLES_LE_2_UOP_DELIV.CORE
+
+# Cycles per thread when 3 or more uops are not delivered to Resource Allocation Table (RAT) when backend of the machine is not stalled
+9C.01.CMSK=3 IDQ_UOPS_NOT_DELIVERED.CYCLES_LE_1_UOP_DELIV.CORE
+
+# Cycles per thread when 4 or more uops are not delivered to Resource Allocation Table (RAT) when backend of the machine is not stalled
+9C.01.CMSK=4 IDQ_UOPS_NOT_DELIVERED.CYCLES_0_UOPS_DELIV.CORE
+
+# Cycles per thread when uops are executed in port 0
+A1.01 UOPS_DISPATCHED_PORT.PORT_0
+
+# Cycles per thread when uops are executed in port 1
+A1.02 UOPS_DISPATCHED_PORT.PORT_1
+
+# Cycles per thread when uops are executed in port 2
+A1.04 UOPS_DISPATCHED_PORT.PORT_2
+
+# Cycles per thread when uops are executed in port 3
+A1.08 UOPS_DISPATCHED_PORT.PORT_3
+
+# Cycles per thread when uops are executed in port 4
+A1.10 UOPS_DISPATCHED_PORT.PORT_4
+
+# Cycles per thread when uops are executed in port 5
+A1.20 UOPS_DISPATCHED_PORT.PORT_5
+
+# Cycles per thread when uops are executed in port 6
+A1.40 UOPS_DISPATCHED_PORT.PORT_6
+
+# Cycles per thread when uops are executed in port 7
+A1.80 UOPS_DISPATCHED_PORT.PORT_7
+
+# Resource-related stall cycles
+A2.01 RESOURCE_STALLS.ANY
+
+# Cycles stalled due to no store buffers available. (not including draining form sync).
+A2.08 RESOURCE_STALLS.SB
+
+# Cycles while L2 cache miss demand load is outstanding.
+A3.01.CMSK=1 CYCLE_ACTIVITY.CYCLES_L2_MISS
+
+# Cycles while L3 cache miss demand load is outstanding.
+A3.02.CMSK=2 CYCLE_ACTIVITY.CYCLES_L3_MISS
+
+# Total execution stalls.
+A3.04.CMSK=4 CYCLE_ACTIVITY.STALLS_TOTAL
+
+# Execution stalls while L2 cache miss demand load is outstanding.
+A3.05.CMSK=5 CYCLE_ACTIVITY.STALLS_L2_MISS
+
+# Execution stalls while L3 cache miss demand load is outstanding.
+A3.06.CMSK=6 CYCLE_ACTIVITY.STALLS_L3_MISS
+
+# Cycles while L1 cache miss demand load is outstanding.
+A3.08.CMSK=8 CYCLE_ACTIVITY.CYCLES_L1D_MISS
+
+# Execution stalls while L1 cache miss demand load is outstanding.
+A3.0C.CMSK=12 CYCLE_ACTIVITY.STALLS_L1D_MISS
+
+# Cycles while memory subsystem has an outstanding load.
+A3.10.CMSK=16 CYCLE_ACTIVITY.CYCLES_MEM_ANY
+
+# Execution stalls while memory subsystem has an outstanding load.
+A3.14.CMSK=20 CYCLE_ACTIVITY.STALLS_MEM_ANY
+
+# Cycles where no uops were executed, the Reservation Station was not empty, the Store Buffer was full and there was no outstanding load.
+A6.01 EXE_ACTIVITY.EXE_BOUND_0_PORTS
+
+# Cycles total of 1 uop is executed on all ports and Reservation Station was not empty.
+A6.02 EXE_ACTIVITY.1_PORTS_UTIL
+
+# Cycles total of 2 uops are executed on all ports and Reservation Station was not empty.
+A6.04 EXE_ACTIVITY.2_PORTS_UTIL
+
+# Cycles total of 3 uops are executed on all ports and Reservation Station was not empty.
+A6.08 EXE_ACTIVITY.3_PORTS_UTIL
+
+# Cycles total of 4 uops are executed on all ports and Reservation Station was not empty.
+A6.10 EXE_ACTIVITY.4_PORTS_UTIL
+
+# Cycles where the Store Buffer was full and no outstanding load.
+A6.40 EXE_ACTIVITY.BOUND_ON_STORES
+
+# Number of Uops delivered by the LSD.
+A8.01 LSD.UOPS
+
+# Cycles Uops delivered by the LSD, but didn't come from the decoder.
+A8.01.CMSK=1 LSD.CYCLES_ACTIVE
+
+# Cycles 4 Uops delivered by the LSD, but didn't come from the decoder.
+A8.01.CMSK=4 LSD.CYCLES_4_UOPS
+
+# Decode Stream Buffer (DSB)-to-MITE switches
+AB.01 DSB2MITE_SWITCHES.COUNT
+
+# Decode Stream Buffer (DSB)-to-MITE switch true penalty cycles.
+AB.02 DSB2MITE_SWITCHES.PENALTY_CYCLES
+
+# Flushing of the Instruction TLB (ITLB) pages, includes 4k/2M/4M pages.
+AE.01 ITLB.ITLB_FLUSH
+
+# Demand Data Read requests sent to uncore
+B0.01 OFFCORE_REQUESTS.DEMAND_DATA_RD
+
+# Cacheable and noncachaeble code read requests
+B0.02 OFFCORE_REQUESTS.DEMAND_CODE_RD
+
+# Demand RFO requests including regular RFOs, locks, ItoM
+B0.04 OFFCORE_REQUESTS.DEMAND_RFO
+
+# Demand and prefetch data reads
+B0.08 OFFCORE_REQUESTS.ALL_DATA_RD
+
+# Demand Data Read requests who miss L3 cache
+B0.10 OFFCORE_REQUESTS.L3_MISS_DEMAND_DATA_RD
+
+# Any memory transaction that reached the SQ.
+B0.80 OFFCORE_REQUESTS.ALL_REQUESTS
+
+# Counts the number of uops to be executed per-thread each cycle.
+B1.01 UOPS_EXECUTED.THREAD
+
+# Cycles where at least 1 uop was executed per-thread
+B1.01.CMSK=1 UOPS_EXECUTED.CYCLES_GE_1_UOP_EXEC
+
+# Counts number of cycles no uops were dispatched to be executed on this thread.
+B1.01.CMSK=1.INV UOPS_EXECUTED.STALL_CYCLES
+
+# Cycles where at least 2 uops were executed per-thread
+B1.01.CMSK=2 UOPS_EXECUTED.CYCLES_GE_2_UOPS_EXEC
+
+# Cycles where at least 3 uops were executed per-thread
+B1.01.CMSK=3 UOPS_EXECUTED.CYCLES_GE_3_UOPS_EXEC
+
+# Cycles where at least 4 uops were executed per-thread
+B1.01.CMSK=4 UOPS_EXECUTED.CYCLES_GE_4_UOPS_EXEC
+
+# Number of uops executed on the core.
+B1.02 UOPS_EXECUTED.CORE
+
+# Cycles at least 1 micro-op is executed from any thread on physical core.
+B1.02.CMSK=1 UOPS_EXECUTED.CORE_CYCLES_GE_1
+
+# Cycles with no micro-ops executed from any thread on physical core.
+B1.02.CMSK=1.INV UOPS_EXECUTED.CORE_CYCLES_NONE
+
+# Cycles at least 2 micro-op is executed from any thread on physical core.
+B1.02.CMSK=2 UOPS_EXECUTED.CORE_CYCLES_GE_2
+
+# Cycles at least 3 micro-op is executed from any thread on physical core.
+B1.02.CMSK=3 UOPS_EXECUTED.CORE_CYCLES_GE_3
+
+# Cycles at least 4 micro-op is executed from any thread on physical core.
+B1.02.CMSK=4 UOPS_EXECUTED.CORE_CYCLES_GE_4
+
+# Counts the number of x87 uops dispatched.
+B1.10 UOPS_EXECUTED.X87
+
+# Offcore requests buffer cannot take more entries for this thread core.
+B2.01 OFFCORE_REQUESTS_BUFFER.SQ_FULL
+
+# DTLB flush attempts of the thread-specific entries
+BD.01 TLB_FLUSH.DTLB_THREAD
+
+# STLB flush attempts
+BD.20 TLB_FLUSH.STLB_ANY
+
+# Number of instructions retired. General Counter - architectural event
+C0.00 INST_RETIRED.ANY_P
+
+# Number of cycles using always true condition applied to  PEBS instructions retired event.
+C0.01.CMSK=10.INV.CTR=0 INST_RETIRED.TOTAL_CYCLES_PS
+
+# Precise instruction retired event with HW to reduce effect of PEBS shadow in IP distribution
+C0.01.CTR=1 INST_RETIRED.PREC_DIST
+
+# Number of all retired NOP instructions.
+C0.02 INST_RETIRED.NOP
+
+# Number of times a microcode assist is invoked by HW other than FP-assist. Examples include AD (page Access Dirty) and AVX* related assists.
+C1.3F OTHER_ASSISTS.ANY
+
+# Retirement slots used.
+C2.02 UOPS_RETIRED.RETIRE_SLOTS
+
+# Cycles without actually retired uops.
+C2.02.CMSK=1.INV UOPS_RETIRED.STALL_CYCLES
+
+# Cycles with less than 10 actually retired uops.
+C2.02.CMSK=10.INV UOPS_RETIRED.TOTAL_CYCLES
+
+# Number of macro-fused uops retired. (non precise)
+C2.04 UOPS_RETIRED.MACRO_FUSED
+
+# Number of machine clears (nukes) of any type.
+C3.01.CMSK=1.EDG MACHINE_CLEARS.COUNT
+
+# Counts the number of machine clears due to memory order conflicts.
+C3.02 MACHINE_CLEARS.MEMORY_ORDERING
+
+# Self-modifying code (SMC) detected.
+C3.04 MACHINE_CLEARS.SMC
+
+# All (macro) branch instructions retired.
+C4.00 BR_INST_RETIRED.ALL_BRANCHES
+
+# Conditional branch instructions retired.
+C4.01 BR_INST_RETIRED.CONDITIONAL
+
+# Direct and indirect near call instructions retired.
+C4.02 BR_INST_RETIRED.NEAR_CALL
+
+# All (macro) branch instructions retired.
+C4.04 BR_INST_RETIRED.ALL_BRANCHES_PEBS
+
+# Return instructions retired.
+C4.08 BR_INST_RETIRED.NEAR_RETURN
+
+# Not taken branch instructions retired.
+C4.10 BR_INST_RETIRED.COND_NTAKEN
+
+# Not taken branch instructions retired.
+C4.10 BR_INST_RETIRED.NOT_TAKEN
+
+# Taken branch instructions retired.
+C4.20 BR_INST_RETIRED.NEAR_TAKEN
+
+# Far branch instructions retired.
+C4.40 BR_INST_RETIRED.FAR_BRANCH
+
+# All mispredicted macro branch instructions retired.
+C5.00 BR_MISP_RETIRED.ALL_BRANCHES
+
+# Mispredicted conditional branch instructions retired.
+C5.01 BR_MISP_RETIRED.CONDITIONAL
+
+# Mispredicted direct and indirect near call instructions retired.
+C5.02 BR_MISP_RETIRED.NEAR_CALL
+
+# Mispredicted macro branch instructions retired.
+C5.04 BR_MISP_RETIRED.ALL_BRANCHES_PEBS
+
+# Number of near branch instructions retired that were mispredicted and taken.
+C5.20 BR_MISP_RETIRED.NEAR_TAKEN
+
+# Retired Instructions who experienced DSB miss.
+C6.01.TakenAlone FRONTEND_RETIRED.ANY_DSB_MISS
+
+# Retired Instructions who experienced a critical DSB miss.
+C6.01.TakenAlone FRONTEND_RETIRED.DSB_MISS
+
+# Retired Instructions who experienced iTLB true miss.
+C6.01.TakenAlone FRONTEND_RETIRED.ITLB_MISS
+
+# Retired Instructions who experienced Instruction L1 Cache true miss.
+C6.01.TakenAlone FRONTEND_RETIRED.L1I_MISS
+
+# Retired Instructions who experienced Instruction L2 Cache true miss.
+C6.01.TakenAlone FRONTEND_RETIRED.L2_MISS
+
+# Retired instructions after front-end starvation of at least 1 cycle
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_1
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 128 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_128
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 16 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_16
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 2 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_2
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 256 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_256
+
+# Retired instructions that are fetched after an interval where the front-end had at least 1 bubble-slot for a period of 2 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_2_BUBBLES_GE_1
+
+# Retired instructions that are fetched after an interval where the front-end had at least 2 bubble-slots for a period of 2 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_2_BUBBLES_GE_2
+
+# Retired instructions that are fetched after an interval where the front-end had at least 3 bubble-slots for a period of 2 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_2_BUBBLES_GE_3
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 32 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_32
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 4 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_4
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 512 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_512
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 64 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_64
+
+# Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 8 cycles which was not interrupted by a back-end stall.
+C6.01.TakenAlone FRONTEND_RETIRED.LATENCY_GE_8
+
+# Retired Instructions who experienced STLB (2nd level TLB) true miss.
+C6.01.TakenAlone FRONTEND_RETIRED.STLB_MISS
+
+# Counts once for most SIMD scalar computational double precision floating-point instructions retired. Counts twice for DPP and FM(N)ADD/SUB instructions retired.
+C7.01 FP_ARITH_INST_RETIRED.SCALAR_DOUBLE
+
+# Counts once for most SIMD scalar computational single precision floating-point instructions retired. Counts twice for DPP and FM(N)ADD/SUB instructions retired.
+C7.02 FP_ARITH_INST_RETIRED.SCALAR_SINGLE
+
+# Counts once for most SIMD 128-bit packed computational double precision floating-point instructions retired. Counts twice for DPP and FM(N)ADD/SUB instructions retired.
+C7.04 FP_ARITH_INST_RETIRED.128B_PACKED_DOUBLE
+
+# Counts once for most SIMD 128-bit packed computational single precision floating-point instruction retired. Counts twice for DPP and FM(N)ADD/SUB instructions retired.
+C7.08 FP_ARITH_INST_RETIRED.128B_PACKED_SINGLE
+
+# Counts once for most SIMD 256-bit packed double computational precision floating-point instructions retired. Counts twice for DPP and FM(N)ADD/SUB instructions retired.
+C7.10 FP_ARITH_INST_RETIRED.256B_PACKED_DOUBLE
+
+# Counts once for most SIMD 256-bit packed single computational precision floating-point instructions retired. Counts twice for DPP and FM(N)ADD/SUB instructions retired.
+C7.20 FP_ARITH_INST_RETIRED.256B_PACKED_SINGLE
+
+# Number of times an HLE execution started.
+C8.01 HLE_RETIRED.START
+
+# Number of times an HLE execution successfully committed
+C8.02 HLE_RETIRED.COMMIT
+
+# Number of times an HLE execution aborted due to any reasons (multiple categories may count as one). 
+C8.04 HLE_RETIRED.ABORTED
+
+# Number of times an HLE execution aborted due to various memory events (e.g., read/write capacity and conflicts).
+C8.08 HLE_RETIRED.ABORTED_MEM
+
+# Number of times an HLE execution aborted due to hardware timer expiration.
+C8.10 HLE_RETIRED.ABORTED_TIMER
+
+# Number of times an HLE execution aborted due to HLE-unfriendly instructions and certain unfriendly events (such as AD assists etc.).
+C8.20 HLE_RETIRED.ABORTED_UNFRIENDLY
+
+# Number of times an HLE execution aborted due to incompatible memory type
+C8.40 HLE_RETIRED.ABORTED_MEMTYPE
+
+# Number of times an HLE execution aborted due to unfriendly events (such as interrupts).
+C8.80 HLE_RETIRED.ABORTED_EVENTS
+
+# Number of times an RTM execution started.
+C9.01 RTM_RETIRED.START
+
+# Number of times an RTM execution successfully committed
+C9.02 RTM_RETIRED.COMMIT
+
+# Number of times an RTM execution aborted due to any reasons (multiple categories may count as one). 
+C9.04 RTM_RETIRED.ABORTED
+
+# Number of times an RTM execution aborted due to various memory events (e.g. read/write capacity and conflicts)
+C9.08 RTM_RETIRED.ABORTED_MEM
+
+# Number of times an RTM execution aborted due to uncommon conditions.
+C9.10 RTM_RETIRED.ABORTED_TIMER
+
+# Number of times an RTM execution aborted due to HLE-unfriendly instructions
+C9.20 RTM_RETIRED.ABORTED_UNFRIENDLY
+
+# Number of times an RTM execution aborted due to incompatible memory type
+C9.40 RTM_RETIRED.ABORTED_MEMTYPE
+
+# Number of times an RTM execution aborted due to none of the previous 4 categories (e.g. interrupt)
+C9.80 RTM_RETIRED.ABORTED_EVENTS
+
+# Cycles with any input/output SSE or FP assist
+CA.1E.CMSK=1 FP_ASSIST.ANY
+
+# Number of hardware interrupts received by the processor.
+CB.01 HW_INTERRUPTS.RECEIVED
+
+# Increments whenever there is an update to the LBR array.
+CC.20 ROB_MISC_EVENTS.LBR_INSERTS
+
+# Number of retired PAUSE instructions (that do not end up with a VMExit to the VMM; TSX aborted Instructions may be counted). This event is not supported on first SKL and KBL products.
+CC.40 ROB_MISC_EVENTS.PAUSE_INST
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 16 cycles.
+CD.01.MSR_3F6H=0x10.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_16
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 256 cycles.
+CD.01.MSR_3F6H=0x100.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_256
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 32 cycles.
+CD.01.MSR_3F6H=0x20.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_32
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 512 cycles.
+CD.01.MSR_3F6H=0x200.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_512
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 4 cycles.
+CD.01.MSR_3F6H=0x4.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_4
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 64 cycles.
+CD.01.MSR_3F6H=0x40.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_64
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 8 cycles.
+CD.01.MSR_3F6H=0x8.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_8
+
+# Counts randomly selected loads when the latency from first dispatch to completion is greater than 128 cycles.
+CD.01.MSR_3F6H=0x80.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_128
+
+# Retired load instructions that miss the STLB.
+D0.11 MEM_INST_RETIRED.STLB_MISS_LOADS
+
+# Retired store instructions that miss the STLB.
+D0.12 MEM_INST_RETIRED.STLB_MISS_STORES
+
+# Retired load instructions with locked access.
+D0.21 MEM_INST_RETIRED.LOCK_LOADS
+
+# Retired load instructions that split across a cacheline boundary.
+D0.41 MEM_INST_RETIRED.SPLIT_LOADS
+
+# Retired store instructions that split across a cacheline boundary.
+D0.42 MEM_INST_RETIRED.SPLIT_STORES
+
+# All retired load instructions.
+D0.81 MEM_INST_RETIRED.ALL_LOADS
+
+# All retired store instructions.
+D0.82 MEM_INST_RETIRED.ALL_STORES
+
+# All retired memory instructions.
+D0.83 MEM_INST_RETIRED.ANY
+
+# Retired load instructions with L1 cache hits as data sources
+D1.01 MEM_LOAD_RETIRED.L1_HIT
+
+# Retired load instructions with L2 cache hits as data sources
+D1.02 MEM_LOAD_RETIRED.L2_HIT
+
+# Retired load instructions with L3 cache hits as data sources
+D1.04 MEM_LOAD_RETIRED.L3_HIT
+
+# Retired load instructions missed L1 cache as data sources
+D1.08 MEM_LOAD_RETIRED.L1_MISS
+
+# Retired load instructions missed L2 cache as data sources
+D1.10 MEM_LOAD_RETIRED.L2_MISS
+
+# Retired load instructions missed L3 cache as data sources
+D1.20 MEM_LOAD_RETIRED.L3_MISS
+
+# Retired load instructions which data sources were load missed L1 but hit FB due to preceding miss to the same cache line with data not ready
+D1.40 MEM_LOAD_RETIRED.FB_HIT
+
+# Retired load instructions which data sources were L3 hit and cross-core snoop missed in on-pkg core cache.
+D2.01 MEM_LOAD_L3_HIT_RETIRED.XSNP_MISS
+
+# Retired load instructions which data sources were L3 and cross-core snoop hits in on-pkg core cache
+D2.02 MEM_LOAD_L3_HIT_RETIRED.XSNP_HIT
+
+# Retired load instructions which data sources were HitM responses from shared L3
+D2.04 MEM_LOAD_L3_HIT_RETIRED.XSNP_HITM
+
+# Retired load instructions which data sources were hits in L3 without snoops required
+D2.08 MEM_LOAD_L3_HIT_RETIRED.XSNP_NONE
+
+# Retired instructions with at least 1 uncacheable load or lock.
+D4.04 MEM_LOAD_MISC_RETIRED.UC
+
+# Counts the total number when the front end is resteered, mainly when the BPU cannot provide a correct prediction and this is corrected by other branch handling mechanisms at the front end.
+E6.01 BACLEARS.ANY
+
+# L2 writebacks that access L2 cache
+F0.40 L2_TRANS.L2_WB
+
+# L2 cache lines filling L2
+F1.1F L2_LINES_IN.ALL
+
+# Counts the number of lines that are silently dropped by L2 cache when triggered by an L2 cache fill. These lines are typically in Shared or Exclusive state. A non-threaded event.
+F2.01 L2_LINES_OUT.SILENT
+
+# Counts the number of lines that are evicted by L2 cache when triggered by an L2 cache fill. Those lines are in Modified state. Modified lines are written back to L3
+F2.02 L2_LINES_OUT.NON_SILENT
+
+# Counts the number of lines that have been hardware prefetched but not used and now evicted by L2 cache
+F2.04 L2_LINES_OUT.USELESS_HWPF
+
+# This event is deprecated. Refer to new event L2_LINES_OUT.USELESS_HWPF
+F2.04 L2_LINES_OUT.USELESS_PREF
+
+# Number of cache line split locks sent to uncore.
+F4.10 SQ_MISC.SPLIT_LOCK

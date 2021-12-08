@@ -1,0 +1,812 @@
+# Based on https://download.01.org/perfmon/WSM-EP-SP/WestmereEP-SP_core_V2.json
+# Applies to processors with family-model in {6-25}
+
+# Offcore demand data reads that HIT in a remote cache
+B7.01.MSR_RSP0=0x1001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.REMOTE_CACHE_HIT
+
+# Offcore demand RFO requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.REMOTE_CACHE_HIT
+
+# Offcore demand data requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1003.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.REMOTE_CACHE_HIT
+
+# Offcore demand code reads that HIT in a remote cache
+B7.01.MSR_RSP0=0x1004.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.REMOTE_CACHE_HIT
+
+# Offcore writebacks that HIT in a remote cache
+B7.01.MSR_RSP0=0x1008.TakenAlone OFFCORE_RESPONSE.COREWB.REMOTE_CACHE_HIT
+
+# Offcore demand data reads satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x101.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_HIT_NO_OTHER_CORE
+
+# Offcore prefetch data reads that HIT in a remote cache
+B7.01.MSR_RSP0=0x1010.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.REMOTE_CACHE_HIT
+
+# Offcore data reads that HIT in a remote cache
+B7.01.MSR_RSP0=0x1011.TakenAlone OFFCORE_RESPONSE.ANY_DATA.REMOTE_CACHE_HIT
+
+# Offcore demand RFO requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x102.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LLC_HIT_NO_OTHER_CORE
+
+# Offcore prefetch RFO requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1020.TakenAlone OFFCORE_RESPONSE.PF_RFO.REMOTE_CACHE_HIT
+
+# Offcore RFO requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1022.TakenAlone OFFCORE_RESPONSE.ANY_RFO.REMOTE_CACHE_HIT
+
+# Offcore demand data requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x103.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.LLC_HIT_NO_OTHER_CORE
+
+# Offcore data reads, RFO's and prefetches that HIT in a remote cache 
+B7.01.MSR_RSP0=0x1033.TakenAlone OFFCORE_RESPONSE.DATA_IN.REMOTE_CACHE_HIT
+
+# Offcore demand code reads satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x104.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.LLC_HIT_NO_OTHER_CORE
+
+# Offcore prefetch code reads that HIT in a remote cache
+B7.01.MSR_RSP0=0x1040.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.REMOTE_CACHE_HIT
+
+# Offcore code reads that HIT in a remote cache
+B7.01.MSR_RSP0=0x1044.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.REMOTE_CACHE_HIT
+
+# Offcore prefetch data requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1050.TakenAlone OFFCORE_RESPONSE.PF_DATA.REMOTE_CACHE_HIT
+
+# Offcore prefetch requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1070.TakenAlone OFFCORE_RESPONSE.PREFETCH.REMOTE_CACHE_HIT
+
+# Offcore code or data read requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1077.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.REMOTE_CACHE_HIT
+
+# Offcore writebacks to the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x108.TakenAlone OFFCORE_RESPONSE.COREWB.LLC_HIT_NO_OTHER_CORE
+
+# Offcore other requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x1080.TakenAlone OFFCORE_RESPONSE.OTHER.REMOTE_CACHE_HIT
+
+# Offcore requests that HIT in a remote cache
+B7.01.MSR_RSP0=0x10FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.REMOTE_CACHE_HIT
+
+# Offcore prefetch data reads satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x110.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.LLC_HIT_NO_OTHER_CORE
+
+# Offcore data reads satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x111.TakenAlone OFFCORE_RESPONSE.ANY_DATA.LLC_HIT_NO_OTHER_CORE
+
+# Offcore prefetch RFO requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x120.TakenAlone OFFCORE_RESPONSE.PF_RFO.LLC_HIT_NO_OTHER_CORE
+
+# Offcore RFO requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x122.TakenAlone OFFCORE_RESPONSE.ANY_RFO.LLC_HIT_NO_OTHER_CORE
+
+# Offcore data reads, RFO's and prefetches statisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x133.TakenAlone OFFCORE_RESPONSE.DATA_IN.LLC_HIT_NO_OTHER_CORE
+
+# Offcore prefetch code reads satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x140.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.LLC_HIT_NO_OTHER_CORE
+
+# Offcore code reads satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x144.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.LLC_HIT_NO_OTHER_CORE
+
+# Offcore prefetch data requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x150.TakenAlone OFFCORE_RESPONSE.PF_DATA.LLC_HIT_NO_OTHER_CORE
+
+# Offcore prefetch requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x170.TakenAlone OFFCORE_RESPONSE.PREFETCH.LLC_HIT_NO_OTHER_CORE
+
+# Offcore code or data read requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x177.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.LLC_HIT_NO_OTHER_CORE
+
+# Offcore other requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x180.TakenAlone OFFCORE_RESPONSE.OTHER.LLC_HIT_NO_OTHER_CORE
+
+# Offcore demand data reads satisfied by a remote cache
+B7.01.MSR_RSP0=0x1801.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.REMOTE_CACHE
+
+# Offcore demand RFO requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1802.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.REMOTE_CACHE
+
+# Offcore demand data requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1803.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.REMOTE_CACHE
+
+# Offcore demand code reads satisfied by a remote cache
+B7.01.MSR_RSP0=0x1804.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.REMOTE_CACHE
+
+# Offcore writebacks to a remote cache
+B7.01.MSR_RSP0=0x1808.TakenAlone OFFCORE_RESPONSE.COREWB.REMOTE_CACHE
+
+# Offcore prefetch data reads satisfied by a remote cache
+B7.01.MSR_RSP0=0x1810.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.REMOTE_CACHE
+
+# Offcore data reads satisfied by a remote cache
+B7.01.MSR_RSP0=0x1811.TakenAlone OFFCORE_RESPONSE.ANY_DATA.REMOTE_CACHE
+
+# Offcore prefetch RFO requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1820.TakenAlone OFFCORE_RESPONSE.PF_RFO.REMOTE_CACHE
+
+# Offcore RFO requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1822.TakenAlone OFFCORE_RESPONSE.ANY_RFO.REMOTE_CACHE
+
+# Offcore request = all data, response = remote cache
+B7.01.MSR_RSP0=0x1833.TakenAlone OFFCORE_RESPONSE.DATA_IN.REMOTE_CACHE
+
+# Offcore prefetch code reads satisfied by a remote cache
+B7.01.MSR_RSP0=0x1840.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.REMOTE_CACHE
+
+# Offcore code reads satisfied by a remote cache
+B7.01.MSR_RSP0=0x1844.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.REMOTE_CACHE
+
+# Offcore prefetch data requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1850.TakenAlone OFFCORE_RESPONSE.PF_DATA.REMOTE_CACHE
+
+# Offcore prefetch requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1870.TakenAlone OFFCORE_RESPONSE.PREFETCH.REMOTE_CACHE
+
+# Offcore code or data read requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1877.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.REMOTE_CACHE
+
+# Offcore other requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x1880.TakenAlone OFFCORE_RESPONSE.OTHER.REMOTE_CACHE
+
+# Offcore requests satisfied by a remote cache
+B7.01.MSR_RSP0=0x18FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.REMOTE_CACHE
+
+# Offcore requests satisfied by the LLC and not found in a sibling core
+B7.01.MSR_RSP0=0x1FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.LLC_HIT_NO_OTHER_CORE
+
+# Offcore demand data reads satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LOCAL_DRAM
+
+# Offcore demand RFO requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LOCAL_DRAM
+
+# Offcore demand data requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2003.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.LOCAL_DRAM
+
+# Offcore demand code reads satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2004.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.LOCAL_DRAM
+
+# Offcore writebacks to the local DRAM
+B7.01.MSR_RSP0=0x2008.TakenAlone OFFCORE_RESPONSE.COREWB.LOCAL_DRAM
+
+# Offcore demand data reads satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x201.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch data reads satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2010.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.LOCAL_DRAM
+
+# Offcore data reads satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2011.TakenAlone OFFCORE_RESPONSE.ANY_DATA.LOCAL_DRAM
+
+# Offcore demand RFO requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x202.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch RFO requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2020.TakenAlone OFFCORE_RESPONSE.PF_RFO.LOCAL_DRAM
+
+# Offcore RFO requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2022.TakenAlone OFFCORE_RESPONSE.ANY_RFO.LOCAL_DRAM
+
+# Offcore demand data requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x203.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore data reads, RFO's and prefetches statisfied by the local DRAM.
+B7.01.MSR_RSP0=0x2033.TakenAlone OFFCORE_RESPONSE.DATA_IN.LOCAL_DRAM
+
+# Offcore demand code reads satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x204.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch code reads satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2040.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.LOCAL_DRAM
+
+# Offcore code reads satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2044.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.LOCAL_DRAM
+
+# Offcore prefetch data requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2050.TakenAlone OFFCORE_RESPONSE.PF_DATA.LOCAL_DRAM
+
+# Offcore prefetch requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2070.TakenAlone OFFCORE_RESPONSE.PREFETCH.LOCAL_DRAM
+
+# Offcore code or data read requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x2077.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.LOCAL_DRAM
+
+# Offcore requests satisfied by the local DRAM
+B7.01.MSR_RSP0=0x20FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.LOCAL_DRAM
+
+# Offcore prefetch data reads satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x210.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore data reads satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x211.TakenAlone OFFCORE_RESPONSE.ANY_DATA.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch RFO requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x220.TakenAlone OFFCORE_RESPONSE.PF_RFO.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore RFO requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x222.TakenAlone OFFCORE_RESPONSE.ANY_RFO.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore data reads, RFO's and prefetches satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x233.TakenAlone OFFCORE_RESPONSE.DATA_IN.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch code reads satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x240.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore code reads satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x244.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch data requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x250.TakenAlone OFFCORE_RESPONSE.PF_DATA.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x270.TakenAlone OFFCORE_RESPONSE.PREFETCH.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore demand data reads satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2701.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LOCAL_CACHE_DRAM
+
+# Offcore demand RFO requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2702.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LOCAL_CACHE_DRAM
+
+# Offcore demand data requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2703.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.LOCAL_CACHE_DRAM
+
+# Offcore demand code reads satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2704.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.LOCAL_CACHE_DRAM
+
+# Offcore writebacks to the LLC or local DRAM
+B7.01.MSR_RSP0=0x2708.TakenAlone OFFCORE_RESPONSE.COREWB.LOCAL_CACHE_DRAM
+
+# Offcore prefetch data reads satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2710.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.LOCAL_CACHE_DRAM
+
+# Offcore data reads satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2711.TakenAlone OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE_DRAM
+
+# Offcore prefetch RFO requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2720.TakenAlone OFFCORE_RESPONSE.PF_RFO.LOCAL_CACHE_DRAM
+
+# Offcore RFO requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2722.TakenAlone OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE_DRAM
+
+# Offcore request = all data, response = local cache or dram
+B7.01.MSR_RSP0=0x2733.TakenAlone OFFCORE_RESPONSE.DATA_IN.LOCAL_CACHE_DRAM
+
+# Offcore prefetch code reads satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2740.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.LOCAL_CACHE_DRAM
+
+# Offcore code reads satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2744.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.LOCAL_CACHE_DRAM
+
+# Offcore prefetch data requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2750.TakenAlone OFFCORE_RESPONSE.PF_DATA.LOCAL_CACHE_DRAM
+
+# Offcore code or data read requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x277.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore prefetch requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2770.TakenAlone OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE_DRAM
+
+# Offcore code or data read requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2777.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.LOCAL_CACHE_DRAM
+
+# Offcore other requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x2780.TakenAlone OFFCORE_RESPONSE.OTHER.LOCAL_CACHE_DRAM
+
+# Offcore requests satisfied by the LLC or local DRAM
+B7.01.MSR_RSP0=0x27FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.LOCAL_CACHE_DRAM
+
+# Offcore other requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x280.TakenAlone OFFCORE_RESPONSE.OTHER.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore requests satisfied by the LLC and HIT in a sibling core
+B7.01.MSR_RSP0=0x2FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.LLC_HIT_OTHER_CORE_HIT
+
+# Offcore demand data reads satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.REMOTE_DRAM
+
+# Offcore demand RFO requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.REMOTE_DRAM
+
+# Offcore demand data requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4003.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.REMOTE_DRAM
+
+# Offcore demand code reads satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4004.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.REMOTE_DRAM
+
+# Offcore writebacks to a remote DRAM
+B7.01.MSR_RSP0=0x4008.TakenAlone OFFCORE_RESPONSE.COREWB.REMOTE_DRAM
+
+# Offcore demand data reads satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x401.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore prefetch data reads satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4010.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.REMOTE_DRAM
+
+# Offcore data reads satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4011.TakenAlone OFFCORE_RESPONSE.ANY_DATA.REMOTE_DRAM
+
+# Offcore demand RFO requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x402.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore prefetch RFO requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4020.TakenAlone OFFCORE_RESPONSE.PF_RFO.REMOTE_DRAM
+
+# Offcore RFO requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4022.TakenAlone OFFCORE_RESPONSE.ANY_RFO.REMOTE_DRAM
+
+# Offcore demand data requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x403.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore data reads, RFO's and prefetches statisfied by the remote DRAM
+B7.01.MSR_RSP0=0x4033.TakenAlone OFFCORE_RESPONSE.DATA_IN.REMOTE_DRAM
+
+# Offcore demand code reads satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x404.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore prefetch code reads satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4040.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.REMOTE_DRAM
+
+# Offcore code reads satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4044.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.REMOTE_DRAM
+
+# Offcore prefetch data requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4050.TakenAlone OFFCORE_RESPONSE.PF_DATA.REMOTE_DRAM
+
+# Offcore prefetch requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4070.TakenAlone OFFCORE_RESPONSE.PREFETCH.REMOTE_DRAM
+
+# Offcore code or data read requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4077.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.REMOTE_DRAM
+
+# Offcore writebacks to the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x408.TakenAlone OFFCORE_RESPONSE.COREWB.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore other requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x4080.TakenAlone OFFCORE_RESPONSE.OTHER.REMOTE_DRAM
+
+# Offcore requests satisfied by a remote DRAM
+B7.01.MSR_RSP0=0x40FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.REMOTE_DRAM
+
+# Offcore prefetch data reads satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x410.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore data reads satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x411.TakenAlone OFFCORE_RESPONSE.ANY_DATA.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore prefetch RFO requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x420.TakenAlone OFFCORE_RESPONSE.PF_RFO.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore RFO requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x422.TakenAlone OFFCORE_RESPONSE.ANY_RFO.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore data reads, RFO's and prefetches satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x433.TakenAlone OFFCORE_RESPONSE.DATA_IN.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore prefetch code reads satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x440.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore code reads satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x444.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore prefetch data requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x450.TakenAlone OFFCORE_RESPONSE.PF_DATA.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore prefetch requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x470.TakenAlone OFFCORE_RESPONSE.PREFETCH.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore code or data read requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x477.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore other requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x480.TakenAlone OFFCORE_RESPONSE.OTHER.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore requests satisfied by the LLC  and HITM in a sibling core
+B7.01.MSR_RSP0=0x4FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.LLC_HIT_OTHER_CORE_HITM
+
+# Offcore demand data reads satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5801.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.REMOTE_CACHE_DRAM
+
+# Offcore demand RFO requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5802.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.REMOTE_CACHE_DRAM
+
+# Offcore demand data requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5803.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.REMOTE_CACHE_DRAM
+
+# Offcore demand code reads satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5804.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.REMOTE_CACHE_DRAM
+
+# Offcore writebacks to a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5808.TakenAlone OFFCORE_RESPONSE.COREWB.REMOTE_CACHE_DRAM
+
+# Offcore prefetch data reads satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5810.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.REMOTE_CACHE_DRAM
+
+# Offcore data reads satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5811.TakenAlone OFFCORE_RESPONSE.ANY_DATA.REMOTE_CACHE_DRAM
+
+# Offcore prefetch RFO requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5820.TakenAlone OFFCORE_RESPONSE.PF_RFO.REMOTE_CACHE_DRAM
+
+# Offcore RFO requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5822.TakenAlone OFFCORE_RESPONSE.ANY_RFO.REMOTE_CACHE_DRAM
+
+# Offcore request = all data, response = remote cache or dram
+B7.01.MSR_RSP0=0x5833.TakenAlone OFFCORE_RESPONSE.DATA_IN.REMOTE_CACHE_DRAM
+
+# Offcore prefetch code reads satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5840.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.REMOTE_CACHE_DRAM
+
+# Offcore code reads satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5844.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.REMOTE_CACHE_DRAM
+
+# Offcore prefetch data requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5850.TakenAlone OFFCORE_RESPONSE.PF_DATA.REMOTE_CACHE_DRAM
+
+# Offcore prefetch requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5870.TakenAlone OFFCORE_RESPONSE.PREFETCH.REMOTE_CACHE_DRAM
+
+# Offcore code or data read requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5877.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.REMOTE_CACHE_DRAM
+
+# Offcore other requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x5880.TakenAlone OFFCORE_RESPONSE.OTHER.REMOTE_CACHE_DRAM
+
+# Offcore requests satisfied by a remote cache or remote DRAM
+B7.01.MSR_RSP0=0x58FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.REMOTE_CACHE_DRAM
+
+# Offcore demand data reads satisfied by any DRAM
+B7.01.MSR_RSP0=0x6001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.ANY_DRAM
+
+# Offcore demand RFO requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.ANY_DRAM
+
+# Offcore demand data requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6003.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.ANY_DRAM
+
+# Offcore demand code reads satisfied by any DRAM
+B7.01.MSR_RSP0=0x6004.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.ANY_DRAM
+
+# Offcore writebacks to any DRAM
+B7.01.MSR_RSP0=0x6008.TakenAlone OFFCORE_RESPONSE.COREWB.ANY_DRAM
+
+# Offcore prefetch data reads satisfied by any DRAM
+B7.01.MSR_RSP0=0x6010.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.ANY_DRAM
+
+# Offcore data reads satisfied by any DRAM
+B7.01.MSR_RSP0=0x6011.TakenAlone OFFCORE_RESPONSE.ANY_DATA.ANY_DRAM
+
+# Offcore prefetch RFO requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6020.TakenAlone OFFCORE_RESPONSE.PF_RFO.ANY_DRAM
+
+# Offcore RFO requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6022.TakenAlone OFFCORE_RESPONSE.ANY_RFO.ANY_DRAM
+
+# Offcore request = all data, response = any DRAM
+B7.01.MSR_RSP0=0x6033.TakenAlone OFFCORE_RESPONSE.DATA_IN.ANY_DRAM
+
+# Offcore prefetch code reads satisfied by any DRAM
+B7.01.MSR_RSP0=0x6040.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.ANY_DRAM
+
+# Offcore code reads satisfied by any DRAM
+B7.01.MSR_RSP0=0x6044.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.ANY_DRAM
+
+# Offcore prefetch data requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6050.TakenAlone OFFCORE_RESPONSE.PF_DATA.ANY_DRAM
+
+# Offcore prefetch requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6070.TakenAlone OFFCORE_RESPONSE.PREFETCH.ANY_DRAM
+
+# Offcore code or data read requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6077.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.ANY_DRAM
+
+# Offcore other requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x6080.TakenAlone OFFCORE_RESPONSE.OTHER.ANY_DRAM
+
+# Offcore requests satisfied by any DRAM
+B7.01.MSR_RSP0=0x60FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.ANY_DRAM
+
+# Offcore demand data reads satisfied by the LLC
+B7.01.MSR_RSP0=0x701.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.LOCAL_CACHE
+
+# Offcore demand RFO requests satisfied by the LLC
+B7.01.MSR_RSP0=0x702.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.LOCAL_CACHE
+
+# Offcore demand data requests satisfied by the LLC
+B7.01.MSR_RSP0=0x703.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.LOCAL_CACHE
+
+# Offcore demand code reads satisfied by the LLC
+B7.01.MSR_RSP0=0x704.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.LOCAL_CACHE
+
+# Offcore writebacks to the LLC
+B7.01.MSR_RSP0=0x708.TakenAlone OFFCORE_RESPONSE.COREWB.LOCAL_CACHE
+
+# Offcore prefetch data reads satisfied by the LLC
+B7.01.MSR_RSP0=0x710.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.LOCAL_CACHE
+
+# Offcore data reads satisfied by the LLC
+B7.01.MSR_RSP0=0x711.TakenAlone OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE
+
+# Offcore prefetch RFO requests satisfied by the LLC
+B7.01.MSR_RSP0=0x720.TakenAlone OFFCORE_RESPONSE.PF_RFO.LOCAL_CACHE
+
+# Offcore RFO requests satisfied by the LLC
+B7.01.MSR_RSP0=0x722.TakenAlone OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE
+
+# Offcore request = all data, response = local cache
+B7.01.MSR_RSP0=0x733.TakenAlone OFFCORE_RESPONSE.DATA_IN.LOCAL_CACHE
+
+# Offcore prefetch code reads satisfied by the LLC
+B7.01.MSR_RSP0=0x740.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.LOCAL_CACHE
+
+# Offcore code reads satisfied by the LLC
+B7.01.MSR_RSP0=0x744.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.LOCAL_CACHE
+
+# Offcore prefetch data requests satisfied by the LLC
+B7.01.MSR_RSP0=0x750.TakenAlone OFFCORE_RESPONSE.PF_DATA.LOCAL_CACHE
+
+# Offcore prefetch requests satisfied by the LLC
+B7.01.MSR_RSP0=0x770.TakenAlone OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE
+
+# Offcore code or data read requests satisfied by the LLC
+B7.01.MSR_RSP0=0x777.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.LOCAL_CACHE
+
+# Offcore other requests satisfied by the LLC
+B7.01.MSR_RSP0=0x780.TakenAlone OFFCORE_RESPONSE.OTHER.LOCAL_CACHE
+
+# Offcore demand data reads satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F01.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.ANY_CACHE_DRAM
+
+# Offcore demand RFO requests satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F02.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.ANY_CACHE_DRAM
+
+# Offcore demand data requests satisfied by any cache or DRAM
+B7.01.MSR_RSP0=0x7F03.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.ANY_CACHE_DRAM
+
+# Offcore demand code reads satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F04.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.ANY_CACHE_DRAM
+
+# Offcore writebacks to any cache or DRAM.
+B7.01.MSR_RSP0=0x7F08.TakenAlone OFFCORE_RESPONSE.COREWB.ANY_CACHE_DRAM
+
+# Offcore prefetch data reads satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F10.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.ANY_CACHE_DRAM
+
+# Offcore data reads satisfied by any cache or DRAM
+B7.01.MSR_RSP0=0x7F11.TakenAlone OFFCORE_RESPONSE.ANY_DATA.ANY_CACHE_DRAM
+
+# Offcore prefetch RFO requests satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F20.TakenAlone OFFCORE_RESPONSE.PF_RFO.ANY_CACHE_DRAM
+
+# Offcore RFO requests satisfied by any cache or DRAM
+B7.01.MSR_RSP0=0x7F22.TakenAlone OFFCORE_RESPONSE.ANY_RFO.ANY_CACHE_DRAM
+
+# Offcore request = all data, response = any cache_dram
+B7.01.MSR_RSP0=0x7F33.TakenAlone OFFCORE_RESPONSE.DATA_IN.ANY_CACHE_DRAM
+
+# Offcore prefetch code reads satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F40.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.ANY_CACHE_DRAM
+
+# Offcore code reads satisfied by any cache or DRAM
+B7.01.MSR_RSP0=0x7F44.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.ANY_CACHE_DRAM
+
+# Offcore prefetch data requests satisfied by any cache or DRAM
+B7.01.MSR_RSP0=0x7F50.TakenAlone OFFCORE_RESPONSE.PF_DATA.ANY_CACHE_DRAM
+
+# Offcore prefetch requests satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F70.TakenAlone OFFCORE_RESPONSE.PREFETCH.ANY_CACHE_DRAM
+
+# Offcore code or data read requests satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F77.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.ANY_CACHE_DRAM
+
+# Offcore other requests satisfied by any cache or DRAM.
+B7.01.MSR_RSP0=0x7F80.TakenAlone OFFCORE_RESPONSE.OTHER.ANY_CACHE_DRAM
+
+# Offcore requests satisfied by the LLC
+B7.01.MSR_RSP0=0x7FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.LOCAL_CACHE
+
+# Offcore requests satisfied by any cache or DRAM
+B7.01.MSR_RSP0=0x7FFF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.ANY_CACHE_DRAM
+
+# Offcore demand data reads satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8001.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.IO_CSR_MMIO
+
+# Offcore demand RFO requests satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8002.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.IO_CSR_MMIO
+
+# Offcore demand data requests satisfied by the IO, CSR, MMIO unit.
+B7.01.MSR_RSP0=0x8003.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.IO_CSR_MMIO
+
+# Offcore demand code reads satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8004.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.IO_CSR_MMIO
+
+# Offcore writebacks to the IO, CSR, MMIO unit.
+B7.01.MSR_RSP0=0x8008.TakenAlone OFFCORE_RESPONSE.COREWB.IO_CSR_MMIO
+
+# Offcore demand data reads that HITM in a remote cache
+B7.01.MSR_RSP0=0x801.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.REMOTE_CACHE_HITM
+
+# Offcore prefetch data reads satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8010.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.IO_CSR_MMIO
+
+# Offcore data reads satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8011.TakenAlone OFFCORE_RESPONSE.ANY_DATA.IO_CSR_MMIO
+
+# Offcore demand RFO requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x802.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.REMOTE_CACHE_HITM
+
+# Offcore prefetch RFO requests satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8020.TakenAlone OFFCORE_RESPONSE.PF_RFO.IO_CSR_MMIO
+
+# Offcore RFO requests satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8022.TakenAlone OFFCORE_RESPONSE.ANY_RFO.IO_CSR_MMIO
+
+# Offcore demand data requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x803.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.REMOTE_CACHE_HITM
+
+# Offcore data reads, RFO's and prefetches satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8033.TakenAlone OFFCORE_RESPONSE.DATA_IN.IO_CSR_MMIO
+
+# Offcore demand code reads that HITM in a remote cache
+B7.01.MSR_RSP0=0x804.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.REMOTE_CACHE_HITM
+
+# Offcore prefetch code reads satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8040.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.IO_CSR_MMIO
+
+# Offcore code reads satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8044.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.IO_CSR_MMIO
+
+# Offcore prefetch data requests satisfied by the IO, CSR, MMIO unit.
+B7.01.MSR_RSP0=0x8050.TakenAlone OFFCORE_RESPONSE.PF_DATA.IO_CSR_MMIO
+
+# Offcore prefetch requests satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8070.TakenAlone OFFCORE_RESPONSE.PREFETCH.IO_CSR_MMIO
+
+# Offcore code or data read requests satisfied by the IO, CSR, MMIO unit.
+B7.01.MSR_RSP0=0x8077.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.IO_CSR_MMIO
+
+# Offcore writebacks that HITM in a remote cache
+B7.01.MSR_RSP0=0x808.TakenAlone OFFCORE_RESPONSE.COREWB.REMOTE_CACHE_HITM
+
+# Offcore other requests satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x8080.TakenAlone OFFCORE_RESPONSE.OTHER.IO_CSR_MMIO
+
+# Offcore requests satisfied by the IO, CSR, MMIO unit
+B7.01.MSR_RSP0=0x80FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.IO_CSR_MMIO
+
+# Offcore prefetch data reads that HITM in a remote cache
+B7.01.MSR_RSP0=0x810.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.REMOTE_CACHE_HITM
+
+# Offcore data reads that HITM in a remote cache
+B7.01.MSR_RSP0=0x811.TakenAlone OFFCORE_RESPONSE.ANY_DATA.REMOTE_CACHE_HITM
+
+# Offcore prefetch RFO requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x820.TakenAlone OFFCORE_RESPONSE.PF_RFO.REMOTE_CACHE_HITM
+
+# Offcore RFO requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x822.TakenAlone OFFCORE_RESPONSE.ANY_RFO.REMOTE_CACHE_HITM
+
+# Offcore data reads, RFO's and prefetches that HITM in a remote cache
+B7.01.MSR_RSP0=0x833.TakenAlone OFFCORE_RESPONSE.DATA_IN.REMOTE_CACHE_HITM
+
+# Offcore prefetch code reads that HITM in a remote cache
+B7.01.MSR_RSP0=0x840.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.REMOTE_CACHE_HITM
+
+# Offcore code reads that HITM in a remote cache
+B7.01.MSR_RSP0=0x844.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.REMOTE_CACHE_HITM
+
+# Offcore prefetch data requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x850.TakenAlone OFFCORE_RESPONSE.PF_DATA.REMOTE_CACHE_HITM
+
+# Offcore prefetch requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x870.TakenAlone OFFCORE_RESPONSE.PREFETCH.REMOTE_CACHE_HITM
+
+# Offcore code or data read requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x877.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.REMOTE_CACHE_HITM
+
+# Offcore other requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x880.TakenAlone OFFCORE_RESPONSE.OTHER.REMOTE_CACHE_HITM
+
+# Offcore requests that HITM in a remote cache
+B7.01.MSR_RSP0=0x8FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.REMOTE_CACHE_HITM
+
+# Offcore demand data reads that missed the LLC
+B7.01.MSR_RSP0=0xF801.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.ANY_LLC_MISS
+
+# Offcore demand RFO requests that missed the LLC
+B7.01.MSR_RSP0=0xF802.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.ANY_LLC_MISS
+
+# Offcore demand data requests that missed the LLC
+B7.01.MSR_RSP0=0xF803.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.ANY_LLC_MISS
+
+# Offcore demand code reads that missed the LLC
+B7.01.MSR_RSP0=0xF804.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.ANY_LLC_MISS
+
+# Offcore writebacks that missed the LLC
+B7.01.MSR_RSP0=0xF808.TakenAlone OFFCORE_RESPONSE.COREWB.ANY_LLC_MISS
+
+# Offcore prefetch data reads that missed the LLC
+B7.01.MSR_RSP0=0xF810.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.ANY_LLC_MISS
+
+# Offcore data reads that missed the LLC
+B7.01.MSR_RSP0=0xF811.TakenAlone OFFCORE_RESPONSE.ANY_DATA.ANY_LLC_MISS
+
+# Offcore prefetch RFO requests that missed the LLC
+B7.01.MSR_RSP0=0xF820.TakenAlone OFFCORE_RESPONSE.PF_RFO.ANY_LLC_MISS
+
+# Offcore RFO requests that missed the LLC
+B7.01.MSR_RSP0=0xF822.TakenAlone OFFCORE_RESPONSE.ANY_RFO.ANY_LLC_MISS
+
+# Offcore request = all data, response = any LLC miss
+B7.01.MSR_RSP0=0xF833.TakenAlone OFFCORE_RESPONSE.DATA_IN.ANY_LLC_MISS
+
+# Offcore prefetch code reads that missed the LLC
+B7.01.MSR_RSP0=0xF840.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.ANY_LLC_MISS
+
+# Offcore code reads that missed the LLC
+B7.01.MSR_RSP0=0xF844.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.ANY_LLC_MISS
+
+# Offcore prefetch data requests that missed the LLC
+B7.01.MSR_RSP0=0xF850.TakenAlone OFFCORE_RESPONSE.PF_DATA.ANY_LLC_MISS
+
+# Offcore prefetch requests that missed the LLC
+B7.01.MSR_RSP0=0xF870.TakenAlone OFFCORE_RESPONSE.PREFETCH.ANY_LLC_MISS
+
+# Offcore code or data read requests that missed the LLC
+B7.01.MSR_RSP0=0xF877.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.ANY_LLC_MISS
+
+# Offcore other requests that missed the LLC
+B7.01.MSR_RSP0=0xF880.TakenAlone OFFCORE_RESPONSE.OTHER.ANY_LLC_MISS
+
+# Offcore requests that missed the LLC
+B7.01.MSR_RSP0=0xF8FF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.ANY_LLC_MISS
+
+# All offcore demand data reads
+B7.01.MSR_RSP0=0xFF01.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA_RD.ANY_LOCATION
+
+# All offcore demand RFO requests
+B7.01.MSR_RSP0=0xFF02.TakenAlone OFFCORE_RESPONSE.DEMAND_RFO.ANY_LOCATION
+
+# All offcore demand data requests
+B7.01.MSR_RSP0=0xFF03.TakenAlone OFFCORE_RESPONSE.DEMAND_DATA.ANY_LOCATION
+
+# All offcore demand code reads
+B7.01.MSR_RSP0=0xFF04.TakenAlone OFFCORE_RESPONSE.DEMAND_IFETCH.ANY_LOCATION
+
+# All offcore writebacks
+B7.01.MSR_RSP0=0xFF08.TakenAlone OFFCORE_RESPONSE.COREWB.ANY_LOCATION
+
+# All offcore prefetch data reads
+B7.01.MSR_RSP0=0xFF10.TakenAlone OFFCORE_RESPONSE.PF_DATA_RD.ANY_LOCATION
+
+# All offcore data reads
+B7.01.MSR_RSP0=0xFF11.TakenAlone OFFCORE_RESPONSE.ANY_DATA.ANY_LOCATION
+
+# All offcore prefetch RFO requests
+B7.01.MSR_RSP0=0xFF20.TakenAlone OFFCORE_RESPONSE.PF_RFO.ANY_LOCATION
+
+# All offcore RFO requests
+B7.01.MSR_RSP0=0xFF22.TakenAlone OFFCORE_RESPONSE.ANY_RFO.ANY_LOCATION
+
+# Offcore request = all data, response = any location
+B7.01.MSR_RSP0=0xFF33.TakenAlone OFFCORE_RESPONSE.DATA_IN.ANY_LOCATION
+
+# All offcore prefetch code reads
+B7.01.MSR_RSP0=0xFF40.TakenAlone OFFCORE_RESPONSE.PF_IFETCH.ANY_LOCATION
+
+# All offcore code reads
+B7.01.MSR_RSP0=0xFF44.TakenAlone OFFCORE_RESPONSE.ANY_IFETCH.ANY_LOCATION
+
+# All offcore prefetch data requests
+B7.01.MSR_RSP0=0xFF50.TakenAlone OFFCORE_RESPONSE.PF_DATA.ANY_LOCATION
+
+# All offcore prefetch requests
+B7.01.MSR_RSP0=0xFF70.TakenAlone OFFCORE_RESPONSE.PREFETCH.ANY_LOCATION
+
+# All offcore code or data read requests
+B7.01.MSR_RSP0=0xFF77.TakenAlone OFFCORE_RESPONSE.DATA_IFETCH.ANY_LOCATION
+
+# All offcore other requests
+B7.01.MSR_RSP0=0xFF80.TakenAlone OFFCORE_RESPONSE.OTHER.ANY_LOCATION
+
+# All offcore requests
+B7.01.MSR_RSP0=0xFFFF.TakenAlone OFFCORE_RESPONSE.ANY_REQUEST.ANY_LOCATION

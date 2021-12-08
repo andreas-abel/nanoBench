@@ -1,6 +1,5 @@
-# Performance monitoring events for processors based on the Knights Landing microarchitecture.
-# Applies to processors with DisplayFamily_DisplayModel of 06_57H and 06_85H.
-# See Table 19-7 of Intel's "System Programming Guide" (Jan. 2019)
+# Based on https://download.01.org/perfmon/KNL/KnightsLanding_core_V9.json
+# Applies to processors with family-model in {6-57}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED

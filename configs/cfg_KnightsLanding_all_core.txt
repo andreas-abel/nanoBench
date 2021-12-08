@@ -1,0 +1,215 @@
+# Based on https://download.01.org/perfmon/KNL/KnightsLanding_core_V9.json
+# Applies to processors with family-model in {6-57}
+
+# Counts the number of occurences a retired load gets blocked because its address partially overlaps with a store 
+03.01 RECYCLEQ.LD_BLOCK_ST_FORWARD
+
+# Counts the number of occurences a retired load gets blocked because its address overlaps with a store whose data is not ready
+03.02 RECYCLEQ.LD_BLOCK_STD_NOTREADY
+
+# Counts the number of occurences a retired store that is a cache line split. Each split should be counted only once.
+03.04 RECYCLEQ.ST_SPLITS
+
+# Counts the number of occurences a retired load that is a cache line split. Each split should be counted only once.
+03.08 RECYCLEQ.LD_SPLITS
+
+# Counts all the retired locked loads. It does not include stores because we would double count if we count stores
+03.10 RECYCLEQ.LOCK
+
+# Counts the store micro-ops retired that were pushed in the rehad queue because the store address buffer is full
+03.20 RECYCLEQ.STA_FULL
+
+# Counts any retired load that was pushed into the recycle queue for any reason.
+03.40 RECYCLEQ.ANY_LD
+
+# Counts any retired store that was pushed into the recycle queue for any reason.
+03.80 RECYCLEQ.ANY_ST
+
+# Counts the number of load micro-ops retired that miss in L1 D cache
+04.01 MEM_UOPS_RETIRED.L1_MISS_LOADS
+
+# Counts the number of load micro-ops retired that hit in the L2
+04.02 MEM_UOPS_RETIRED.L2_HIT_LOADS
+
+# Counts the number of load micro-ops retired that miss in the L2
+04.04 MEM_UOPS_RETIRED.L2_MISS_LOADS
+
+# Counts the number of load micro-ops retired that cause a DTLB miss
+04.08 MEM_UOPS_RETIRED.DTLB_MISS_LOADS
+
+# Counts the number of load micro-ops retired that caused micro TLB miss
+04.10 MEM_UOPS_RETIRED.UTLB_MISS_LOADS
+
+# Counts the loads retired that get the data from the other core in the same tile in M state
+04.20 MEM_UOPS_RETIRED.HITM
+
+# Counts all the load micro-ops retired
+04.40 MEM_UOPS_RETIRED.ALL_LOADS
+
+# Counts all the store micro-ops retired
+04.80 MEM_UOPS_RETIRED.ALL_STORES
+
+# Counts the total number of core cycles for all the D-side page walks. The cycles for page walks started in speculative path will also be included.
+05.01 PAGE_WALKS.D_SIDE_CYCLES
+
+# Counts the total D-side page walks that are completed or started. The page walks started in the speculative path will also be counted
+05.01.EDG PAGE_WALKS.D_SIDE_WALKS
+
+# Counts the total number of core cycles for all the I-side page walks. The cycles for page walks started in speculative path will also be included.
+05.02 PAGE_WALKS.I_SIDE_CYCLES
+
+# Counts the total I-side page walks that are completed.
+05.02.EDG PAGE_WALKS.I_SIDE_WALKS
+
+# Counts the total number of core cycles for all the page walks. The cycles for page walks started in speculative path will also be included.
+05.03 PAGE_WALKS.CYCLES
+
+# Counts the total page walks that are completed (I-side and D-side)
+05.03.EDG PAGE_WALKS.WALKS
+
+# Counts the number of L2 cache misses
+2E.41 L2_REQUESTS.MISS
+
+# Counts the total number of L2 cache references.
+2E.4F L2_REQUESTS.REFERENCE
+
+# Counts the number of MEC requests from the L2Q that reference a cache line (cacheable requests) exlcuding SW prefetches filling only to L2 cache and L1 evictions (automatically exlcudes L2HWP, UC, WC) that were rejected - Multiple repeated rejects should be counted multiple times
+30.00 L2_REQUESTS_REJECT.ALL
+
+# Counts the number of MEC requests that were not accepted into the L2Q because of any L2  queue reject condition. There is no concept of at-ret here. It might include requests due to instructions in the speculative path.
+31.00 CORE_REJECT_L2Q.ALL
+
+# Counts the number of unhalted core clock cycles
+3C.00 CPU_CLK_UNHALTED.THREAD_P
+
+# Counts the number of unhalted reference clock cycles
+3C.01 CPU_CLK_UNHALTED.REF
+
+# Counts all instruction fetches that hit the instruction cache.
+80.01 ICACHE.HIT
+
+# Counts all instruction fetches that miss the instruction cache or produce memory requests. An instruction fetch miss is counted only once and not once for every cycle it is outstanding.
+80.02 ICACHE.MISSES
+
+# Counts all instruction fetches, including uncacheable fetches.
+80.03 ICACHE.ACCESSES
+
+# Counts the number of core cycles the fetch stalls because of an icache miss. This is a cummulative count of core cycles the fetch stalled for all icache misses. 
+86.04 FETCH_STALL.ICACHE_FILL_PENDING_CYCLES
+
+# Counts the total number of instructions retired
+C0.00 INST_RETIRED.ANY_P
+
+# Counts the number of micro-ops retired that are from the complex flows issued by the micro-sequencer (MS).
+C2.01 UOPS_RETIRED.MS
+
+# Counts the number of micro-ops retired
+C2.10 UOPS_RETIRED.ALL
+
+# Counts the number of scalar SSE, AVX, AVX2, AVX-512 micro-ops retired. More specifically, it counts scalar SSE, AVX, AVX2, AVX-512 micro-ops except for loads (memory-to-register mov-type micro ops), division, sqrt.
+C2.20 UOPS_RETIRED.SCALAR_SIMD
+
+# Counts the number of vector SSE, AVX, AVX2, AVX-512 micro-ops retired. More specifically, it counts packed SSE, AVX, AVX2, AVX-512 micro-ops (both floating point and integer) except for loads (memory-to-register mov-type micro-ops), packed byte and word multiplies.
+C2.40 UOPS_RETIRED.PACKED_SIMD
+
+# Counts the number of times that the machine clears due to program modifying data within 1K of a recently fetched code page
+C3.01 MACHINE_CLEARS.SMC
+
+# Counts the number of times the machine clears due to memory ordering hazards
+C3.02 MACHINE_CLEARS.MEMORY_ORDERING
+
+# Counts the number of floating operations retired that required microcode assists
+C3.04 MACHINE_CLEARS.FP_ASSIST
+
+# Counts all nukes
+C3.08 MACHINE_CLEARS.ALL
+
+# Counts the number of branch instructions retired
+C4.00 BR_INST_RETIRED.ALL_BRANCHES
+
+# Counts the number of branch instructions retired that were conditional jumps.
+C4.7E BR_INST_RETIRED.JCC
+
+# Counts the number of far branch instructions retired.
+C4.BF BR_INST_RETIRED.FAR_BRANCH
+
+# Counts the number of branch instructions retired that were near indirect CALL or near indirect JMP.
+C4.EB BR_INST_RETIRED.NON_RETURN_IND
+
+# Counts the number of near RET branch instructions retired.
+C4.F7 BR_INST_RETIRED.RETURN
+
+# Counts the number of near CALL branch instructions retired.
+C4.F9 BR_INST_RETIRED.CALL
+
+# Counts the number of near indirect CALL branch instructions retired.
+C4.FB BR_INST_RETIRED.IND_CALL
+
+# Counts the number of near relative CALL branch instructions retired.
+C4.FD BR_INST_RETIRED.REL_CALL
+
+# Counts the number of branch instructions retired that were conditional jumps and predicted taken.
+C4.FE BR_INST_RETIRED.TAKEN_JCC
+
+# Counts the number of mispredicted branch instructions retired
+C5.00 BR_MISP_RETIRED.ALL_BRANCHES
+
+# Counts the number of mispredicted branch instructions retired that were conditional jumps.
+C5.7E BR_MISP_RETIRED.JCC
+
+# Counts the number of mispredicted far branch instructions retired.
+C5.BF BR_MISP_RETIRED.FAR_BRANCH
+
+# Counts the number of mispredicted branch instructions retired that were near indirect CALL or near indirect JMP.
+C5.EB BR_MISP_RETIRED.NON_RETURN_IND
+
+# Counts the number of mispredicted near RET branch instructions retired.
+C5.F7 BR_MISP_RETIRED.RETURN
+
+# Counts the number of mispredicted near CALL branch instructions retired.
+C5.F9 BR_MISP_RETIRED.CALL
+
+# Counts the number of mispredicted near indirect CALL branch instructions retired.
+C5.FB BR_MISP_RETIRED.IND_CALL
+
+# Counts the number of mispredicted near relative CALL branch instructions retired.
+C5.FD BR_MISP_RETIRED.REL_CALL
+
+# Counts the number of mispredicted branch instructions retired that were conditional jumps and predicted taken.
+C5.FE BR_MISP_RETIRED.TAKEN_JCC
+
+# Counts the number of core cycles when no micro-ops are allocated and the ROB is full
+CA.01 NO_ALLOC_CYCLES.ROB_FULL
+
+# Counts the number of core cycles when no micro-ops are allocated and the alloc pipe is stalled waiting for a mispredicted branch to retire.
+CA.04 NO_ALLOC_CYCLES.MISPREDICTS
+
+# Counts the number of core cycles when no micro-ops are allocated and a RATstall (caused by reservation station full) is asserted.  
+CA.20 NO_ALLOC_CYCLES.RAT_STALL
+
+# Counts the total number of core cycles when no micro-ops are allocated for any reason.
+CA.7F NO_ALLOC_CYCLES.ALL
+
+# Counts the number of core cycles when no micro-ops are allocated, the IQ is empty, and no other condition is blocking allocation.
+CA.90 NO_ALLOC_CYCLES.NOT_DELIVERED
+
+# Counts the number of core cycles when allocation pipeline is stalled and is waiting for a free MEC reservation station entry.
+CB.01 RS_FULL_STALL.MEC
+
+# Counts the total number of core cycles the Alloc pipeline is stalled when any one of the reservation stations is full. 
+CB.1F RS_FULL_STALL.ALL
+
+# Cycles the number of core cycles when divider is busy.  Does not imply a stall waiting for the divider.  
+CD.01 CYCLES_DIV_BUSY.ALL
+
+# Counts the number of times the front end resteers for any branch as a result of another branch handling mechanism in the front end.
+E6.01 BACLEARS.ALL
+
+# Counts the number of times the front end resteers for RET branches as a result of another branch handling mechanism in the front end.
+E6.08 BACLEARS.RETURN
+
+# Counts the number of times the front end resteers for conditional branches as a result of another branch handling mechanism in the front end.
+E6.10 BACLEARS.COND
+
+# Counts the number of times the MSROM starts a flow of uops.
+E7.01 MS_DECODED.MS_ENTRY

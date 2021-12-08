@@ -1,10 +1,14 @@
-# Performance monitoring events for processors based on the Haswell microarchitecture.
-# Applies to processors with DisplayFamily_DisplayModel of 06_3CH, 06_45H and 06_46H.
-# See Table 19-10 of Intel's "System Programming Guide" (Jan. 2019)
+# Based on https://download.01.org/perfmon/HSW/haswell_core_v30.json
+# Applies to processors with family-model in {6-3C, 6-45, 6-46}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED
+79.04 IDQ.MITE_UOPS
+79.08 IDQ.DSB_UOPS
+79.30 IDQ.MS_UOPS
+A8.01 LSD.UOPS
 0E.01 UOPS_ISSUED
+B1.01 UOPS_EXECUTED
 C2.01 UOPS_RETIRED
 A1.01 UOPS_EXECUTED_PORT.PORT_0
 A1.02 UOPS_EXECUTED_PORT.PORT_1

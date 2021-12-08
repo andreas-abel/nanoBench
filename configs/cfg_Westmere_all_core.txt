@@ -1,0 +1,911 @@
+# Based on https://download.01.org/perfmon/WSM-EP-SP/WestmereEP-SP_core_V2.json
+# Applies to processors with family-model in {6-25}
+
+# Loads that partially overlap an earlier store
+03.02 LOAD_BLOCK.OVERLAP_STORE
+
+# All Store buffer stall cycles
+04.07 SB_DRAIN.ANY
+
+# Loads delayed with at-Retirement block code
+06.04 STORE_BLOCKS.AT_RET
+
+# Cacheable loads delayed with L1D block code
+06.08 STORE_BLOCKS.L1D_BLOCK
+
+# False dependencies due to partial address aliasing
+07.01 PARTIAL_ADDRESS_ALIAS
+
+# DTLB load misses
+08.01 DTLB_LOAD_MISSES.ANY
+
+# DTLB load miss page walks complete
+08.02 DTLB_LOAD_MISSES.WALK_COMPLETED
+
+# DTLB load miss page walk cycles
+08.04 DTLB_LOAD_MISSES.WALK_CYCLES
+
+# DTLB second level hit
+08.10 DTLB_LOAD_MISSES.STLB_HIT
+
+# DTLB load miss caused by low part of address
+08.20 DTLB_LOAD_MISSES.PDE_MISS
+
+# Instructions retired which contains a load (Precise Event)
+0B.01 MEM_INST_RETIRED.LOADS
+
+# Instructions retired which contains a store (Precise Event)
+0B.02 MEM_INST_RETIRED.STORES
+
+# Memory instructions retired above 0 clocks (Precise Event)
+0B.10.MSR_3F6H=0x0.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_0
+
+# Memory instructions retired above 16 clocks (Precise Event)
+0B.10.MSR_3F6H=0x10.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_16
+
+# Memory instructions retired above 256 clocks (Precise Event)
+0B.10.MSR_3F6H=0x100.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_256
+
+# Memory instructions retired above 4096 clocks (Precise Event)
+0B.10.MSR_3F6H=0x1000.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_4096
+
+# Memory instructions retired above 32 clocks (Precise Event)
+0B.10.MSR_3F6H=0x20.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_32
+
+# Memory instructions retired above 512 clocks (Precise Event)
+0B.10.MSR_3F6H=0x200.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_512
+
+# Memory instructions retired above 8192 clocks (Precise Event)
+0B.10.MSR_3F6H=0x2000.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_8192
+
+# Memory instructions retired above 4 clocks (Precise Event)
+0B.10.MSR_3F6H=0x4.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_4
+
+# Memory instructions retired above 64 clocks (Precise Event)
+0B.10.MSR_3F6H=0x40.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_64
+
+# Memory instructions retired above 1024 clocks (Precise Event)
+0B.10.MSR_3F6H=0x400.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_1024
+
+# Memory instructions retired above 16384 clocks (Precise Event)
+0B.10.MSR_3F6H=0x4000.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_16384
+
+# Memory instructions retired above 8 clocks (Precise Event)
+0B.10.MSR_3F6H=0x8.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_8
+
+# Memory instructions retired above 128 clocks (Precise Event)
+0B.10.MSR_3F6H=0x80.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_128
+
+# Memory instructions retired above 2048 clocks (Precise Event)
+0B.10.MSR_3F6H=0x800.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_2048
+
+# Memory instructions retired above 32768 clocks (Precise Event)
+0B.10.MSR_3F6H=0x8000.CTR=3.TakenAlone MEM_INST_RETIRED.LATENCY_ABOVE_THRESHOLD_32768
+
+# Retired stores that miss the DTLB (Precise Event)
+0C.01 MEM_STORE_RETIRED.DTLB_MISS
+
+# Uops issued
+0E.01 UOPS_ISSUED.ANY
+
+# Cycles Uops were issued on either thread
+0E.01.CMSK=1.AnyT UOPS_ISSUED.CYCLES_ALL_THREADS
+
+# Cycles no Uops were issued on any thread
+0E.01.CMSK=1.AnyT.INV UOPS_ISSUED.CORE_STALL_CYCLES
+
+# Cycles no Uops were issued
+0E.01.CMSK=1.INV UOPS_ISSUED.STALL_CYCLES
+
+# Fused Uops issued
+0E.02 UOPS_ISSUED.FUSED
+
+# Load instructions retired that HIT modified data in sibling core (Precise Event)
+0F.02 MEM_UNCORE_RETIRED.OTHER_CORE_L2_HITM
+
+# Load instructions retired remote cache HIT data source (Precise Event)
+0F.08 MEM_UNCORE_RETIRED.REMOTE_CACHE_LOCAL_HOME_HIT
+
+# Load instructions retired with a data source of local DRAM or locally homed remote hitm (Precise Event)
+0F.10 MEM_UNCORE_RETIRED.LOCAL_DRAM
+
+# Load instructions retired remote DRAM and remote home-remote cache HITM (Precise Event)
+0F.20 MEM_UNCORE_RETIRED.REMOTE_DRAM
+
+# Load instructions retired IO (Precise Event)
+0F.80 MEM_UNCORE_RETIRED.UNCACHEABLE
+
+# Computational floating-point operations executed
+10.01 FP_COMP_OPS_EXE.X87
+
+# MMX Uops
+10.02 FP_COMP_OPS_EXE.MMX
+
+# SSE and SSE2 FP Uops
+10.04 FP_COMP_OPS_EXE.SSE_FP
+
+# SSE2 integer Uops
+10.08 FP_COMP_OPS_EXE.SSE2_INTEGER
+
+# SSE FP packed Uops
+10.10 FP_COMP_OPS_EXE.SSE_FP_PACKED
+
+# SSE FP scalar Uops
+10.20 FP_COMP_OPS_EXE.SSE_FP_SCALAR
+
+# SSE* FP single precision Uops
+10.40 FP_COMP_OPS_EXE.SSE_SINGLE_PRECISION
+
+# SSE* FP double precision Uops
+10.80 FP_COMP_OPS_EXE.SSE_DOUBLE_PRECISION
+
+# 128 bit SIMD integer multiply operations
+12.01 SIMD_INT_128.PACKED_MPY
+
+# 128 bit SIMD integer shift operations
+12.02 SIMD_INT_128.PACKED_SHIFT
+
+# 128 bit SIMD integer pack operations
+12.04 SIMD_INT_128.PACK
+
+# 128 bit SIMD integer unpack operations
+12.08 SIMD_INT_128.UNPACK
+
+# 128 bit SIMD integer logical operations
+12.10 SIMD_INT_128.PACKED_LOGICAL
+
+# 128 bit SIMD integer arithmetic operations
+12.20 SIMD_INT_128.PACKED_ARITH
+
+# 128 bit SIMD integer shuffle/move operations
+12.40 SIMD_INT_128.SHUFFLE_MOVE
+
+# Loads dispatched that bypass the MOB
+13.01 LOAD_DISPATCH.RS
+
+# Loads dispatched from stage 305
+13.02 LOAD_DISPATCH.RS_DELAYED
+
+# Loads dispatched from the MOB
+13.04 LOAD_DISPATCH.MOB
+
+# All loads dispatched
+13.07 LOAD_DISPATCH.ANY
+
+# Cycles the divider is busy
+14.01 ARITH.CYCLES_DIV_BUSY
+
+# Divide Operations executed
+14.01.CMSK=1.EDG.INV ARITH.DIV
+
+# Multiply operations executed
+14.02 ARITH.MUL
+
+# Instructions written to instruction queue.
+17.01 INST_QUEUE_WRITES
+
+# Instructions that must be decoded by decoder 0
+18.01 INST_DECODED.DEC0
+
+# Two Uop instructions decoded
+19.01 TWO_UOP_INSTS_DECODED
+
+# Cycles instructions are written to the instruction queue
+1E.01 INST_QUEUE_WRITE_CYCLES
+
+# Loops that can't stream from the instruction queue
+20.01 LSD_OVERFLOW
+
+# L2 load hits
+24.01 L2_RQSTS.LD_HIT
+
+# L2 load misses
+24.02 L2_RQSTS.LD_MISS
+
+# L2 requests
+24.03 L2_RQSTS.LOADS
+
+# L2 RFO hits
+24.04 L2_RQSTS.RFO_HIT
+
+# L2 RFO misses
+24.08 L2_RQSTS.RFO_MISS
+
+# L2 RFO requests
+24.0C L2_RQSTS.RFOS
+
+# L2 instruction fetch hits
+24.10 L2_RQSTS.IFETCH_HIT
+
+# L2 instruction fetch misses
+24.20 L2_RQSTS.IFETCH_MISS
+
+# L2 instruction fetches
+24.30 L2_RQSTS.IFETCHES
+
+# L2 prefetch hits
+24.40 L2_RQSTS.PREFETCH_HIT
+
+# L2 prefetch misses
+24.80 L2_RQSTS.PREFETCH_MISS
+
+# All L2 misses
+24.AA L2_RQSTS.MISS
+
+# All L2 prefetches
+24.C0 L2_RQSTS.PREFETCHES
+
+# All L2 requests
+24.FF L2_RQSTS.REFERENCES
+
+# L2 data demand loads in I state (misses)
+26.01 L2_DATA_RQSTS.DEMAND.I_STATE
+
+# L2 data demand loads in S state
+26.02 L2_DATA_RQSTS.DEMAND.S_STATE
+
+# L2 data demand loads in E state
+26.04 L2_DATA_RQSTS.DEMAND.E_STATE
+
+# L2 data demand loads in M state
+26.08 L2_DATA_RQSTS.DEMAND.M_STATE
+
+# L2 data demand requests
+26.0F L2_DATA_RQSTS.DEMAND.MESI
+
+# L2 data prefetches in the I state (misses)
+26.10 L2_DATA_RQSTS.PREFETCH.I_STATE
+
+# L2 data prefetches in the S state
+26.20 L2_DATA_RQSTS.PREFETCH.S_STATE
+
+# L2 data prefetches in E state
+26.40 L2_DATA_RQSTS.PREFETCH.E_STATE
+
+# L2 data prefetches in M state
+26.80 L2_DATA_RQSTS.PREFETCH.M_STATE
+
+# All L2 data prefetches
+26.F0 L2_DATA_RQSTS.PREFETCH.MESI
+
+# All L2 data requests
+26.FF L2_DATA_RQSTS.ANY
+
+# L2 demand store RFOs in I state (misses)
+27.01 L2_WRITE.RFO.I_STATE
+
+# L2 demand store RFOs in S state
+27.02 L2_WRITE.RFO.S_STATE
+
+# L2 demand store RFOs in M state
+27.08 L2_WRITE.RFO.M_STATE
+
+# All L2 demand store RFOs that hit the cache
+27.0E L2_WRITE.RFO.HIT
+
+# All L2 demand store RFOs
+27.0F L2_WRITE.RFO.MESI
+
+# L2 demand lock RFOs in I state (misses)
+27.10 L2_WRITE.LOCK.I_STATE
+
+# L2 demand lock RFOs in S state
+27.20 L2_WRITE.LOCK.S_STATE
+
+# L2 demand lock RFOs in E state
+27.40 L2_WRITE.LOCK.E_STATE
+
+# L2 demand lock RFOs in M state
+27.80 L2_WRITE.LOCK.M_STATE
+
+# All demand L2 lock RFOs that hit the cache
+27.E0 L2_WRITE.LOCK.HIT
+
+# All demand L2 lock RFOs
+27.F0 L2_WRITE.LOCK.MESI
+
+# L1 writebacks to L2 in I state (misses)
+28.01 L1D_WB_L2.I_STATE
+
+# L1 writebacks to L2 in S state
+28.02 L1D_WB_L2.S_STATE
+
+# L1 writebacks to L2 in E state
+28.04 L1D_WB_L2.E_STATE
+
+# L1 writebacks to L2 in M state
+28.08 L1D_WB_L2.M_STATE
+
+# All L1 writebacks to L2
+28.0F L1D_WB_L2.MESI
+
+# Longest latency cache miss
+2E.41 LONGEST_LAT_CACHE.MISS
+
+# Longest latency cache reference
+2E.4F LONGEST_LAT_CACHE.REFERENCE
+
+# Cycles when thread is not halted (programmable counter)
+3C.00 CPU_CLK_UNHALTED.THREAD_P
+
+# Total CPU cycles
+3C.00.CMSK=2.INV CPU_CLK_UNHALTED.TOTAL_CYCLES
+
+# Reference base clock (133 Mhz) cycles when thread is not halted (programmable counter)
+3C.01 CPU_CLK_UNHALTED.REF_P
+
+# DTLB misses
+49.01 DTLB_MISSES.ANY
+
+# DTLB miss page walks
+49.02 DTLB_MISSES.WALK_COMPLETED
+
+# DTLB miss page walk cycles
+49.04 DTLB_MISSES.WALK_CYCLES
+
+# DTLB first level misses but second level hit
+49.10 DTLB_MISSES.STLB_HIT
+
+# DTLB miss large page walks
+49.80 DTLB_MISSES.LARGE_WALK_COMPLETED
+
+# Load operations conflicting with software prefetches
+4C.01.CTR=0 LOAD_HIT_PRE
+
+# L1D hardware prefetch requests
+4E.01.CTR=0 L1D_PREFETCH.REQUESTS
+
+# L1D hardware prefetch misses
+4E.02.CTR=0 L1D_PREFETCH.MISS
+
+# L1D hardware prefetch requests triggered
+4E.04.CTR=0 L1D_PREFETCH.TRIGGERS
+
+# Extended Page Table walk cycles
+4F.10 EPT.WALK_CYCLES
+
+# L1 data cache lines allocated
+51.01.CTR=0 L1D.REPL
+
+# L1D cache lines allocated in the M state
+51.02.CTR=0 L1D.M_REPL
+
+# L1D cache lines replaced in M state
+51.04.CTR=0 L1D.M_EVICT
+
+# L1D snoop eviction of cache lines in M state
+51.08.CTR=0 L1D.M_SNOOP_EVICT
+
+# L1D prefetch load lock accepted in fill buffer
+52.01.CTR=0 L1D_CACHE_PREFETCH_LOCK_FB_HIT
+
+# Cycles offcore demand data read busy
+60.01.CMSK=1.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.DEMAND.READ_DATA_NOT_EMPTY
+
+# Outstanding offcore demand data reads
+60.01.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.DEMAND.READ_DATA
+
+# Cycles offcore demand code read busy
+60.02.CMSK=1.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.DEMAND.READ_CODE_NOT_EMPTY
+
+# Outstanding offcore demand code reads
+60.02.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.DEMAND.READ_CODE
+
+# Cycles offcore demand RFOs busy
+60.04.CMSK=1.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.DEMAND.RFO_NOT_EMPTY
+
+# Outstanding offcore demand RFOs
+60.04.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.DEMAND.RFO
+
+# Cycles offcore reads busy
+60.08.CMSK=1.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.ANY.READ_NOT_EMPTY
+
+# Outstanding offcore reads
+60.08.CTR=0 OFFCORE_REQUESTS_OUTSTANDING.ANY.READ
+
+# Cycles L1D and L2 locked
+63.01.CTR=0 CACHE_LOCK_CYCLES.L1D_L2
+
+# Cycles L1D locked
+63.02.CTR=0 CACHE_LOCK_CYCLES.L1D
+
+# I/O transactions
+6C.01 IO_TRANSACTIONS
+
+# L1I instruction fetch hits
+80.01 L1I.HITS
+
+# L1I instruction fetch misses
+80.02 L1I.MISSES
+
+# L1I Instruction fetches
+80.03 L1I.READS
+
+# L1I instruction fetch stall cycles
+80.04 L1I.CYCLES_STALLED
+
+# Large ITLB hit
+82.01 LARGE_ITLB.HIT
+
+# ITLB miss
+85.01 ITLB_MISSES.ANY
+
+# ITLB miss page walks
+85.02 ITLB_MISSES.WALK_COMPLETED
+
+# ITLB miss page walk cycles
+85.04 ITLB_MISSES.WALK_CYCLES
+
+# Length Change Prefix stall cycles
+87.01 ILD_STALL.LCP
+
+# Stall cycles due to BPU MRU bypass
+87.02 ILD_STALL.MRU
+
+# Instruction Queue full stall cycles
+87.04 ILD_STALL.IQ_FULL
+
+# Regen stall cycles
+87.08 ILD_STALL.REGEN
+
+# Any Instruction Length Decoder stall cycles
+87.0F ILD_STALL.ANY
+
+# Conditional branch instructions executed
+88.01 BR_INST_EXEC.COND
+
+# Unconditional branches executed
+88.02 BR_INST_EXEC.DIRECT
+
+# Indirect non call branches executed
+88.04 BR_INST_EXEC.INDIRECT_NON_CALL
+
+# All non call branches executed
+88.07 BR_INST_EXEC.NON_CALLS
+
+# Indirect return branches executed
+88.08 BR_INST_EXEC.RETURN_NEAR
+
+# Unconditional call branches executed
+88.10 BR_INST_EXEC.DIRECT_NEAR_CALL
+
+# Indirect call branches executed
+88.20 BR_INST_EXEC.INDIRECT_NEAR_CALL
+
+# Call branches executed
+88.30 BR_INST_EXEC.NEAR_CALLS
+
+# Taken branches executed
+88.40 BR_INST_EXEC.TAKEN
+
+# Branch instructions executed
+88.7F BR_INST_EXEC.ANY
+
+# Mispredicted conditional branches executed
+89.01 BR_MISP_EXEC.COND
+
+# Mispredicted unconditional branches executed
+89.02 BR_MISP_EXEC.DIRECT
+
+# Mispredicted indirect non call branches executed
+89.04 BR_MISP_EXEC.INDIRECT_NON_CALL
+
+# Mispredicted non call branches executed
+89.07 BR_MISP_EXEC.NON_CALLS
+
+# Mispredicted return branches executed
+89.08 BR_MISP_EXEC.RETURN_NEAR
+
+# Mispredicted non call branches executed
+89.10 BR_MISP_EXEC.DIRECT_NEAR_CALL
+
+# Mispredicted indirect call branches executed
+89.20 BR_MISP_EXEC.INDIRECT_NEAR_CALL
+
+# Mispredicted call branches executed
+89.30 BR_MISP_EXEC.NEAR_CALLS
+
+# Mispredicted taken branches executed
+89.40 BR_MISP_EXEC.TAKEN
+
+# Mispredicted branches executed
+89.7F BR_MISP_EXEC.ANY
+
+# Resource related stall cycles
+A2.01 RESOURCE_STALLS.ANY
+
+# Load buffer stall cycles
+A2.02 RESOURCE_STALLS.LOAD
+
+# Reservation Station full stall cycles
+A2.04 RESOURCE_STALLS.RS_FULL
+
+# Store buffer stall cycles
+A2.08 RESOURCE_STALLS.STORE
+
+# ROB full stall cycles
+A2.10 RESOURCE_STALLS.ROB_FULL
+
+# FPU control word write stall cycles
+A2.20 RESOURCE_STALLS.FPCW
+
+# MXCSR rename stall cycles
+A2.40 RESOURCE_STALLS.MXCSR
+
+# Other Resource related stall cycles
+A2.80 RESOURCE_STALLS.OTHER
+
+# Macro-fused instructions decoded
+A6.01 MACRO_INSTS.FUSIONS_DECODED
+
+# Instruction queue forced BACLEAR
+A7.01 BACLEAR_FORCE_IQ
+
+# Cycles when uops were delivered by the LSD
+A8.01.CMSK=1 LSD.ACTIVE
+
+# Cycles no uops were delivered by the LSD
+A8.01.CMSK=1.INV LSD.INACTIVE
+
+# ITLB flushes
+AE.01 ITLB_FLUSH
+
+# Offcore demand data read requests
+B0.01 OFFCORE_REQUESTS.DEMAND.READ_DATA
+
+# Offcore demand code read requests
+B0.02 OFFCORE_REQUESTS.DEMAND.READ_CODE
+
+# Offcore demand RFO requests
+B0.04 OFFCORE_REQUESTS.DEMAND.RFO
+
+# Offcore read requests
+B0.08 OFFCORE_REQUESTS.ANY.READ
+
+# Offcore RFO requests
+B0.10 OFFCORE_REQUESTS.ANY.RFO
+
+# Offcore uncached memory accesses
+B0.20 OFFCORE_REQUESTS.UNCACHED_MEM
+
+# Offcore L1 data cache writebacks
+B0.40 OFFCORE_REQUESTS.L1D_WRITEBACK
+
+# All offcore requests
+B0.80 OFFCORE_REQUESTS.ANY
+
+# Uops executed on port 0
+B1.01 UOPS_EXECUTED.PORT0
+
+# Uops executed on port 1
+B1.02 UOPS_EXECUTED.PORT1
+
+# Uops executed on port 2 (core count)
+B1.04.AnyT UOPS_EXECUTED.PORT2_CORE
+
+# Uops executed on port 3 (core count)
+B1.08.AnyT UOPS_EXECUTED.PORT3_CORE
+
+# Uops executed on port 4 (core count)
+B1.10.AnyT UOPS_EXECUTED.PORT4_CORE
+
+# Cycles Uops executed on ports 0-4 (core count)
+B1.1F.CMSK=1.AnyT UOPS_EXECUTED.CORE_ACTIVE_CYCLES_NO_PORT5
+
+# Uops executed on ports 0-4 (core count)
+B1.1F.CMSK=1.AnyT.EDG.INV UOPS_EXECUTED.CORE_STALL_COUNT_NO_PORT5
+
+# Cycles no Uops issued on ports 0-4 (core count)
+B1.1F.CMSK=1.AnyT.INV UOPS_EXECUTED.CORE_STALL_CYCLES_NO_PORT5
+
+# Uops executed on port 5
+B1.20 UOPS_EXECUTED.PORT5
+
+# Cycles Uops executed on any port (core count)
+B1.3F.CMSK=1.AnyT UOPS_EXECUTED.CORE_ACTIVE_CYCLES
+
+# Uops executed on any port (core count)
+B1.3F.CMSK=1.AnyT.EDG.INV UOPS_EXECUTED.CORE_STALL_COUNT
+
+# Cycles no Uops issued on any port (core count)
+B1.3F.CMSK=1.AnyT.INV UOPS_EXECUTED.CORE_STALL_CYCLES
+
+# Uops issued on ports 0, 1 or 5
+B1.40 UOPS_EXECUTED.PORT015
+
+# Cycles no Uops issued on ports 0, 1 or 5
+B1.40.CMSK=1.INV UOPS_EXECUTED.PORT015_STALL_CYCLES
+
+# Uops issued on ports 2, 3 or 4
+B1.80.AnyT UOPS_EXECUTED.PORT234_CORE
+
+# Offcore requests blocked due to Super Queue full
+B2.01 OFFCORE_REQUESTS_SQ_FULL
+
+# Cycles snoop data requests queued
+B3.01.CMSK=1.CTR=0 SNOOPQ_REQUESTS_OUTSTANDING.DATA_NOT_EMPTY
+
+# Outstanding snoop data requests
+B3.01.CTR=0 SNOOPQ_REQUESTS_OUTSTANDING.DATA
+
+# Cycles snoop invalidate requests queued
+B3.02.CMSK=1.CTR=0 SNOOPQ_REQUESTS_OUTSTANDING.INVALIDATE_NOT_EMPTY
+
+# Outstanding snoop invalidate requests
+B3.02.CTR=0 SNOOPQ_REQUESTS_OUTSTANDING.INVALIDATE
+
+# Cycles snoop code requests queued
+B3.04.CMSK=1.CTR=0 SNOOPQ_REQUESTS_OUTSTANDING.CODE_NOT_EMPTY
+
+# Outstanding snoop code requests
+B3.04.CTR=0 SNOOPQ_REQUESTS_OUTSTANDING.CODE
+
+# Snoop data requests
+B4.01 SNOOPQ_REQUESTS.DATA
+
+# Snoop invalidate requests
+B4.02 SNOOPQ_REQUESTS.INVALIDATE
+
+# Snoop code requests
+B4.04 SNOOPQ_REQUESTS.CODE
+
+# Thread responded HIT to snoop
+B8.01 SNOOP_RESPONSE.HIT
+
+# Thread responded HITE to snoop
+B8.02 SNOOP_RESPONSE.HITE
+
+# Thread responded HITM to snoop
+B8.04 SNOOP_RESPONSE.HITM
+
+# Instructions retired (Programmable counter and Precise Event)
+C0.01 INST_RETIRED.ANY_P
+
+# Total cycles (Precise Event)
+C0.01.CMSK=16.INV INST_RETIRED.TOTAL_CYCLES
+
+# Total cycles (Precise Event)
+C0.01.CMSK=16.INV INST_RETIRED.TOTAL_CYCLES_PS
+
+# Retired floating-point operations (Precise Event)
+C0.02 INST_RETIRED.X87
+
+# Retired MMX instructions (Precise Event)
+C0.04 INST_RETIRED.MMX
+
+# Uops retired (Precise Event)
+C2.01 UOPS_RETIRED.ANY
+
+# Cycles Uops are being retired
+C2.01.CMSK=1 UOPS_RETIRED.ACTIVE_CYCLES
+
+# Cycles Uops are not retiring (Precise Event)
+C2.01.CMSK=1.INV UOPS_RETIRED.STALL_CYCLES
+
+# Total cycles using precise uop retired event (Precise Event)
+C2.01.CMSK=16.INV UOPS_RETIRED.TOTAL_CYCLES
+
+# Retirement slots used (Precise Event)
+C2.02 UOPS_RETIRED.RETIRE_SLOTS
+
+# Macro-fused Uops retired (Precise Event)
+C2.04 UOPS_RETIRED.MACRO_FUSED
+
+# Cycles machine clear asserted
+C3.01 MACHINE_CLEARS.CYCLES
+
+# Execution pipeline restart due to Memory ordering conflicts
+C3.02 MACHINE_CLEARS.MEM_ORDER
+
+# Self-Modifying Code detected
+C3.04 MACHINE_CLEARS.SMC
+
+# Retired conditional branch instructions (Precise Event)
+C4.01 BR_INST_RETIRED.CONDITIONAL
+
+# Retired near call instructions (Precise Event)
+C4.02 BR_INST_RETIRED.NEAR_CALL
+
+# Retired branch instructions (Precise Event)
+C4.04 BR_INST_RETIRED.ALL_BRANCHES
+
+# Mispredicted conditional retired branches (Precise Event)
+C5.01 BR_MISP_RETIRED.CONDITIONAL
+
+# Mispredicted near retired calls (Precise Event)
+C5.02 BR_MISP_RETIRED.NEAR_CALL
+
+# Mispredicted retired branch instructions (Precise Event)
+C5.04 BR_MISP_RETIRED.ALL_BRANCHES
+
+# SIMD Packed-Single Uops retired (Precise Event)
+C7.01 SSEX_UOPS_RETIRED.PACKED_SINGLE
+
+# SIMD Scalar-Single Uops retired (Precise Event)
+C7.02 SSEX_UOPS_RETIRED.SCALAR_SINGLE
+
+# SIMD Packed-Double Uops retired (Precise Event)
+C7.04 SSEX_UOPS_RETIRED.PACKED_DOUBLE
+
+# SIMD Scalar-Double Uops retired (Precise Event)
+C7.08 SSEX_UOPS_RETIRED.SCALAR_DOUBLE
+
+# SIMD Vector Integer Uops retired (Precise Event)
+C7.10 SSEX_UOPS_RETIRED.VECTOR_INTEGER
+
+# Retired instructions that missed the ITLB (Precise Event)
+C8.20 ITLB_MISS_RETIRED
+
+# Retired loads that hit the L1 data cache (Precise Event)
+CB.01 MEM_LOAD_RETIRED.L1D_HIT
+
+# Retired loads that hit the L2 cache (Precise Event)
+CB.02 MEM_LOAD_RETIRED.L2_HIT
+
+# Retired loads that hit valid versions in the LLC cache (Precise Event)
+CB.04 MEM_LOAD_RETIRED.LLC_UNSHARED_HIT
+
+# Retired loads that hit sibling core's L2 in modified or unmodified states (Precise Event)
+CB.08 MEM_LOAD_RETIRED.OTHER_CORE_L2_HIT_HITM
+
+# Retired loads that miss the LLC cache (Precise Event)
+CB.10 MEM_LOAD_RETIRED.LLC_MISS
+
+# Retired loads that miss L1D and hit an previously allocated LFB (Precise Event)
+CB.40 MEM_LOAD_RETIRED.HIT_LFB
+
+# Retired loads that miss the DTLB (Precise Event)
+CB.80 MEM_LOAD_RETIRED.DTLB_MISS
+
+# Transitions from MMX to Floating Point instructions
+CC.01 FP_MMX_TRANS.TO_FP
+
+# Transitions from Floating Point to MMX instructions
+CC.02 FP_MMX_TRANS.TO_MMX
+
+# All Floating Point to and from MMX transitions
+CC.03 FP_MMX_TRANS.ANY
+
+# Instructions decoded
+D0.01 MACRO_INSTS.DECODED
+
+# Cycles no Uops are decoded
+D1.01.CMSK=1.INV UOPS_DECODED.STALL_CYCLES
+
+# Uops decoded by Microcode Sequencer
+D1.02.CMSK=1 UOPS_DECODED.MS_CYCLES_ACTIVE
+
+# Stack pointer instructions decoded
+D1.04 UOPS_DECODED.ESP_FOLDING
+
+# Stack pointer sync operations
+D1.08 UOPS_DECODED.ESP_SYNC
+
+# Flag stall cycles
+D2.01 RAT_STALLS.FLAGS
+
+# Partial register stall cycles
+D2.02 RAT_STALLS.REGISTERS
+
+# ROB read port stalls cycles
+D2.04 RAT_STALLS.ROB_READ_PORT
+
+# Scoreboard stall cycles
+D2.08 RAT_STALLS.SCOREBOARD
+
+# All RAT stall cycles
+D2.0F RAT_STALLS.ANY
+
+# Segment rename stall cycles
+D4.01 SEG_RENAME_STALLS
+
+# ES segment renames
+D5.01 ES_REG_RENAMES
+
+# Uop unfusions due to FP exceptions
+DB.01 UOP_UNFUSION
+
+# Branch instructions decoded
+E0.01 BR_INST_DECODED
+
+# Branch prediction unit missed call or return
+E5.01 BPU_MISSED_CALL_RET
+
+# BACLEAR asserted, regardless of cause 
+E6.01 BACLEAR.CLEAR
+
+# BACLEAR asserted with bad target address
+E6.02 BACLEAR.BAD_TARGET
+
+# Early Branch Prediciton Unit clears
+E8.01 BPU_CLEARS.EARLY
+
+# Late Branch Prediction Unit clears
+E8.02 BPU_CLEARS.LATE
+
+# L2 Load transactions
+F0.01 L2_TRANSACTIONS.LOAD
+
+# L2 RFO transactions
+F0.02 L2_TRANSACTIONS.RFO
+
+# L2 instruction fetch transactions
+F0.04 L2_TRANSACTIONS.IFETCH
+
+# L2 prefetch transactions
+F0.08 L2_TRANSACTIONS.PREFETCH
+
+# L1D writeback to L2 transactions
+F0.10 L2_TRANSACTIONS.L1D_WB
+
+# L2 fill transactions
+F0.20 L2_TRANSACTIONS.FILL
+
+# L2 writeback to LLC transactions
+F0.40 L2_TRANSACTIONS.WB
+
+# All L2 transactions
+F0.80 L2_TRANSACTIONS.ANY
+
+# L2 lines allocated in the S state
+F1.02 L2_LINES_IN.S_STATE
+
+# L2 lines allocated in the E state
+F1.04 L2_LINES_IN.E_STATE
+
+# L2 lines alloacated
+F1.07 L2_LINES_IN.ANY
+
+# L2 lines evicted by a demand request
+F2.01 L2_LINES_OUT.DEMAND_CLEAN
+
+# L2 modified lines evicted by a demand request
+F2.02 L2_LINES_OUT.DEMAND_DIRTY
+
+# L2 lines evicted by a prefetch request
+F2.04 L2_LINES_OUT.PREFETCH_CLEAN
+
+# L2 modified lines evicted by a prefetch request
+F2.08 L2_LINES_OUT.PREFETCH_DIRTY
+
+# L2 lines evicted
+F2.0F L2_LINES_OUT.ANY
+
+# Super Queue LRU hints sent to LLC
+F4.04 SQ_MISC.LRU_HINTS
+
+# Super Queue lock splits across a cache line
+F4.10 SQ_MISC.SPLIT_LOCK
+
+# Super Queue full stall cycles
+F6.01 SQ_FULL_STALL_CYCLES
+
+# X87 Floating point assists (Precise Event)
+F7.01 FP_ASSIST.ALL
+
+# X87 Floating point assists for invalid output value (Precise Event)
+F7.02 FP_ASSIST.OUTPUT
+
+# X87 Floating poiint assists for invalid input value (Precise Event)
+F7.04 FP_ASSIST.INPUT
+
+# SIMD integer 64 bit packed multiply operations
+FD.01 SIMD_INT_64.PACKED_MPY
+
+# SIMD integer 64 bit shift operations
+FD.02 SIMD_INT_64.PACKED_SHIFT
+
+# SIMD integer 64 bit pack operations
+FD.04 SIMD_INT_64.PACK
+
+# SIMD integer 64 bit unpack operations
+FD.08 SIMD_INT_64.UNPACK
+
+# SIMD integer 64 bit logical operations
+FD.10 SIMD_INT_64.PACKED_LOGICAL
+
+# SIMD integer 64 bit arithmetic operations
+FD.20 SIMD_INT_64.PACKED_ARITH
+
+# SIMD integer 64 bit shuffle/move operations
+FD.40 SIMD_INT_64.SHUFFLE_MOVE

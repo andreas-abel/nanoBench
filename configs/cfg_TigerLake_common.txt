@@ -1,5 +1,5 @@
-# Based on https://download.01.org/perfmon/ICL/icelake_core_v1.12.json
-# Applies to processors with family-model in {6-7E}
+# Based on https://download.01.org/perfmon/TGL/tigerlake_core_v1.05.json
+# Applies to processors with family-model in {6-8C, 6-8D}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED
