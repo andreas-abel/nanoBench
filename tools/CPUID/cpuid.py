@@ -181,7 +181,7 @@ def version_info(cpu):
    stepping = a & 0xF
 
    core_type = 0
-   if 0x1A <= cpuid(0x0)[0]:
+   if 0x1A <= cpu(0x0)[0]:
       core_type = (cpu(0x1A)[0] >> 24)
 
    return VersionInfo(int(displ_family), int(displ_model), int(stepping), int(core_type))
