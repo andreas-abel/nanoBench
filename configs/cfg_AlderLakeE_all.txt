@@ -1,0 +1,266 @@
+# Based on https://download.01.org/perfmon/ADL/alderlake_gracemont_core_v1.03.json
+# Applies to processors with family-model in {6-97, 6-9A}
+
+# Counts the number of retired loads that are blocked because its address exactly matches an older store whose data is not ready.
+03.01 LD_BLOCKS.DATA_UNKNOWN
+
+# This event is deprecated. Refer to new event LD_BLOCKS.ADDRESS_ALIAS
+03.04 LD_BLOCKS.4K_ALIAS
+
+# Counts the number of retired loads that are blocked because it initially appears to be store forward blocked, but subsequently is shown not to be blocked based on 4K alias check.
+03.04 LD_BLOCKS.ADDRESS_ALIAS
+
+# Counts the number of cycles that uops are blocked due to a store buffer full condition.
+04.01 MEM_SCHEDULER_BLOCK.ST_BUF
+
+# Counts the number of cycles that uops are blocked due to a load buffer full condition.
+04.02 MEM_SCHEDULER_BLOCK.LD_BUF
+
+# Counts the number of cycles that the head (oldest load) of the load buffer is stalled due to a store address match when load subsequently retires.
+05.84 LD_HEAD.ST_ADDR_AT_RET
+
+# Counts the number of cycles that the head (oldest load) of the load buffer is stalled due to a DTLB miss when load subsequently retires.
+05.90 LD_HEAD.DTLB_MISS_AT_RET
+
+# Counts the number of cycles that the head (oldest load) of the load buffer is stalled due to a pagewalk when load subsequently retires.
+05.A0 LD_HEAD.PGWALK_AT_RET
+
+# Counts the number of cycles that the head (oldest load) of the load buffer is stalled due to other block cases when load subsequently retires when load subsequently retires.
+05.C0 LD_HEAD.OTHER_AT_RET
+
+# Counts the number of cycles that the head (oldest load) of the load buffer is stalled due to any number of reasons, including an L1 miss, WCB full, pagewalk, store address block or store data block, on a load that retires.
+05.FF LD_HEAD.ANY_AT_RET
+
+# Counts the number of page walks completed due to load DTLB misses to any page size.
+08.0E DTLB_LOAD_MISSES.WALK_COMPLETED
+
+# Counts the number of cycles the core is stalled due to a demand load which hit in the L2 cache.
+34.01 MEM_BOUND_STALLS.LOAD_L2_HIT
+
+# Counts the number of cycles the core is stalled due to a demand load which hit in the LLC or other core with HITE/F/M.
+34.02 MEM_BOUND_STALLS.LOAD_LLC_HIT
+
+# Counts the number of cycles the core is stalled due to a demand load miss which hit in DRAM or MMIO (Non-DRAM).
+34.04 MEM_BOUND_STALLS.LOAD_DRAM_HIT
+
+# Counts the number of cycles the core is stalled due to a demand load miss which hit in the L2, LLC, DRAM or MMIO (Non-DRAM).
+34.07 MEM_BOUND_STALLS.LOAD
+
+# Counts the number of cycles the core is stalled due to an instruction cache or tlb miss which hit in the L2 cache.
+34.08 MEM_BOUND_STALLS.IFETCH_L2_HIT
+
+# Counts the number of cycles the core is stalled due to an instruction cache or tlb miss which hit in the last level cache or other core with HITE/F/M.
+34.10 MEM_BOUND_STALLS.IFETCH_LLC_HIT
+
+# Counts the number of cycles the core is stalled due to an instruction cache or tlb miss which hit in DRAM or MMIO (Non-DRAM).
+34.20 MEM_BOUND_STALLS.IFETCH_DRAM_HIT
+
+# Counts the number of cycles the core is stalled due to an instruction cache or tlb miss which hit in the L2, LLC, DRAM or MMIO (Non-DRAM).
+34.38 MEM_BOUND_STALLS.IFETCH
+
+# Counts the number of unhalted core clock cycles.
+3C.00 CPU_CLK_UNHALTED.CORE_P
+
+# Counts the number of unhalted core clock cycles.
+3C.00 CPU_CLK_UNHALTED.THREAD_P
+
+# Counts the number of page walks completed due to store DTLB misses to any page size.
+49.0E DTLB_STORE_MISSES.WALK_COMPLETED
+
+# Counts the total number of issue slots every cycle that were not consumed by the backend due to frontend stalls.
+71.00 TOPDOWN_FE_BOUND.ALL
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to the microcode sequencer (MS).
+71.01 TOPDOWN_FE_BOUND.CISC
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to BACLEARS.
+71.02 TOPDOWN_FE_BOUND.BRANCH_DETECT
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to wrong predecodes.
+71.04 TOPDOWN_FE_BOUND.PREDECODE
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to decode stalls.
+71.08 TOPDOWN_FE_BOUND.DECODE
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to ITLB misses.
+71.10 TOPDOWN_FE_BOUND.ITLB
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to instruction cache misses.
+71.20 TOPDOWN_FE_BOUND.ICACHE
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to BTCLEARS.
+71.40 TOPDOWN_FE_BOUND.BRANCH_RESTEER
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to latency related stalls including BACLEARs, BTCLEARs, ITLB misses, and ICache misses.
+71.72 TOPDOWN_FE_BOUND.FRONTEND_LATENCY
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to other common frontend stalls not categorized.
+71.80 TOPDOWN_FE_BOUND.OTHER
+
+# Counts the number of issue slots every cycle that were not delivered by the frontend due to frontend bandwidth restrictions due to decode, predecode, cisc, and other limitations.
+71.8D TOPDOWN_FE_BOUND.FRONTEND_BANDWIDTH
+
+# Counts the total number of issue slots that were not consumed by the backend because allocation is stalled due to a mispredicted jump or a machine clear.
+73.00 TOPDOWN_BAD_SPECULATION.ALL
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to a machine clear (nuke).
+73.01 TOPDOWN_BAD_SPECULATION.NUKE
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to fast nukes such as memory ordering and memory disambiguation machine clears.
+73.02 TOPDOWN_BAD_SPECULATION.FASTNUKE
+
+# Counts the total number of issue slots that were not consumed by the backend because allocation is stalled due to a machine clear (nuke) of any kind including memory ordering and memory disambiguation.
+73.03 TOPDOWN_BAD_SPECULATION.MACHINE_CLEARS
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to branch mispredicts.
+73.04 TOPDOWN_BAD_SPECULATION.MISPREDICT
+
+# Counts the total number of issue slots every cycle that were not consumed by the backend due to backend stalls.
+74.00 TOPDOWN_BE_BOUND.ALL
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to certain allocation restrictions.
+74.01 TOPDOWN_BE_BOUND.ALLOC_RESTRICTIONS
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to memory reservation stalls in which a scheduler is not able to accept uops.
+74.02 TOPDOWN_BE_BOUND.MEM_SCHEDULER
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to IEC or FPC RAT stalls, which can be due to FIQ or IEC reservation stalls in which the integer, floating point or SIMD scheduler is not able to accept uops.
+74.08 TOPDOWN_BE_BOUND.NON_MEM_SCHEDULER
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to scoreboards from the instruction queue (IQ), jump execution unit (JEU), or microcode sequencer (MS).
+74.10 TOPDOWN_BE_BOUND.SERIALIZATION
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to the physical register file unable to accept an entry (marble stalls).
+74.20 TOPDOWN_BE_BOUND.REGISTER
+
+# Counts the number of issue slots every cycle that were not consumed by the backend due to the reorder buffer being full (ROB stalls).
+74.40 TOPDOWN_BE_BOUND.REORDER_BUFFER
+
+# Counts the number of issue slots not consumed due to a micro-sequencer (MS) scoreboard, which stalls the front-end from issuing uops from the UROM until a specified older uop retires.
+75.02 SERIALIZATION.NON_C01_MS_SCB
+
+# Counts the number of instruction cache misses.
+80.02 ICACHE.MISSES
+
+# Counts the number of requests to the instruction cache for one or more bytes of a cache line.
+80.03 ICACHE.ACCESSES
+
+# Counts demand data reads that have any type of response.
+B7.01.MSR_RSP0=0x10001.TakenAlone OCR.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts demand reads for ownership (RFO) and software prefetches for exclusive ownership (PREFETCHW) that have any type of response.
+B7.01.MSR_RSP0=0x10002.TakenAlone OCR.DEMAND_RFO.ANY_RESPONSE
+
+# Counts demand reads for ownership (RFO) and software prefetches for exclusive ownership (PREFETCHW) that were supplied by the L3 cache where a snoop was sent, the snoop hit, and modified data was forwarded.
+B7.01.MSR_RSP0=0x10003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_HITM
+
+# Counts streaming stores that have any type of response.
+B7.01.MSR_RSP0=0x10800.TakenAlone OCR.STREAMING_WR.ANY_RESPONSE
+
+# Counts demand data reads that were not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3F84400001.TakenAlone OCR.DEMAND_DATA_RD.L3_MISS
+
+# Counts demand reads for ownership (RFO) and software prefetches for exclusive ownership (PREFETCHW) that were not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x3F84400002.TakenAlone OCR.DEMAND_RFO.L3_MISS
+
+# Counts the total number of consumed retirement slots.
+C2.00 TOPDOWN_RETIRING.ALL
+
+# Counts the total number of uops retired.
+C2.00 UOPS_RETIRED.ALL
+
+# Counts the number of uops that are from complex flows issued by the micro-sequencer (MS).
+C2.01 UOPS_RETIRED.MS
+
+# Counts the number of x87 uops retired, includes those in MS flows.
+C2.02 UOPS_RETIRED.X87
+
+# Counts the number of floating point divide uops retired (x87 and SSE, including x87 sqrt).
+C2.08 UOPS_RETIRED.FPDIV
+
+# Counts the number of integer divide uops retired.
+C2.10 UOPS_RETIRED.IDIV
+
+# Counts the number of machine clears due to program modifying data (self modifying code) within 1K of a recently fetched code page.
+C3.01 MACHINE_CLEARS.SMC
+
+# Counts the number of machine clears due to memory ordering caused by a snoop from an external agent. Does not count internally generated machine clears such as those due to memory disambiguation.
+C3.02 MACHINE_CLEARS.MEMORY_ORDERING
+
+# Counts the number of floating point operations retired that required microcode assist.
+C3.04 MACHINE_CLEARS.FP_ASSIST
+
+# Counts the number of machine clears due to memory ordering in which an internal load passes an older store within the same CPU.
+C3.08 MACHINE_CLEARS.DISAMBIGUATION
+
+# Counts the number of machine clears due to a page fault.  Counts both I-Side and D-Side (Loads/Stores) page faults.  A page fault occurs when either the page is not present, or an access violation occurs.
+C3.20 MACHINE_CLEARS.PAGE_FAULT
+
+# Counts the number of machine clears that flush the pipeline and restart the machine with the use of microcode due to SMC, MEMORY_ORDERING, FP_ASSISTS, PAGE_FAULT, DISAMBIGUATION, and FPC_VIRTUAL_TRAP.
+C3.6F MACHINE_CLEARS.SLOW
+
+# Counts the number of machines clears due to memory renaming.
+C3.80 MACHINE_CLEARS.MRN_NUKE
+
+# Counts the total number of branch instructions retired for all branch types.
+C4.00 BR_INST_RETIRED.ALL_BRANCHES
+
+# Counts the number of far branch instructions retired, includes far jump, far call and return, and Interrupt call and return.
+C4.BF BR_INST_RETIRED.FAR_BRANCH
+
+# This event is deprecated. Refer to new event BR_INST_RETIRED.NEAR_CALL
+C4.F9 BR_INST_RETIRED.CALL
+
+# Counts the number of near CALL branch instructions retired.
+C4.F9 BR_INST_RETIRED.NEAR_CALL
+
+# Counts the total number of mispredicted branch instructions retired for all branch types.
+C5.00 BR_MISP_RETIRED.ALL_BRANCHES
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 16 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x10.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_16
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 256 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x100.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_256
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 32 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x20.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_32
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 512 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x200.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_512
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 4 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x4.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_4
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 64 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x40.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_64
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 8 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x8.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_8
+
+# Counts the number of tagged loads with an instruction latency that exceeds or equals the threshold of 128 cycles as defined in MEC_CR_PEBS_LD_LAT_THRESHOLD (3F6H). Only counts with PEBS enabled.
+D0.05.MSR_3F6H=0x80.TakenAlone MEM_UOPS_RETIRED.LOAD_LATENCY_GT_128
+
+# Counts the number of stores uops retired. Counts with or without PEBS enabled.
+D0.06 MEM_UOPS_RETIRED.STORE_LATENCY
+
+# Counts all the retired split loads.
+D0.41 MEM_UOPS_RETIRED.SPLIT_LOADS
+
+# Counts the number of load uops retired.
+D0.81 MEM_UOPS_RETIRED.ALL_LOADS
+
+# Counts the number of store uops retired.
+D0.82 MEM_UOPS_RETIRED.ALL_STORES
+
+# Counts the number of load ops retired that hit in the L2 cache.
+D1.02 MEM_LOAD_UOPS_RETIRED.L2_HIT
+
+# Counts the number of load ops retired that hit in the L3 cache.
+D1.04 MEM_LOAD_UOPS_RETIRED.L3_HIT
+
+# Counts the number of load ops retired that hit in DRAM.
+D1.80 MEM_LOAD_UOPS_RETIRED.DRAM_HIT
+
+# Counts the total number of BACLEARS due to all branch types including conditional and unconditional jumps, returns, and indirect branches.
+E6.01 BACLEARS.ANY

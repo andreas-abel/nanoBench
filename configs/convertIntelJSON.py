@@ -26,7 +26,7 @@ if '0,1,2,3' in allCtrs:
 
 evDescriptions = []
 for ev in sorted(json, key=lambda x: (x['EventCode'].upper(), x['UMask'].upper())):
-    if 'Fixed' in ev['Counter']:
+    if ('Fixed' in ev['Counter']) or (ev['Counter'] in ['32', '33', '34', '35']):
         continue
     if ev.get('Deprecated') == '1':
         continue
