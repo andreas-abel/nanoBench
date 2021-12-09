@@ -163,7 +163,7 @@ def cpu_name(cpu):
     return " ".join(str("".join((struct.pack("IIII", *cpu(0x80000000 + i)).decode("ascii")
             for i in range(2, 5))).replace('\x00', '')).split())
 
-VersionInfo = collections.namedtuple('VersionInfo', 'displ_family displ_model stepping')
+VersionInfo = collections.namedtuple('VersionInfo', 'displ_family displ_model stepping core_type')
 
 def version_info(cpu):
    a, _, _, _ = cpu(0x01)
@@ -180,7 +180,11 @@ def version_info(cpu):
 
    stepping = a & 0xF
 
-   return VersionInfo(int(displ_family), int(displ_model), int(stepping))
+   core_type = 0
+   if 0x1A <= cpuid(0x0)[0]:
+      core_type = (cpu(0x1A)[0] >> 24)
+
+   return VersionInfo(int(displ_family), int(displ_model), int(stepping), int(core_type))
 
 def micro_arch(cpu):
    vi = version_info(cpu)
@@ -193,14 +197,28 @@ def micro_arch(cpu):
       return 'NHM'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x25), (0x06, 0x2C), (0x06, 0x2F)]:
       return 'WSM'
-   if (vi.displ_family, vi.displ_model) in [(0x06, 0x2A), (0x06, 0x2D)]:
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x1C), (0x06, 0x26), (0x06, 0x27), (0x06, 0x35), (0x06, 0x36)]:
+      return 'BNL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x2A)]:
       return 'SNB'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x2D)]:
+      return 'JKT'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x3A)]:
       return 'IVB'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x3E)]:
+      return 'IVT'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x3C), (0x06, 0x45), (0x06, 0x46)]:
       return 'HSW'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x3F)]:
+      return 'HSX'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x3D), (0x06, 0x47), (0x06, 0x56), (0x06, 0x4F)]:
       return 'BDW'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x37), (0x06, 0x4C), (0x06, 0x4D)]:
+      return 'SLM'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x5C), (0x06, 0x5F)]:
+      return 'GLM'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x57)]:
+      return 'KNL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x4E), (0x06, 0x5E)]:
       return 'SKL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x55)]:
@@ -216,12 +234,24 @@ def micro_arch(cpu):
          return 'CFL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x66)]:
       return 'CNL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x7A)]:
+      return 'GLP'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x7D), (0x06, 0x7E)]:
       return 'ICL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x85)]:
+      return 'KNM'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x86)]:
+      return 'SNR'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x8C), (0x06, 0x8D)]:
       return 'TGL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0xA7)]:
       return 'RKL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x6A), (0x06, 0x6C)]:
+      return 'ICX'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x96)]:
+      return 'EHL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x97), (0x06, 0x9A)]:
+      return 'ADL-' + ('P' if (vi.core_type == 0x40) else 'E')
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x01), (0x17, 0x11)]:
       return 'ZEN'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x08), (0x17, 0x18)]:
@@ -538,6 +568,8 @@ def get_basic_info(cpu):
     strs += ['Family: 0x%02X' % vi.displ_family]
     strs += ['Model: 0x%02X' % vi.displ_model]
     strs += ['Stepping: 0x%X' % vi.stepping]
+    if vi.core_type:
+       strs += ['Core Type: 0x%X' % vi.core_type]
     strs += ['Microarchitecture: ' + micro_arch(cpu)]
     return '\n'.join(strs)
 
