@@ -49,6 +49,12 @@ unsigned long cur_rdmsr = 0;
 
 bool is_Intel_CPU = false;
 bool is_AMD_CPU = false;
+bool supports_tsc_deadline = false;
+int displ_family;
+int displ_model;
+int Intel_perf_mon_ver = -1;
+int Intel_FF_ctr_width = -1;
+int Intel_programmable_ctr_width = -1;
 
 int n_programmable_counters;
 
@@ -111,11 +117,11 @@ bool check_cpuid() {
     print_user_verbose("Brand: %s\n", proc_brand_string);
 
     __cpuid(0x01, eax, ebx, ecx, edx);
-    unsigned int displ_family = ((eax >> 8) & 0xF);
+    displ_family = ((eax >> 8) & 0xF);
     if (displ_family == 0x0F) {
         displ_family += ((eax >> 20) & 0xFF);
     }
-    unsigned int displ_model = ((eax >> 4) & 0xF);
+    displ_model = ((eax >> 4) & 0xF);
     if (displ_family == 0x06 || displ_family == 0x0F) {
         displ_model += ((eax >> 12) & 0xF0);
     }
@@ -125,21 +131,29 @@ bool check_cpuid() {
     if (strcmp(proc_vendor_string, "GenuineIntel") == 0) {
         is_Intel_CPU = true;
 
+        __cpuid(0x01, eax, ebx, ecx, edx);
+        supports_tsc_deadline = (ecx >> 24) & 1;
+
         __cpuid(0x0A, eax, ebx, ecx, edx);
-        unsigned int perf_mon_ver = (eax & 0xFF);
-        print_user_verbose("Performance monitoring version: %u\n", perf_mon_ver);
-        if (perf_mon_ver < 2) {
+        Intel_perf_mon_ver = (eax & 0xFF);
+        print_user_verbose("Performance monitoring version: %d\n", Intel_perf_mon_ver);
+        if (Intel_perf_mon_ver < 2) {
             print_error("Error: performance monitoring version >= 2 required\n");
             return true;
         }
 
+        print_user_verbose("Number of fixed-function performance counters: %u\n", edx & 0x1F);
         n_programmable_counters = ((eax >> 8) & 0xFF);
         print_user_verbose("Number of general-purpose performance counters: %u\n", n_programmable_counters);
         if (n_programmable_counters < 2) {
             print_error("Error: only %u programmable counters available; nanoBench requires at least 2\n", n_programmable_counters);
             return true;
         }
-        print_user_verbose("Bit widths of general-purpose performance counters: %u\n", ((eax >> 16) & 0xFF));
+
+        Intel_FF_ctr_width = (edx >> 5) & 0xFF;
+        Intel_programmable_ctr_width = (eax >> 16) & 0xFF;
+        print_user_verbose("Bit widths of fixed-function performance counters: %u\n", Intel_FF_ctr_width);
+        print_user_verbose("Bit widths of general-purpose performance counters: %u\n", Intel_programmable_ctr_width);
     } else if (strcmp(proc_vendor_string, "AuthenticAMD") == 0) {
         is_AMD_CPU = true;
         n_programmable_counters = 6;
@@ -676,26 +690,13 @@ void run_initial_warmup_experiment() {
 void run_experiment(char* measurement_template, int64_t* results[], int n_counters, long local_unroll_count, long local_loop_count) {
     create_runtime_code(measurement_template, local_unroll_count, local_loop_count);
 
-    #ifdef __KERNEL__
-        get_cpu();
-        unsigned long flags;
-        raw_local_irq_save(flags);
-    #endif
-
     for (long ri=-warm_up_count; ri<n_measurements; ri++) {
         ((void(*)(void))runtime_code)();
 
-        // ignore "warm-up" runs (ri<0), but don't execute different branches
-        long ri_ = (ri>=0)?ri:0;
         for (int c=0; c<n_counters; c++) {
-                results[c][ri_] = pfc_mem[c];
+            results[c][max(0L, ri)] = pfc_mem[c];
         }
     }
-
-    #ifdef __KERNEL__
-        raw_local_irq_restore(flags);
-        put_cpu();
-    #endif
 }
 
 char* compute_result_str(char* buf, size_t buf_len, char* desc, int counter) {

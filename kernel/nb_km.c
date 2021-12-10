@@ -9,6 +9,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+#include <asm/apic.h>
+#include <asm-generic/io.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/mm.h>
@@ -19,7 +21,6 @@
 #include <linux/version.h>
 #include <linux/vmalloc.h>
 #include <../arch/x86/include/asm/fpu/api.h>
-#include <asm-generic/io.h>
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(4,12,0)
 #include <asm/cacheflush.h>
@@ -499,7 +500,56 @@ static ssize_t reset_store(struct kobject *kobj, struct kobj_attribute *attr, co
 }
 static struct kobj_attribute reset_attribute =__ATTR(reset, 0660, reset_show, reset_store);
 
-static int show(struct seq_file *m, void *v) {
+uint32_t prev_LVTT = 0;
+uint32_t prev_LVTTHMR = 0;
+uint32_t prev_LVTPC = 0;
+uint32_t prev_LVT0 = 0;
+uint32_t prev_LVT1 = 0;
+uint32_t prev_LVTERR = 0;
+uint64_t prev_deadline = 0;
+
+static void restore_interrupts_preemption(void) {
+    apic_write(APIC_LVTT, prev_LVTT);
+    apic_write(APIC_LVTTHMR, prev_LVTTHMR);
+    apic_write(APIC_LVTPC, prev_LVTPC);
+    apic_write(APIC_LVT0, prev_LVT0);
+    apic_write(APIC_LVT1, prev_LVT1);
+    apic_write(APIC_LVTERR, prev_LVTERR);
+    if (supports_tsc_deadline) write_msr(MSR_IA32_TSC_DEADLINE, prev_deadline);
+    prev_LVTT = prev_LVTTHMR = prev_LVTPC = prev_LVT0 = prev_LVT1 = prev_LVTERR = prev_deadline = 0;
+
+    put_cpu();
+}
+
+static void disable_interrupts_preemption(void) {
+    if (prev_LVTT || prev_LVTTHMR || prev_LVTPC || prev_LVT0 || prev_LVT1 || prev_LVTERR) {
+        // The previous call to disable_interrupts_preemption() was not followed by a call to restore_interrupts_preemption().
+        restore_interrupts_preemption();
+    }
+
+    // disable preemption
+    get_cpu();
+
+    // We mask interrupts in the APIC LVT. We do not mask all maskable interrupts using the cli instruction, as on some
+    // microarchitectures, pending interrupts that are masked via the cli instruction can reduce the retirement rate
+    // (e.g., on ICL to 4 uops/cycle).
+    prev_LVTT = apic_read(APIC_LVTT);
+    prev_LVTTHMR = apic_read(APIC_LVTTHMR);
+    prev_LVTPC = apic_read(APIC_LVTPC);
+    prev_LVT0 = apic_read(APIC_LVT0);
+    prev_LVT1 = apic_read(APIC_LVT1);
+    prev_LVTERR = apic_read(APIC_LVTERR);
+    if (supports_tsc_deadline) prev_deadline = read_msr(MSR_IA32_TSC_DEADLINE);
+
+    apic_write(APIC_LVTT, prev_LVTT | APIC_LVT_MASKED);
+    apic_write(APIC_LVTTHMR, prev_LVTTHMR | APIC_LVT_MASKED);
+    apic_write(APIC_LVTPC, prev_LVTPC | APIC_LVT_MASKED);
+    apic_write(APIC_LVT0, prev_LVT0 | APIC_LVT_MASKED);
+    apic_write(APIC_LVT1, prev_LVT1 | APIC_LVT_MASKED);
+    apic_write(APIC_LVTERR, prev_LVTERR | APIC_LVT_MASKED);
+}
+
+static int run_nanoBench(struct seq_file *m, void *v) {
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         if (!measurement_results[i] || !measurement_results_base[i]) {
             pr_err("Could not allocate memory for measurement_results\n");
@@ -515,6 +565,7 @@ static int show(struct seq_file *m, void *v) {
     runtime_code = runtime_code_base + code_offset;
 
     kernel_fpu_begin();
+    disable_interrupts_preemption();
 
     long base_unroll_count = (basic_mode?0:unroll_count);
     long main_unroll_count = (basic_mode?unroll_count:2*unroll_count);
@@ -654,26 +705,27 @@ static int show(struct seq_file *m, void *v) {
         seq_printf(m, "%s", compute_result_str(buf, sizeof(buf), msr_configs[i].description, 0));
     }
 
+    restore_interrupts_preemption();
     kernel_fpu_end();
     return 0;
 }
 
-static int open(struct inode *inode, struct  file *file) {
-    return single_open(file, show, NULL);
+static int open_nanoBench(struct inode *inode, struct  file *file) {
+    return single_open_size(file, run_nanoBench, NULL, (n_pfc_configs+4*use_fixed_counters)*128);
 }
 
 // since 5.6 the struct for fileops has changed
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-static const struct proc_ops proc_file_fops = {
+static const struct proc_ops proc_file_fops_nanoBench = {
     .proc_lseek = seq_lseek,
-    .proc_open = open,
+    .proc_open = open_nanoBench,
     .proc_read = seq_read,
     .proc_release = single_release,
 };
 #else
-static const struct file_operations proc_file_fops = {
+static const struct file_operations proc_file_fops_nanoBench = {
     .llseek = seq_lseek,
-    .open = open,
+    .open = open_nanoBench,
     .owner = THIS_MODULE,
     .read = seq_read,
     .release = single_release,
@@ -768,7 +820,7 @@ static int __init nb_init(void) {
         return error;
     }
 
-    struct proc_dir_entry* proc_file_entry = proc_create("nanoBench", 0, NULL, &proc_file_fops);
+    struct proc_dir_entry* proc_file_entry = proc_create("nanoBench", 0, NULL, &proc_file_fops_nanoBench);
     if(proc_file_entry == NULL) {
         pr_err("failed to create file in /proc/\n");
         return -1;

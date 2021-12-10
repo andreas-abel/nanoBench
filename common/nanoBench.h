@@ -176,6 +176,12 @@ extern char* msr_config_file_content;
 
 extern bool is_Intel_CPU;
 extern bool is_AMD_CPU;
+extern bool supports_tsc_deadline;
+extern int displ_family;
+extern int displ_model;
+extern int Intel_perf_mon_ver;
+extern int Intel_FF_ctr_width;
+extern int Intel_programmable_ctr_width;
 
 #define MAX_PROGRAMMABLE_COUNTERS 8
 extern int n_programmable_counters;
