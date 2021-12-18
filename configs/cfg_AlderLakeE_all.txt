@@ -1,4 +1,4 @@
-# Based on https://download.01.org/perfmon/ADL/alderlake_gracemont_core_v1.03.json
+# Based on https://download.01.org/perfmon/ADL/alderlake_gracemont_core_v1.04.json
 # Applies to processors with family-model in {6-97, 6-9A}
 
 # Counts the number of retired loads that are blocked because its address exactly matches an older store whose data is not ready.
@@ -15,6 +15,12 @@
 
 # Counts the number of cycles that uops are blocked due to a load buffer full condition.
 04.02 MEM_SCHEDULER_BLOCK.LD_BUF
+
+# Counts the number of cycles that uops are blocked due to an RSV full condition.
+04.04 MEM_SCHEDULER_BLOCK.RSV
+
+# Counts the number of cycles that uops are blocked for any of the following reasons:  load buffer, store buffer or RSV full.
+04.07 MEM_SCHEDULER_BLOCK.ALL
 
 # Counts the number of cycles that the head (oldest load) of the load buffer is stalled due to a store address match when load subsequently retires.
 05.84 LD_HEAD.ST_ADDR_AT_RET

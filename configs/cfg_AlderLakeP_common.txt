@@ -1,4 +1,4 @@
-# Based on https://download.01.org/perfmon/ADL/alderlake_goldencove_core_v1.03.json
+# Based on https://download.01.org/perfmon/ADL/alderlake_goldencove_core_v1.04.json
 # Applies to processors with family-model in {6-97, 6-9A}
 
 3C.00 CORE_CYCLES

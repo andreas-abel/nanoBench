@@ -51,8 +51,15 @@ done
 args="$args $1"
 set "$args"
 
-prev_rdpmc=$(cat /sys/bus/event_source/devices/cpu/rdpmc)
-echo 2 > /sys/bus/event_source/devices/cpu/rdpmc || exit
+if [ -d "/sys/bus/event_source/devices/cpu" ]; then
+    prev_rdpmc=$(cat /sys/bus/event_source/devices/cpu/rdpmc)
+    echo 2 > /sys/bus/event_source/devices/cpu/rdpmc || exit 1
+else
+    prev_rdpmc_atom=$(cat /sys/bus/event_source/devices/cpu_atom/rdpmc)
+    prev_rdpmc_core=$(cat /sys/bus/event_source/devices/cpu_core/rdpmc)
+    echo 2 > /sys/bus/event_source/devices/cpu_atom/rdpmc || exit 1
+    echo 2 > /sys/bus/event_source/devices/cpu_core/rdpmc || exit 1
+fi
 
 modprobe --first-time msr &>/dev/null
 msr_prev_loaded=$?
@@ -77,8 +84,14 @@ fi
 
 rm -f asm-*.bin
 
-echo $prev_rdpmc > /sys/bus/event_source/devices/cpu/rdpmc
 echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog
+
+if [ -d "/sys/bus/event_source/devices/cpu" ]; then
+    echo $prev_rdpmc > /sys/bus/event_source/devices/cpu/rdpmc
+else
+    echo $prev_rdpmc_atom > /sys/bus/event_source/devices/cpu_atom/rdpmc
+    echo $prev_rdpmc_core > /sys/bus/event_source/devices/cpu_core/rdpmc
+fi
 
 if [[ $msr_prev_loaded == 0 ]]; then
     modprobe -r msr

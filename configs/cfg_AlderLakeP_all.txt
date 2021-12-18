@@ -1,4 +1,4 @@
-# Based on https://download.01.org/perfmon/ADL/alderlake_goldencove_core_v1.03.json
+# Based on https://download.01.org/perfmon/ADL/alderlake_goldencove_core_v1.04.json
 # Applies to processors with family-model in {6-97, 6-9A}
 
 # False dependencies in MOB due to partial compare on address.
@@ -28,6 +28,15 @@
 # Instruction fetch requests that miss the ITLB and hit the STLB.
 11.20 ITLB_MISSES.STLB_HIT
 
+# Page walks completed due to a demand data load to a 4K page.
+12.02 DTLB_LOAD_MISSES.WALK_COMPLETED_4K
+
+# Page walks completed due to a demand data load to a 2M/4M page.
+12.04 DTLB_LOAD_MISSES.WALK_COMPLETED_2M_4M
+
+# Page walks completed due to a demand data load to a 1G page.
+12.08 DTLB_LOAD_MISSES.WALK_COMPLETED_1G
+
 # Load miss in all TLB levels causes a page walk that completes. (All page sizes)
 12.0E DTLB_LOAD_MISSES.WALK_COMPLETED
 
@@ -39,6 +48,15 @@
 
 # Loads that miss the DTLB and hit the STLB.
 12.20 DTLB_LOAD_MISSES.STLB_HIT
+
+# Page walks completed due to a demand data store to a 4K page.
+13.02 DTLB_STORE_MISSES.WALK_COMPLETED_4K
+
+# Page walks completed due to a demand data store to a 2M/4M page.
+13.04 DTLB_STORE_MISSES.WALK_COMPLETED_2M_4M
+
+# Page walks completed due to a demand data store to a 1G page.
+13.08 DTLB_STORE_MISSES.WALK_COMPLETED_1G
 
 # Store misses in all TLB levels causes a page walk that completes. (All page sizes)
 13.0E DTLB_STORE_MISSES.WALK_COMPLETED
@@ -355,11 +373,14 @@ AD.80 INT_MISC.CLEAR_RESTEER_CYCLES
 # Uops that RAT issues to RS
 AE.01 UOPS_ISSUED.ANY
 
-# tbd
+# TBD
 B0.01.CMSK=1 ARITH.FPDIV_ACTIVE
 
 # This event is deprecated. Refer to new event ARITH.FPDIV_ACTIVE
 B0.01.CMSK=1 ARITH.FP_DIVIDER_ACTIVE
+
+# This event counts the cycles the integer divider is busy.
+B0.08 ARITH.IDIV_ACTIVE
 
 # This event is deprecated. Refer to new event ARITH.IDIV_ACTIVE
 B0.08.CMSK=1 ARITH.INT_DIVIDER_ACTIVE
@@ -628,7 +649,7 @@ CD.01.MSR_3F6H=0x8.CTR=1.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_8
 # Counts randomly selected loads when the latency from first dispatch to completion is greater than 128 cycles.
 CD.01.MSR_3F6H=0x80.CTR=1.TakenAlone MEM_TRANS_RETIRED.LOAD_LATENCY_GT_128
 
-# Counts the number of retired instructions with at least 1 store uop.
+# Retired instructions with at least 1 store uop. This PEBS event is the trigger for stores sampled by the PEBS Store Facility.
 CD.02.CTR=0 MEM_TRANS_RETIRED.STORE_SAMPLE
 
 # Retired load instructions that miss the STLB.
@@ -706,17 +727,11 @@ E0.20 MISC2_RETIRED.LFENCE
 # Retired memory uops for any access
 E5.03 MEM_UOP_RETIRED.ANY
 
-# TBD
-E7.01 INT_VEC_RETIRED.ADD_128
+# integer ADD, SUB, SAD 128-bit vector instructions.
+E7.03 INT_VEC_RETIRED.ADD_128
 
-# TBD
-E7.02 INT_VEC_RETIRED.HADD_128
-
-# TBD
-E7.04 INT_VEC_RETIRED.ADD_256
-
-# TBD
-E7.08 INT_VEC_RETIRED.HADD_256
+# integer ADD, SUB, SAD 256-bit vector instructions.
+E7.0C INT_VEC_RETIRED.ADD_256
 
 # TBD
 E7.10 INT_VEC_RETIRED.VNNI_128
