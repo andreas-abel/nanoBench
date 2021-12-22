@@ -23,5 +23,5 @@ all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 clean:
-	rm -f ../common/*.o ../common/*.ur-safe ../common/*.dwo
-	rm -rf *.o *.ko *.mod *.mod.c *.ur-safe *.dwo .tmp_versions modules.order Module.symvers
+	rm -f ../common/*.o ../common/*.ur-safe ../common/*.dwo ../common/.nanoBench.*
+	rm -rf *.o *.ko *.mod *.mod.c *.ur-safe *.dwo .tmp_versions .cache.mk .nb.* .nb_km.* .modules.* .Module.* modules.order Module.symvers

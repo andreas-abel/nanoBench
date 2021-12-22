@@ -3,11 +3,14 @@
 *.o
 *.o.ur-safe
 *.mod
+*.dwo
 *.pyc
 *.html
+*.xml
 *.asm
 *.s
-
+*.tar.gz
+.vscode
 
 # Kernel ignore files/directories
 kernel/.cache.mk
