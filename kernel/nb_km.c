@@ -506,6 +506,7 @@ uint32_t prev_LVTPC = 0;
 uint32_t prev_LVT0 = 0;
 uint32_t prev_LVT1 = 0;
 uint32_t prev_LVTERR = 0;
+uint32_t prev_APIC_TMICT = 0;
 uint64_t prev_deadline = 0;
 
 static void restore_interrupts_preemption(void) {
@@ -515,8 +516,12 @@ static void restore_interrupts_preemption(void) {
     apic_write(APIC_LVT0, prev_LVT0);
     apic_write(APIC_LVT1, prev_LVT1);
     apic_write(APIC_LVTERR, prev_LVTERR);
-    if (supports_tsc_deadline) write_msr(MSR_IA32_TSC_DEADLINE, prev_deadline);
-    prev_LVTT = prev_LVTTHMR = prev_LVTPC = prev_LVT0 = prev_LVT1 = prev_LVTERR = prev_deadline = 0;
+    apic_write(APIC_TMICT, prev_APIC_TMICT);
+    if (supports_tsc_deadline) {
+        asm volatile("mfence");
+        write_msr(MSR_IA32_TSC_DEADLINE, max(1ULL, prev_deadline));
+    }
+    prev_LVTT = prev_LVTTHMR = prev_LVTPC = prev_LVT0 = prev_LVT1 = prev_LVTERR = prev_APIC_TMICT = prev_deadline = 0;
 
     put_cpu();
 }
@@ -539,7 +544,11 @@ static void disable_interrupts_preemption(void) {
     prev_LVT0 = apic_read(APIC_LVT0);
     prev_LVT1 = apic_read(APIC_LVT1);
     prev_LVTERR = apic_read(APIC_LVTERR);
-    if (supports_tsc_deadline) prev_deadline = read_msr(MSR_IA32_TSC_DEADLINE);
+    prev_APIC_TMICT = apic_read(APIC_TMICT);
+    if (supports_tsc_deadline) {
+        prev_deadline = read_msr(MSR_IA32_TSC_DEADLINE);
+        write_msr(MSR_IA32_TSC_DEADLINE, 0);
+    }
 
     apic_write(APIC_LVTT, prev_LVTT | APIC_LVT_MASKED);
     apic_write(APIC_LVTTHMR, prev_LVTTHMR | APIC_LVT_MASKED);
