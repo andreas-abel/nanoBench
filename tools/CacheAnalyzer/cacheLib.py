@@ -22,26 +22,26 @@ def getEventConfig(event):
    if event == 'L1_HIT':
       if arch in ['Core', 'EnhancedCore']: return '40.0E ' + event # L1D_CACHE_LD.MES
       if arch in ['NHM', 'WSM']: return 'CB.01 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.01 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL', 'ADL-P']: return 'D1.01 ' + event
    if event == 'L1_MISS':
       if arch in ['Core', 'EnhancedCore']: return 'CB.01.CTR=0 ' + event
-      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.08 ' + event
+      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL', 'ADL-P']: return 'D1.08 ' + event
       if arch in ['ZEN+']: return '064.70 ' + event
    if event == 'L2_HIT':
       if arch in ['Core', 'EnhancedCore']: return '29.7E ' + event # L2_LD.THIS_CORE.ALL_INCL.MES
       if arch in ['NHM', 'WSM']: return 'CB.02 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.02 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL', 'ADL-P']: return 'D1.02 ' + event
       if arch in ['ZEN+']: return '064.70 ' + event
    if event == 'L2_MISS':
       if arch in ['Core', 'EnhancedCore']: return 'CB.04.CTR=0 ' + event
-      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.10 ' + event
+      if arch in ['IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL', 'ADL-P']: return 'D1.10 ' + event
       if arch in ['ZEN+']: return '064.08 ' + event
    if event == 'L3_HIT':
       if arch in ['NHM', 'WSM']: return 'CB.04 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.04 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL', 'ADL-P']: return 'D1.04 ' + event
    if event == 'L3_MISS':
       if arch in ['NHM', 'WSM']: return 'CB.10 ' + event
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL']: return 'D1.20 ' + event
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'TGL', 'ADL-P']: return 'D1.20 ' + event
    return ''
 
 def getDefaultCacheConfig():
@@ -50,14 +50,27 @@ def getDefaultCacheConfig():
 
 def getDefaultCacheMSRConfig():
    if 'Intel' in getCPUVendor() and 'L3' in getCpuidCacheInfo() and getCpuidCacheInfo()['L3']['complex']:
-      if getArch() in ['CNL', 'ICL', 'TGL']:
+      if getArch() in ['ADL-P']:
+         MSR_UNC_PERF_GLOBAL_CTRL = 0x2FF0
+         MSR_UNC_CBO_0_PERFEVTSEL0 = 0x2000
+         MSR_UNC_CBO_0_PERFCTR0 = 0x2002
          dist = 8
-         ctrOffset = 2
+      elif getArch() in ['CNL', 'ICL', 'TGL']:
+         MSR_UNC_PERF_GLOBAL_CTRL = 0xE01
+         MSR_UNC_CBO_0_PERFEVTSEL0 = 0x700
+         MSR_UNC_CBO_0_PERFCTR0 = 0x702
+         dist = 8
       else:
+         MSR_UNC_PERF_GLOBAL_CTRL = 0xE01
+         MSR_UNC_CBO_0_PERFEVTSEL0 = 0x700
+         MSR_UNC_CBO_0_PERFCTR0 = 0x706
          dist = 16
-         ctrOffset = 6
-      return '\n'.join('msr_0xE01=0x20000000.msr_' + format(0x700 + dist*cbo, 'x') + '=0x408F34 msr_' + format(0x700 + ctrOffset + dist*cbo, 'x') +
-                       ' CACHE_LOOKUP_CBO_' + str(cbo) for cbo in range(0, getNCBoxUnits()))
+
+      return '\n'.join('msr_' + format(MSR_UNC_PERF_GLOBAL_CTRL, '#x') + '=0x20000000' +
+                       '.msr_' + format(MSR_UNC_CBO_0_PERFEVTSEL0 + dist*cbo, '#x') + '=0x408F34' +
+                       ' msr_' + format(MSR_UNC_CBO_0_PERFCTR0 + dist*cbo, '#x') +
+                       ' CACHE_LOOKUP_CBO_' + str(cbo)
+                       for cbo in range(0, getNCBoxUnits()))
    return ''
 
 
@@ -150,7 +163,7 @@ def getNCBoxUnits():
       try:
          subprocess.check_output(['modprobe', 'msr'])
          cbo_config = subprocess.check_output(['rdmsr', '0x396', '-f', '3:0'])
-         if getArch() in ['CNL', 'ICL', 'TGL']:
+         if getArch() in ['CNL', 'ICL', 'TGL', 'ADL-P']:
             getNCBoxUnits.nCBoxUnits = int(cbo_config)
          else:
             getNCBoxUnits.nCBoxUnits = int(cbo_config) - 1
