@@ -1224,7 +1224,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                               if not useDepBreakingInstrs:
                                  minTP_noDepBreaking_noLoop = min(minTP_noDepBreaking_noLoop, cycles)
                                  for p, i in result.items():
-                                    if (i > .1) and (('UOPS_PORT' in p) or ('FpuPipeAssignment.Total' in p)):
+                                    if (i/ic > .1) and (('UOPS_PORT' in p) or ('FpuPipeAssignment.Total' in p)):
                                        all_used_ports.add(p[10:] if ('UOPS_PORT' in p) else p[23:])
                            else:
                               minTP_loop = min(minTP_loop, cycles)
@@ -2281,7 +2281,8 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          instrI = getInstrInstanceFromNode(instrNode, useDistinctRegs=useDistinctRegs)
          chainInstr = 'TEST ' + targetNode.attrib['memory-prefix'] + ' [' + getAddrReg(instrNode, targetNode) + '], 1'
          configList.isUpperBound = True
-         configList.append(LatConfig(instrI, chainInstrs=chainInstr, chainLatency=1))
+         # we use basicMode, as the measurements for these benchmarks are often not very stable, in particular on, e.g., HSW
+         configList.append(LatConfig(instrI, chainInstrs=chainInstr, chainLatency=1, basicMode=True))
    elif startNode.attrib['type'] in ['agen', 'mem']:
       #################
       # mem -> ...
@@ -2415,14 +2416,14 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                # mem -> mem
                if startNode.attrib.get('r','0')=='1':
                   configList = LatConfigList()
-                  configList.append(LatConfig(instrI))
+                  # we use basicMode, as the measurements for these benchmarks are often not very stable, in particular on, e.g., HSW
+                  configList.append(LatConfig(instrI, basicMode=True))
 
                   if memWidth <= 64:
                      chainInstrs = 'MOV ' + regToSize('R12', min(64, memWidth)) + ', [' + addrReg + '];'
                      chainInstrs += ('MOVSX R12, ' + regToSize('R12', min(32, memWidth)) + ';')*10
                      chainInstrs += ('MOV [' + addrReg + '], ' + regToSize('R12', min(64, memWidth)))
                      chainLatency = basicLatency['MOV_10MOVSX_MOV_'+str(min(64, memWidth))]
-                     # we use basicMode, as the measurements for these benchmarks are often not very stable, in particular on, e.g., HSW
                      configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=chainLatency, basicMode=True))
                   else:
                      # ToDo
@@ -2508,7 +2509,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
             latencyNode = None
 
             addrMemList = ['']
-            if opNode1.attrib['type']=='mem':
+            if opNode1.attrib['type'] == 'mem':
                if 'moffs' not in opNode1.attrib:
                   addrMemList = ['addr']
                   if 'VSIB' in opNode1.attrib:
@@ -2516,7 +2517,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                   elif (opNode1.attrib.get('suppressed', '') != '1') or ('index' in opNode1.attrib):
                      addrMemList.append('addr_index')
                addrMemList.append('mem') # mem added last; order is relevant for html output
-            elif opNode1.attrib['type']=='agen' and ('B' in instrNode.attrib['agen'] or 'I' in instrNode.attrib['agen']):
+            elif opNode1.attrib['type'] == 'agen':
                addrMemList = []
                if 'B' in instrNode.attrib['agen']:
                   addrMemList.append('addr')
@@ -3057,7 +3058,7 @@ def main():
          tpDictNoInteriteration = {instrNodeDict[k.attrib['string']]:v for k,v in pTpDictNoInteriteration.items()}
    else:
       for i, instrNode in enumerate(instrNodeList):
-         #if not 'ROR_4 (R8l, I8)' in instrNode.attrib['string']: continue
+         #if not 'POP (R64)' in instrNode.attrib['string']: continue
          print('Measuring throughput for ' + instrNode.attrib['string'] + ' (' + str(i) + '/' + str(len(instrNodeList)) + ')')
 
          htmlReports = ['<h1>' + instrNode.attrib['string'] + ' - Throughput and Uops' + (' (IACA '+iacaVersion+')' if useIACA else '') + '</h1>\n<hr>\n']
