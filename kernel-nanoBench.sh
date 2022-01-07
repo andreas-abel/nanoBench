@@ -144,8 +144,8 @@ while [ "$1" ]; do
 done
 
 prev_nmi_watchdog=$(cat /proc/sys/kernel/nmi_watchdog)
-echo 0 > /proc/sys/kernel/nmi_watchdog
+[ $prev_nmi_watchdog != 0 ] && echo 0 > /proc/sys/kernel/nmi_watchdog
 
 $taskset cat /proc/nanoBench
 
-echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog
+[ $prev_nmi_watchdog != 0 ] && echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog

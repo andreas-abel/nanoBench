@@ -257,7 +257,8 @@ def deleteRamdisk():
 
 
 def cleanup():
-   writeFile('/proc/sys/kernel/nmi_watchdog', prevNMIWatchdogState)
+   if prevNMIWatchdogState != '0':
+      writeFile('/proc/sys/kernel/nmi_watchdog', prevNMIWatchdogState)
    deleteRamdisk()
 
 
@@ -270,8 +271,11 @@ if not os.path.exists('/sys/nb'):
 if readFile('/sys/devices/system/cpu/smt/active').startswith('1'):
    print('Note: Hyper-threading is enabled; it can be disabled with "sudo ./disable-HT.sh"', file=sys.stderr)
 
-prevNMIWatchdogState = readFile('/proc/sys/kernel/nmi_watchdog')
-writeFile('/proc/sys/kernel/nmi_watchdog', '0')
+prevNMIWatchdogState = readFile('/proc/sys/kernel/nmi_watchdog').strip()
+print(prevNMIWatchdogState)
+print(prevNMIWatchdogState != '0')
+if prevNMIWatchdogState != '0':
+   writeFile('/proc/sys/kernel/nmi_watchdog', '0')
 
 resetNanoBench()
 createRamdisk()

@@ -381,7 +381,8 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
    if not doNotReadRegs: doNotReadRegs = []
    if not opRegDict: opRegDict = {}
 
-   if instrNode.attrib['extension'] == 'AVX2GATHER': useDistinctRegs=True
+   if (instrNode.attrib['extension'] == 'AVX2GATHER') or instrNode.attrib['isa-set'].startswith('AVX512_FP16'):
+       useDistinctRegs=True
    hasMemOperand = len(instrNode.findall('./operand[@type="mem"]'))>0
 
    readRegs = set()
@@ -944,18 +945,24 @@ def getTPConfigsForDiv(instrNode):
             minConfig.init += ['MOV RAX, 0; MOV RDX, 0']
             minConfig.preInstrCode = 'MOV RAX, 0; MOV RDX, 0'
             minConfig.preInstrNodes = [instrNodeDict['MOV (R64, I32)'], instrNodeDict['MOV (R64, I32)']]
-   elif iclass in ['DIVSS', 'DIVPS', 'DIVSD', 'DIVPD', 'VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD']:
+   elif iclass in ['DIVSS', 'DIVPS', 'DIVSD', 'DIVPD', 'VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD', 'VDIVSH', 'VDIVPH']:
       dataType = iclass[-1]
-      if dataType == 'S':
-         maxDividend = '0x54ed392654ed3926' #8.15093E12 in high and low 32-bit
-         maxDivisor = '0x3f99f4c03f99f4c0' #1.20278 in high and low 32-bit
-         minDividend = '0x3f8000003f800000' #1.0 in high and low 32-bit
-         minDivisor = '0x3f8000003f800000' #1.0 in high and low 32-bit
-      else:
-         maxDividend = '0x429da724b687da66' #8.1509281715106E12
-         maxDivisor = '0x3ff33e97f934078b' #1.20278165192619
-         minDividend = '0x3ff0000000000000' #1.0
-         minDivisor = '0x3ff0000000000000' #1.0
+      if dataType == 'D':
+         maxDividend = '0x429da724b687da66' # 8.1509281715106E12
+         maxDivisor  = '0x3ff33e97f934078b' # 1.20278165192619
+         minDividend = '0x3ff0000000000000' # 1.0
+         minDivisor  = '0x3ff0000000000000' # 1.0
+      elif dataType == 'S':
+         maxDividend = '0x54ed392654ed3926' # 8.15093E12 in high and low 32-bit
+         maxDivisor  = '0x3f99f4c03f99f4c0' # 1.20278 in high and low 32-bit
+         minDividend = '0x3f8000003f800000' # 1.0 in high and low 32-bit
+         minDivisor  = '0x3f8000003f800000' # 1.0 in high and low 32-bit
+      else: # dataType == 'H'
+         # ToDo: find better values
+         maxDividend = '0x2769276927692769' # 0.02895 in all 4 16-bit blocks
+         maxDivisor  = '0x3CCF3CCF3CCF3CCF' # 1.203 in all 4 16-bit blocks
+         minDividend = '0x3C003C003C003C00' # 1.0 in all 4 16-bit blocks
+         minDivisor  = '0x3C003C003C003C00' # 1.0 in all 4 16-bit blocks
 
       for config, dividend, divisor in [(maxConfig, maxDividend, maxDivisor), (minConfig, minDividend, minDivisor)]:
          config.init = ['MOV RAX, ' + dividend]
@@ -980,19 +987,25 @@ def getTPConfigsForDiv(instrNode):
             dividendReg = regType + '0'
             divisorReg = regType + '1'
 
-            config.init += ['VMOVUP' + dataType + ' ' +  dividendReg + ', [R14+64]']
-            config.init += ['VMOVUP' + dataType + ' ' +  divisorReg + ', [R14]']
+            config.init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  dividendReg + ', [R14+64]']
+            config.init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  divisorReg + ', [R14]']
 
-            config.independentInstrs = [getInstrInstanceFromNode(instrNode,  opRegDict={1:regType+str(reg), (nOperands-1):dividendReg, nOperands:divisorReg}) for reg in range(2, 10)]
-   elif instrNode.attrib['iclass'] in ['SQRTSS', 'SQRTPS', 'SQRTSD', 'SQRTPD', 'RSQRTSS', 'RSQRTPS', 'VSQRTSS', 'VSQRTPS', 'VSQRTSD', 'VSQRTPD','VRSQRTSS', 'VRSQRTPS', 'VRSQRT14SS', 'VRSQRT14SD', 'VRSQRT14PS', 'VRSQRT14PD']:
+            config.independentInstrs = [getInstrInstanceFromNode(instrNode,  opRegDict={1:regType+str(reg), (nOperands-1):dividendReg, nOperands:divisorReg})
+                                           for reg in range(2, 10)]
+   elif instrNode.attrib['iclass'] in ['SQRTSS', 'SQRTPS', 'SQRTSD', 'SQRTPD', 'RSQRTSS', 'RSQRTPS', 'VSQRTSS', 'VSQRTPS', 'VSQRTSD', 'VSQRTPD','VRSQRTSS',
+                                       'VRSQRTPS', 'VRSQRT14SS', 'VRSQRT14SD', 'VRSQRT14PS', 'VRSQRT14PD', 'VSQRTSH', 'VSQRTPH', 'VRSQRTSH', 'VRSQRTPH']:
       dataType = instrNode.attrib['iclass'][-1]
 
+      if dataType == 'D':
+         maxArg = '0x465a61fe1acdc21c' # 8.3610378602352937E30
+         minArg = '0x3ff0000000000000' # 1.0
       if dataType == 'S':
-         maxArg = '0x72d30ff172d30ff1' #8.36104E30 in high and low 32-bit
-         minArg = '0x3f8000003f800000' #1.0 in high and low 32-bit
-      else:
-         maxArg = '0x465a61fe1acdc21c' #8.3610378602352937E30
-         minArg = '0x3ff0000000000000' #1.0
+         maxArg = '0x72d30ff172d30ff1' # 8.36104E30 in high and low 32-bit
+         minArg = '0x3f8000003f800000' # 1.0 in high and low 32-bit
+      else:  # dataType == 'H'
+         # ToDo: find better values
+         maxArg = '0x1698169816981698' # 0.00161 in all 4 16-bit blocks
+         minArg = '0x3C003C003C003C00' # 1.0 in all 4 16-bit blocks
 
       instrPrefix = ''
       if instrNode.attrib['iclass'].startswith('V'): instrPrefix = 'V'
@@ -1010,7 +1023,7 @@ def getTPConfigsForDiv(instrNode):
             instrs = [getInstrInstanceFromNode(instrNode, opRegDict={targetRegIdx:regType+str(reg)}) for reg in range(2, 10)]
          else:
             sourceReg = regType + '0'
-            config.init += [instrPrefix + 'MOVUP' + dataType + ' ' +  sourceReg + ', [R14]']
+            config.init += [instrPrefix + 'MOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  sourceReg + ', [R14]']
             sourceRegIdx = max(int(opNode.attrib['idx']) for opNode in instrNode.findall('./operand') if opNode.text and regType in opNode.text)
             instrs = [getInstrInstanceFromNode(instrNode, opRegDict={targetRegIdx:regType+str(reg), sourceRegIdx: sourceReg}) for reg in range(2, 10)]
 
@@ -1583,20 +1596,25 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
          config.chainLatency = chainLatency
          configList.append(config)
       return configLists
-   elif instrNode.attrib['iclass'] in ['DIVSS', 'DIVPS', 'DIVSD', 'DIVPD', 'VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD']:
+   elif instrNode.attrib['iclass'] in ['DIVSS', 'DIVPS', 'DIVSD', 'DIVPD', 'VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD', 'VDIVSH', 'VDIVPH']:
       memDivisor = len(instrNode.findall('./operand[@type="mem"]'))>0
       dataType = instrNode.attrib['iclass'][-1]
 
-      if dataType == 'S':
-         maxDividend = '0x54ed392654ed3926' # 8.15093E12 in high and low 32-bit
-         maxDivisor = '0x3f99f4c03f99f4c0' # 1.20278 in high and low 32-bit
-         minDividend = '0x3f8000003f800000' # 1.0 in high and low 32-bit
-         minDivisor = '0x3f8000003f800000' # 1.0 in high and low 32-bit
-      else:
+      if dataType == 'D':
          maxDividend = '0x429da724b687da66' # 8.1509281715106E12
-         maxDivisor = '0x3ff33e97f934078b' # 1.20278165192619
+         maxDivisor  = '0x3ff33e97f934078b' # 1.20278165192619
          minDividend = '0x3ff0000000000000' # 1.0
-         minDivisor = '0x3ff0000000000000' # 1.0
+         minDivisor  = '0x3ff0000000000000' # 1.0
+      elif dataType == 'S':
+         maxDividend = '0x54ed392654ed3926' # 8.15093E12 in high and low 32-bit
+         maxDivisor  = '0x3f99f4c03f99f4c0' # 1.20278 in high and low 32-bit
+         minDividend = '0x3f8000003f800000' # 1.0 in high and low 32-bit
+         minDivisor  = '0x3f8000003f800000' # 1.0 in high and low 32-bit
+      else: # dataType == 'H'
+         maxDividend = '0x2769276927692769' # 0.02895 in all 4 16-bit blocks
+         maxDivisor  = '0x3CCF3CCF3CCF3CCF' # 1.203 in all 4 16-bit blocks
+         minDividend = '0x3C003C003C003C00' # 1.0 in all 4 16-bit blocks
+         minDivisor  = '0x3C003C003C003C00' # 1.0 in all 4 16-bit blocks
 
       configLists = []
       for dividend, divisor in [(maxDividend, maxDivisor), (minDividend, minDivisor)]:
@@ -1663,7 +1681,7 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
                   config.chainLatency = basicLatency['ANDP' + dataType] * 2 + basicLatency['ORP' + dataType] * (cRep+1)
                   configList.append(config)
                   configList.isUpperBound = True
-         else: # instrNode.attrib['iclass'] in ['VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD']:
+         else: # instrNode.attrib['iclass'] in ['VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD', 'VDIVSH', 'VDIVPH']:
             nOperands = len(instrNode.findall('./operand'))
 
             targetReg = regType + '0'
@@ -1672,10 +1690,10 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
             divisorBaseReg = regType + '3'
             divisorReg = regType + '4'
 
-            init += ['VMOVUP' + dataType + ' ' +  dividendBaseReg + ', [R14+64]']
-            init += ['VMOVUP' + dataType + ' ' +  dividendReg + ', [R14+64]']
-            init += ['VMOVUP' + dataType + ' ' +  divisorBaseReg + ', [R14]']
-            init += ['VMOVUP' + dataType + ' ' +  divisorReg + ', [R14]']
+            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  dividendBaseReg + ', [R14+64]']
+            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  dividendReg + ', [R14+64]']
+            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  divisorBaseReg + ', [R14]']
+            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  divisorReg + ', [R14]']
 
             instrI = getInstrInstanceFromNode(instrNode, opRegDict={1:targetReg, (nOperands-1):dividendReg, nOperands:divisorReg})
 
@@ -1714,16 +1732,19 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
                   configList.append(config)
                   configList.isUpperBound = True
       return configLists
-   elif instrNode.attrib['iclass'] in ['SQRTSS', 'SQRTPS', 'SQRTSD', 'SQRTPD', 'RSQRTSS', 'RSQRTPS', 'VSQRTSS', 'VSQRTPS', 'VSQRTSD',
-                                       'VSQRTPD','VRSQRTSS', 'VRSQRTPS', 'VRSQRT14PD', 'VRSQRT14PS', 'VRSQRT14SD', 'VRSQRT14SS']:
+   elif instrNode.attrib['iclass'] in ['SQRTSS', 'SQRTPS', 'SQRTSD', 'SQRTPD', 'RSQRTSS', 'RSQRTPS', 'VSQRTSS', 'VSQRTPS', 'VSQRTSD', 'VSQRTPD','VRSQRTSS',
+                                       'VRSQRTPS', 'VRSQRT14PD', 'VRSQRT14PS', 'VRSQRT14SD', 'VRSQRT14SS', 'VSQRTSH', 'VSQRTPH', 'VRSQRTSH', 'VRSQRTPH']:
       dataType = instrNode.attrib['iclass'][-1]
 
+      if dataType == 'D':
+         maxArg = '0x465a61fe1acdc21c' # 8.3610378602352937E30
+         minArg = '0x3ff0000000000000' # 1.0
       if dataType == 'S':
          maxArg = '0x72d30ff172d30ff1' # 8.36104E30 in high and low 32-bit
          minArg = '0x3f8000003f800000' # 1.0 in high and low 32-bit
-      else:
-         maxArg = '0x465a61fe1acdc21c' # 8.3610378602352937E30
-         minArg = '0x3ff0000000000000' # 1.0
+      else:  # dataType == 'H'
+         maxArg = '0x1698169816981698' # 0.00161 in all 4 16-bit blocks
+         minArg = '0x3C003C003C003C00' # 1.0 in all 4 16-bit blocks
 
       instrPrefix = ''
       if instrNode.attrib['iclass'].startswith('V'): instrPrefix = 'V'
@@ -1745,8 +1766,8 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
          sourceBaseReg = regType + '1'
          sourceReg = regType + '2'
 
-         init += [instrPrefix + 'MOVUP' + dataType + ' ' +  sourceReg + ', [R14]']
-         init += [instrPrefix + 'MOVUP' + dataType + ' ' +  sourceBaseReg + ', [R14]']
+         init += [instrPrefix + 'MOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  sourceReg + ', [R14]']
+         init += [instrPrefix + 'MOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  sourceBaseReg + ', [R14]']
 
          instrI = getInstrInstanceFromNode(instrNode, opRegDict={int(opNode2.attrib['idx']):targetReg, int(opNode1.attrib['idx']): sourceReg})
 
@@ -1779,7 +1800,7 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
 
 # finds chain instructions from startReg to targetReg (including cases where only part of a reg is read/written)
 def getAllChainInstrsFromRegToReg(instrNode, startReg, targetReg):
-   allFPDataTypes = ['PD', 'PS', 'SD', 'SS']
+   allFPDataTypes = ['PD', 'PS', 'SD', 'SS', 'PH', 'SH']
    dataType = instrNode.attrib['iclass'][-2:]
    if dataType not in allFPDataTypes:
       dataType = ''
