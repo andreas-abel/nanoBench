@@ -208,7 +208,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
       if 'RDTSC' in evt: continue
       if evt == 'UOPS':
          if arch in ['CON', 'WOL']: evt = 'RS_UOPS_DISPATCHED'
-         elif arch in ['NHM', 'WSM']: evt = 'UOPS_RETIRED.ANY'
+         elif arch in ['NHM', 'WSM', 'GLP']: evt = 'UOPS_RETIRED.ANY'
          elif arch in ['SNB', 'ADL-E']: evt = 'UOPS_RETIRED.ALL'
          elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
          elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: evt = 'UOPS_EXECUTED.THREAD'
@@ -275,7 +275,7 @@ def getEventConfig(event):
       if arch in ['CON', 'WOL']: return 'A0.00' # RS_UOPS_DISPATCHED
       if arch in ['NHM', 'WSM', 'SNB' ]: return 'C2.01' # UOPS_RETIRED.ANY
       if arch in ['SNB']: return 'C2.01' # UOPS_RETIRED.ALL
-      if arch in ['ADL-E']: return 'C2.00' # UOPS_RETIRED.ALL
+      if arch in ['GLP', 'ADL-E']: return 'C2.00' # UOPS_RETIRED.ALL
       if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
       if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return 'B1.01' # UOPS_EXECUTED.THREAD
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0C1.00'
@@ -289,7 +289,7 @@ def getEventConfig(event):
       if arch in ['NHM', 'WSM']: return 'D1.02'
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '79.30'
       if arch in ['ADL-P']: return '79.20'
-      if arch in ['ADL-E']: return 'C2.01'
+      if arch in ['GLP', 'ADL-E']: return 'C2.01'
    if event == 'UOPS_PORT_0':
       if arch in ['CON', 'WOL']: return 'A1.01.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.01'
@@ -1197,6 +1197,8 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                         else:
                            # we test with a small loop body so that uops may be delivered from the loop stream detector (LSD)
                            # we also test with a larger loop body to minimize potential overhead from the loop itself
+                           if instrNode.attrib['iclass'] in ['RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
+                              continue
                            unrollCount = max(1, int(round(10.0/ic)))
                            if repType == 'loopSmall':
                               loopCount = 1000

@@ -1,0 +1,290 @@
+# Based on https://download.01.org/perfmon/GLP/goldmontplus_core_v1.01.json
+# Applies to processors with family-model in {6-7A}
+
+# Loads blocked due to store data not ready (Precise event capable)
+03.01 LD_BLOCKS.DATA_UNKNOWN
+
+# Loads blocked due to store forward restriction (Precise event capable)
+03.02 LD_BLOCKS.STORE_FORWARD
+
+# Loads blocked because address has 4k partial address false dependence (Precise event capable)
+03.04 LD_BLOCKS.4K_ALIAS
+
+# Loads blocked because address in not in the UTLB (Precise event capable)
+03.08 LD_BLOCKS.UTLB_MISS
+
+# Loads blocked (Precise event capable)
+03.10 LD_BLOCKS.ALL_BLOCK
+
+# Page walk completed due to a demand load to a 4K page
+08.02 DTLB_LOAD_MISSES.WALK_COMPLETED_4K
+
+# Page walk completed due to a demand load to a 2M or 4M page
+08.04 DTLB_LOAD_MISSES.WALK_COMPLETED_2M_4M
+
+# Page walk completed due to a demand load to a 1GB page
+08.08 DTLB_LOAD_MISSES.WALK_COMPLETED_1GB
+
+# Page walks outstanding due to a demand load every cycle.
+08.10 DTLB_LOAD_MISSES.WALK_PENDING
+
+# Uops issued to the back end per cycle
+0E.00 UOPS_ISSUED.ANY
+
+# Load uops that split a page (Precise event capable)
+13.02 MISALIGN_MEM_REF.LOAD_PAGE_SPLIT
+
+# Store uops that split a page (Precise event capable)
+13.04 MISALIGN_MEM_REF.STORE_PAGE_SPLIT
+
+# L2 cache request misses
+2E.41 LONGEST_LAT_CACHE.MISS
+
+# L2 cache requests
+2E.4F LONGEST_LAT_CACHE.REFERENCE
+
+# Requests rejected by the XQ
+30.00 L2_REJECT_XQ.ALL
+
+# Requests rejected by the L2Q
+31.00 CORE_REJECT_L2Q.ALL
+
+# Core cycles when core is not halted
+3C.00 CPU_CLK_UNHALTED.CORE_P
+
+# Reference cycles when core is not halted
+3C.01 CPU_CLK_UNHALTED.REF
+
+# Page walk completed due to a demand data store to a 4K page
+49.02 DTLB_STORE_MISSES.WALK_COMPLETED_4K
+
+# Page walk completed due to a demand data store to a 2M or 4M page
+49.04 DTLB_STORE_MISSES.WALK_COMPLETED_2M_4M
+
+# Page walk completed due to a demand data store to a 1GB page
+49.08 DTLB_STORE_MISSES.WALK_COMPLETED_1GB
+
+# Page walks outstanding due to a demand data store every cycle.
+49.10 DTLB_STORE_MISSES.WALK_PENDING
+
+# Page walks outstanding due to walking the EPT every cycle
+4F.10 EPT.WALK_PENDING
+
+# L1 Cache evictions for dirty data
+51.01 DL1.REPLACEMENT
+
+# References per ICache line that are available in the ICache (hit). This event counts differently than Intel processors based on Silvermont microarchitecture
+80.01 ICACHE.HIT
+
+# References per ICache line that are not available in the ICache (miss). This event counts differently than Intel processors based on Silvermont microarchitecture
+80.02 ICACHE.MISSES
+
+# References per ICache line. This event counts differently than Intel processors based on Silvermont microarchitecture
+80.03 ICACHE.ACCESSES
+
+# ITLB misses
+81.04 ITLB.MISS
+
+# Page walk completed due to an instruction fetch in a 4K page
+85.02 ITLB_MISSES.WALK_COMPLETED_4K
+
+# Page walk completed due to an instruction fetch in a 2M or 4M page
+85.04 ITLB_MISSES.WALK_COMPLETED_2M_4M
+
+# Page walk completed due to an instruction fetch in a 1GB page
+85.08 ITLB_MISSES.WALK_COMPLETED_1GB
+
+# Page walks outstanding due to an instruction fetch every cycle.
+85.10 ITLB_MISSES.WALK_PENDING
+
+# Cycles code-fetch stalled due to any reason.
+86.00 FETCH_STALL.ALL
+
+# Cycles the code-fetch stalls and an ITLB miss is outstanding.
+86.01 FETCH_STALL.ITLB_FILL_PENDING_CYCLES
+
+# Cycles code-fetch stalled due to an outstanding ICache miss.
+86.02 FETCH_STALL.ICACHE_FILL_PENDING_CYCLES
+
+# Uops requested but not-delivered to the back-end per cycle
+9C.00 UOPS_NOT_DELIVERED.ANY
+
+# STLB flushes
+BD.20 TLB_FLUSHES.STLB_ANY
+
+# Instructions retired (Precise event capable)
+C0.00 INST_RETIRED.ANY_P
+
+# Instructions retired - using Reduced Skid PEBS feature
+C0.00 INST_RETIRED.PREC_DIST
+
+# Uops retired (Precise event capable)
+C2.00 UOPS_RETIRED.ANY
+
+# MS uops retired (Precise event capable)
+C2.01 UOPS_RETIRED.MS
+
+# Floating point divide uops retired (Precise Event Capable)
+C2.08 UOPS_RETIRED.FPDIV
+
+# Integer divide uops retired (Precise Event Capable)
+C2.10 UOPS_RETIRED.IDIV
+
+# All machine clears
+C3.00 MACHINE_CLEARS.ALL
+
+# Self-Modifying Code detected
+C3.01 MACHINE_CLEARS.SMC
+
+# Machine clears due to memory ordering issue
+C3.02 MACHINE_CLEARS.MEMORY_ORDERING
+
+# Machine clears due to FP assists
+C3.04 MACHINE_CLEARS.FP_ASSIST
+
+# Machine clears due to memory disambiguation
+C3.08 MACHINE_CLEARS.DISAMBIGUATION
+
+# Machines clear due to a page fault
+C3.20 MACHINE_CLEARS.PAGE_FAULT
+
+# Retired branch instructions (Precise event capable)
+C4.00 BR_INST_RETIRED.ALL_BRANCHES
+
+# Retired conditional branch instructions (Precise event capable)
+C4.7E BR_INST_RETIRED.JCC
+
+# Retired taken branch instructions (Precise event capable)
+C4.80 BR_INST_RETIRED.ALL_TAKEN_BRANCHES
+
+# Retired far branch instructions (Precise event capable)
+C4.BF BR_INST_RETIRED.FAR_BRANCH
+
+# Retired instructions of near indirect Jmp or call (Precise event capable)
+C4.EB BR_INST_RETIRED.NON_RETURN_IND
+
+# Retired near return instructions (Precise event capable)
+C4.F7 BR_INST_RETIRED.RETURN
+
+# Retired near call instructions (Precise event capable)
+C4.F9 BR_INST_RETIRED.CALL
+
+# Retired near indirect call instructions (Precise event capable)
+C4.FB BR_INST_RETIRED.IND_CALL
+
+# Retired near relative call instructions (Precise event capable)
+C4.FD BR_INST_RETIRED.REL_CALL
+
+# Retired conditional branch instructions that were taken (Precise event capable)
+C4.FE BR_INST_RETIRED.TAKEN_JCC
+
+# Retired mispredicted branch instructions (Precise event capable)
+C5.00 BR_MISP_RETIRED.ALL_BRANCHES
+
+# Retired mispredicted conditional branch instructions (Precise event capable)
+C5.7E BR_MISP_RETIRED.JCC
+
+# Retired mispredicted instructions of near indirect Jmp or near indirect call (Precise event capable)
+C5.EB BR_MISP_RETIRED.NON_RETURN_IND
+
+# Retired mispredicted near return instructions (Precise event capable)
+C5.F7 BR_MISP_RETIRED.RETURN
+
+# Retired mispredicted near indirect call instructions (Precise event capable)
+C5.FB BR_MISP_RETIRED.IND_CALL
+
+# Retired mispredicted conditional branch instructions that were taken (Precise event capable)
+C5.FE BR_MISP_RETIRED.TAKEN_JCC
+
+# Unfilled issue slots per cycle
+CA.00 ISSUE_SLOTS_NOT_CONSUMED.ANY
+
+# Unfilled issue slots per cycle because of a full resource in the backend
+CA.01 ISSUE_SLOTS_NOT_CONSUMED.RESOURCE_FULL
+
+# Unfilled issue slots per cycle to recover
+CA.02 ISSUE_SLOTS_NOT_CONSUMED.RECOVERY
+
+# Hardware interrupts received
+CB.01 HW_INTERRUPTS.RECEIVED
+
+# Cycles hardware interrupts are masked
+CB.02 HW_INTERRUPTS.MASKED
+
+# Cycles pending interrupts are masked
+CB.04 HW_INTERRUPTS.PENDING_AND_MASKED
+
+# Cycles a divider is busy
+CD.00 CYCLES_DIV_BUSY.ALL
+
+# Cycles the integer divide unit is busy
+CD.01 CYCLES_DIV_BUSY.IDIV
+
+# Cycles the FP divide unit is busy
+CD.02 CYCLES_DIV_BUSY.FPDIV
+
+# Load uops retired that missed the DTLB (Precise event capable)
+D0.11 MEM_UOPS_RETIRED.DTLB_MISS_LOADS
+
+# Store uops retired that missed the DTLB (Precise event capable)
+D0.12 MEM_UOPS_RETIRED.DTLB_MISS_STORES
+
+# Memory uops retired that missed the DTLB (Precise event capable)
+D0.13 MEM_UOPS_RETIRED.DTLB_MISS
+
+# Locked load uops retired (Precise event capable)
+D0.21 MEM_UOPS_RETIRED.LOCK_LOADS
+
+# Load uops retired that split a cache-line (Precise event capable)
+D0.41 MEM_UOPS_RETIRED.SPLIT_LOADS
+
+# Stores uops retired that split a cache-line (Precise event capable)
+D0.42 MEM_UOPS_RETIRED.SPLIT_STORES
+
+# Memory uops retired that split a cache-line (Precise event capable)
+D0.43 MEM_UOPS_RETIRED.SPLIT
+
+# Load uops retired (Precise event capable)
+D0.81 MEM_UOPS_RETIRED.ALL_LOADS
+
+# Store uops retired (Precise event capable)
+D0.82 MEM_UOPS_RETIRED.ALL_STORES
+
+# Memory uops retired (Precise event capable)
+D0.83 MEM_UOPS_RETIRED.ALL
+
+# Load uops retired that hit L1 data cache (Precise event capable)
+D1.01 MEM_LOAD_UOPS_RETIRED.L1_HIT
+
+# Load uops retired that hit L2 (Precise event capable)
+D1.02 MEM_LOAD_UOPS_RETIRED.L2_HIT
+
+# Load uops retired that missed L1 data cache (Precise event capable)
+D1.08 MEM_LOAD_UOPS_RETIRED.L1_MISS
+
+# Load uops retired that missed L2 (Precise event capable)
+D1.10 MEM_LOAD_UOPS_RETIRED.L2_MISS
+
+# Memory uop retired where cross core or cross module HITM occurred (Precise event capable)
+D1.20 MEM_LOAD_UOPS_RETIRED.HITM
+
+# Loads retired that hit WCB (Precise event capable)
+D1.40 MEM_LOAD_UOPS_RETIRED.WCB_HIT
+
+# Loads retired that came from DRAM (Precise event capable)
+D1.80 MEM_LOAD_UOPS_RETIRED.DRAM_HIT
+
+# BACLEARs asserted for any branch type
+E6.01 BACLEARS.ALL
+
+# BACLEARs asserted for return branch
+E6.08 BACLEARS.RETURN
+
+# BACLEARs asserted for conditional branch
+E6.10 BACLEARS.COND
+
+# MS decode starts
+E7.01 MS_DECODED.MS_ENTRY
+
+# Decode restrictions due to predicting wrong instruction length
+E9.01 DECODE_RESTRICTION.PREDECODE_WRONG
