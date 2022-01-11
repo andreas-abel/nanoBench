@@ -1352,11 +1352,16 @@ def getBasicLatencies(instrNodeList):
       testSetResultNop = runExperiment(None, 'TEST AL, AL; SET' + flag[0] + ' AL; NOP')
       testSetCycles = min(int(testSetResult['Core cycles'] + .2), int(testSetResultNop['Core cycles'] + .2))
 
-      if (not testSetCycles == 2):
-         print('Latencies of TEST and SET' + flag[0] + ' must be 1')
+      if testSetCycles == 2:
+         basicLatency['TEST'] = 1
+      elif arch in ['SLM', 'AMT', 'GLM', 'GLP']:
+         # according to the Optimization Manual (June 2021)
+         basicLatency['TEST'] = 1
+      else:
+         print('Latencies of TEST and SET' + flag[0] + ' could not be determined')
          sys.exit()
-      basicLatency['SET' + flag[0]] = 1
-      basicLatency['TEST'] = 1
+
+      basicLatency['SET' + flag[0]] = testSetCycles - basicLatency['TEST']
 
       testSetHigh8Result = runExperiment(None, 'TEST AH, AH; SET' + flag[0] + ' AH')
       testSetHigh8Cycles = int(testSetHigh8Result['Core cycles'] + .2)
@@ -1366,7 +1371,7 @@ def getBasicLatencies(instrNodeList):
 
       testCmovResult = runExperiment(None, 'TEST RAX, RAX; CMOV' + flag[0] + ' RAX, RAX')
       testCmovResultNop = runExperiment(None, 'TEST RAX, RAX; CMOV' + flag[0] + ' RAX, RAX; NOP')
-      basicLatency['CMOV' + flag[0]] = min(int(testCmovResult['Core cycles'] + .2), int(testCmovResultNop['Core cycles'] + .2)) - 1
+      basicLatency['CMOV' + flag[0]] = min(int(testCmovResult['Core cycles'] + .2), int(testCmovResultNop['Core cycles'] + .2)) - basicLatency['TEST']
 
    for instr in ['ANDPS', 'ANDPD', 'ORPS', 'ORPD', 'PAND', 'POR']:
       result = runExperiment(instrNodeDict[instr + ' (XMM, XMM)'], instr + ' XMM1, XMM1')
@@ -1601,6 +1606,7 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
    elif instrNode.attrib['iclass'] in ['DIVSS', 'DIVPS', 'DIVSD', 'DIVPD', 'VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD', 'VDIVSH', 'VDIVPH']:
       memDivisor = len(instrNode.findall('./operand[@type="mem"]'))>0
       dataType = instrNode.attrib['iclass'][-1]
+      chainDataType = ('S' if (dataType == 'S') else 'D')
 
       if dataType == 'D':
          maxDividend = '0x429da724b687da66' # 8.1509281715106E12
@@ -1633,10 +1639,10 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
          for i in range(64, 64+getRegSize(regType)//8, 8): init += ['MOV [R14+' + str(i) + '], RAX']
 
          if instrNode.attrib['iclass'] in ['DIVSS', 'DIVPS', 'DIVSD', 'DIVPD']:
-            init += ['MOVUP' + dataType + ' XMM1, [R14+64]']
-            init += ['MOVUP' + dataType + ' XMM2, [R14]']
-            init += ['MOVUP' + dataType + ' XMM3, [R14+64]']
-            init += ['MOVUP' + dataType + ' XMM4, [R14]']
+            init += ['MOVUP' + chainDataType + ' XMM1, [R14+64]']
+            init += ['MOVUP' + chainDataType + ' XMM2, [R14]']
+            init += ['MOVUP' + chainDataType + ' XMM3, [R14+64]']
+            init += ['MOVUP' + chainDataType + ' XMM4, [R14]']
 
             instrI = getInstrInstanceFromNode(instrNode, opRegDict={1:'XMM3', 2:'XMM4'})
 
@@ -1649,10 +1655,10 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
 
                config = LatConfig(instrI, init=init)
                if dividend == maxDividend:
-                  config.chainInstrs = 'ORP{0} XMM3, XMM1; ANDP{0} XMM3, XMM1; '.format(dataType)
-                  config.chainLatency = basicLatency['ORP' + dataType] + basicLatency['ANDP' + dataType]
-               config.chainInstrs += 'ORP{} XMM3, XMM3;'.format(dataType) * cRep
-               config.chainLatency += basicLatency['ORP' + dataType] * cRep
+                  config.chainInstrs = 'ORP{0} XMM3, XMM1; ANDP{0} XMM3, XMM1; '.format(chainDataType)
+                  config.chainLatency = basicLatency['ORP' + chainDataType] + basicLatency['ANDP' + chainDataType]
+               config.chainInstrs += 'ORP{} XMM3, XMM3;'.format(chainDataType) * cRep
+               config.chainLatency += basicLatency['ORP' + chainDataType] * cRep
                configList.append(config)
                configList.isUpperBound = True
             else:
@@ -1661,7 +1667,7 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
                   # find all other instrs from XMM3 to R12
                   for chainInstrI in getAllChainInstrsFromRegToReg(instrNode, 'XMM3', 'R12'):
                      if dividend == maxDividend:
-                        chainInstrs = chainInstrI.asm + '; MOVUP'  + dataType + ' XMM3, XMM1; '
+                        chainInstrs = chainInstrI.asm + '; MOVUP'  + chainDataType + ' XMM3, XMM1; '
                      else:
                         chainInstrs = chainInstrI.asm + '; '
                      chainInstrs += ('XOR R14, R12; ') * cRep
@@ -1679,8 +1685,8 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
                      config.chainInstrs = 'ANDP{0} XMM4, XMM3; MOVUP{0} XMM3, XMM1; ANDP{0} XMM4, XMM2; ORP{0} XMM4, XMM2; '.format(dataType)
                   else:
                      config.chainInstrs = 'ANDP{0} XMM4, XMM3; ANDP{0} XMM4, XMM2; ORP{0} XMM4, XMM2; '.format(dataType)
-                  config.chainInstrs += 'ORP{} XMM4, XMM4; '.format(dataType) * cRep
-                  config.chainLatency = basicLatency['ANDP' + dataType] * 2 + basicLatency['ORP' + dataType] * (cRep+1)
+                  config.chainInstrs += 'ORP{} XMM4, XMM4; '.format(chainDataType) * cRep
+                  config.chainLatency = basicLatency['ANDP' + chainDataType] * 2 + basicLatency['ORP' + chainDataType] * (cRep+1)
                   configList.append(config)
                   configList.isUpperBound = True
          else: # instrNode.attrib['iclass'] in ['VDIVSS', 'VDIVPS', 'VDIVSD', 'VDIVPD', 'VDIVSH', 'VDIVPH']:
@@ -1692,10 +1698,10 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
             divisorBaseReg = regType + '3'
             divisorReg = regType + '4'
 
-            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  dividendBaseReg + ', [R14+64]']
-            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  dividendReg + ', [R14+64]']
-            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  divisorBaseReg + ', [R14]']
-            init += ['VMOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  divisorReg + ', [R14]']
+            init += ['VMOVUP' + chainDataType + ' ' +  dividendBaseReg + ', [R14+64]']
+            init += ['VMOVUP' + chainDataType + ' ' +  dividendReg + ', [R14+64]']
+            init += ['VMOVUP' + chainDataType + ' ' +  divisorBaseReg + ', [R14]']
+            init += ['VMOVUP' + chainDataType + ' ' +  divisorReg + ', [R14]']
 
             instrI = getInstrInstanceFromNode(instrNode, opRegDict={1:targetReg, (nOperands-1):dividendReg, nOperands:divisorReg})
 
@@ -1707,9 +1713,9 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
                   configList.append(config)
 
                config = LatConfig(instrI, init=init)
-               config.chainInstrs = 'VORP{0} {1}, {2}, {2}; VORP{0} {1}, {1}, {3}; VANDP{0} {1}, {1}, {3}; '.format(dataType, dividendReg, targetReg, dividendBaseReg)
-               config.chainInstrs += 'VORP{0} {1}, {1}, {1}; '.format(dataType, dividendReg) * cRep
-               config.chainLatency = basicLatency['VORP' + dataType] * (cRep+2) + basicLatency['VANDP' + dataType]
+               config.chainInstrs = 'VORP{0} {1}, {2}, {2}; VORP{0} {1}, {1}, {3}; VANDP{0} {1}, {1}, {3}; '.format(chainDataType, dividendReg, targetReg, dividendBaseReg)
+               config.chainInstrs += 'VORP{0} {1}, {1}, {1}; '.format(chainDataType, dividendReg) * cRep
+               config.chainLatency = basicLatency['VORP' + chainDataType] * (cRep+2) + basicLatency['VANDP' + chainDataType]
                configList.append(config)
                configList.isUpperBound = True
             else: # divisor
@@ -1728,15 +1734,16 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
                      configList.append(config)
 
                   config = LatConfig(instrI, init=init)
-                  config.chainInstrs = 'VORP{0} {1}, {2}, {2}; VORP{0} {1}, {1}, {3}; VANDP{0} {1}, {1}, {3}; '.format(dataType, divisorReg, targetReg, divisorBaseReg)
-                  config.chainInstrs += 'VORP{0} {1}, {1}, {1}; '.format(dataType, divisorReg) * cRep
-                  config.chainLatency = basicLatency['VORP' + dataType] * (cRep+2) + basicLatency['VANDP' + dataType]
+                  config.chainInstrs = 'VORP{0} {1}, {2}, {2}; VORP{0} {1}, {1}, {3}; VANDP{0} {1}, {1}, {3}; '.format(chainDataType, divisorReg, targetReg, divisorBaseReg)
+                  config.chainInstrs += 'VORP{0} {1}, {1}, {1}; '.format(chainDataType, divisorReg) * cRep
+                  config.chainLatency = basicLatency['VORP' + chainDataType] * (cRep+2) + basicLatency['VANDP' + chainDataType]
                   configList.append(config)
                   configList.isUpperBound = True
       return configLists
    elif instrNode.attrib['iclass'] in ['SQRTSS', 'SQRTPS', 'SQRTSD', 'SQRTPD', 'RSQRTSS', 'RSQRTPS', 'VSQRTSS', 'VSQRTPS', 'VSQRTSD', 'VSQRTPD','VRSQRTSS',
                                        'VRSQRTPS', 'VRSQRT14PD', 'VRSQRT14PS', 'VRSQRT14SD', 'VRSQRT14SS', 'VSQRTSH', 'VSQRTPH', 'VRSQRTSH', 'VRSQRTPH']:
       dataType = instrNode.attrib['iclass'][-1]
+      chainDataType = ('S' if (dataType == 'S') else 'D')
 
       if dataType == 'D':
          maxArg = '0x465a61fe1acdc21c' # 8.3610378602352937E30
@@ -1768,8 +1775,8 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
          sourceBaseReg = regType + '1'
          sourceReg = regType + '2'
 
-         init += [instrPrefix + 'MOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  sourceReg + ', [R14]']
-         init += [instrPrefix + 'MOVUP' + ('S' if (dataType == 'S') else 'D') + ' ' +  sourceBaseReg + ', [R14]']
+         init += [instrPrefix + 'MOVUP' + chainDataType + ' ' +  sourceReg + ', [R14]']
+         init += [instrPrefix + 'MOVUP' + chainDataType + ' ' +  sourceBaseReg + ', [R14]']
 
          instrI = getInstrInstanceFromNode(instrNode, opRegDict={int(opNode2.attrib['idx']):targetReg, int(opNode1.attrib['idx']): sourceReg})
 
@@ -1789,13 +1796,13 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
 
             config = LatConfig(instrI, init=init)
             if instrPrefix == 'V':
-               config.chainInstrs = 'VORP{0} {1}, {2}, {2}; VORP{0} {1}, {1}, {3}; VANDP{0} {1}, {1}, {3}; '.format(dataType, sourceReg, targetReg, sourceBaseReg)
-               config.chainInstrs += 'VORP{0} {1}, {1}, {1}; '.format(dataType, sourceReg) * cRep
-               config.chainLatency = basicLatency['VORP' + dataType] * (cRep+2) + basicLatency['VANDP' + dataType]
+               config.chainInstrs = 'VORP{0} {1}, {2}, {2}; VORP{0} {1}, {1}, {3}; VANDP{0} {1}, {1}, {3}; '.format(chainDataType, sourceReg, targetReg, sourceBaseReg)
+               config.chainInstrs += 'VORP{0} {1}, {1}, {1}; '.format(chainDataType, sourceReg) * cRep
+               config.chainLatency = basicLatency['VORP' + chainDataType] * (cRep+2) + basicLatency['VANDP' + chainDataType]
             else:
-               config.chainInstrs = 'ORP{0} {1}, {2}; ORP{0} {1}, {3}; ANDP{0} {1}, {3}; '.format(dataType, sourceReg, targetReg, sourceBaseReg)
-               config.chainInstrs += 'ORP{0} {1}, {1}; '.format(dataType, sourceReg) * cRep
-               config.chainLatency = basicLatency['ORP' + dataType] * (cRep+2) + basicLatency['ANDP' + dataType]
+               config.chainInstrs = 'ORP{0} {1}, {2}; ORP{0} {1}, {3}; ANDP{0} {1}, {3}; '.format(chainDataType, sourceReg, targetReg, sourceBaseReg)
+               config.chainInstrs += 'ORP{0} {1}, {1}; '.format(chainDataType, sourceReg) * cRep
+               config.chainLatency = basicLatency['ORP' + chainDataType] * (cRep+2) + basicLatency['ANDP' + chainDataType]
             configList.append(config)
             configList.isUpperBound = True
       return configLists
