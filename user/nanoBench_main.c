@@ -237,6 +237,11 @@ int main(int argc, char **argv) {
         }
     }
 
+    clear_perf_counter_configurations();
+    clear_perf_counters();
+    clear_overflow_status_bits();
+    enable_perf_ctrs_globally();
+
     long base_unroll_count = (basic_mode?0:unroll_count);
     long main_unroll_count = (basic_mode?unroll_count:2*unroll_count);
     long base_loop_count = (basic_mode?0:loop_count);
@@ -329,7 +334,7 @@ int main(int argc, char **argv) {
     size_t next_pfc_config = 0;
     while (next_pfc_config < n_pfc_configs) {
         char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
-        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, n_used_counters, usr, os, pfc_descriptions);
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, usr, os, n_used_counters, 0, pfc_descriptions);
 
         run_experiment(measurement_template, measurement_results_base, n_used_counters, base_unroll_count, base_loop_count);
         run_experiment(measurement_template, measurement_results, n_used_counters, main_unroll_count, main_loop_count);

@@ -41,35 +41,43 @@
     #define min(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
-#ifndef MSR_IA32_PMC0
-#define MSR_IA32_PMC0               0x0C1
-#endif
+#undef  MSR_IA32_PMC0
+#define MSR_IA32_PMC0                 0x0C1
 #ifndef MSR_IA32_PERFEVTSEL0
-#define MSR_IA32_PERFEVTSEL0        0x186
+#define MSR_IA32_PERFEVTSEL0          0x186
 #endif
 #ifndef MSR_OFFCORE_RSP0
-#define MSR_OFFCORE_RSP0            0x1A6
+#define MSR_OFFCORE_RSP0              0x1A6
 #endif
 #ifndef MSR_OFFCORE_RSP1
-#define MSR_OFFCORE_RSP1            0x1A7
+#define MSR_OFFCORE_RSP1              0x1A7
+#endif
+#ifndef MSR_IA32_DEBUGCTL
+#define MSR_IA32_DEBUGCTL             0x1D9
 #endif
 #ifndef MSR_IA32_FIXED_CTR0
-#define MSR_IA32_FIXED_CTR0         0x309
+#define MSR_IA32_FIXED_CTR0           0x309
 #endif
 #ifndef MSR_IA32_FIXED_CTR_CTRL
-#define MSR_IA32_FIXED_CTR_CTRL     0x38D
+#define MSR_IA32_FIXED_CTR_CTRL       0x38D
+#endif
+#ifndef IA32_PERF_GLOBAL_STATUS
+#define IA32_PERF_GLOBAL_STATUS       0x38E
 #endif
 #ifndef MSR_IA32_PERF_GLOBAL_CTRL
-#define MSR_IA32_PERF_GLOBAL_CTRL   0x38F
+#define MSR_IA32_PERF_GLOBAL_CTRL     0x38F
+#endif
+#ifndef IA32_PERF_GLOBAL_STATUS_RESET
+#define IA32_PERF_GLOBAL_STATUS_RESET 0x390
 #endif
 #ifndef MSR_PEBS_FRONTEND
-#define MSR_PEBS_FRONTEND           0x3F7
+#define MSR_PEBS_FRONTEND             0x3F7
 #endif
 #ifndef CORE_X86_MSR_PERF_CTL
-#define CORE_X86_MSR_PERF_CTL       0xC0010200
+#define CORE_X86_MSR_PERF_CTL         0xC0010200
 #endif
 #ifndef CORE_X86_MSR_PERF_CTR
-#define CORE_X86_MSR_PERF_CTR       0xC0010201
+#define CORE_X86_MSR_PERF_CTR         0xC0010201
 #endif
 
 
@@ -224,13 +232,21 @@ uint64_t read_value_from_cmd(char* cmd);
 uint64_t read_msr(unsigned int msr);
 void write_msr(unsigned int msr, uint64_t value);
 
-// Enables and clears the fixed-function performance counters.
+void clear_perf_counters(void);
+void clear_perf_counter_configurations(void);
+void clear_overflow_status_bits(void);
+
+void enable_perf_ctrs_globally(void);
+void disable_perf_ctrs_globally(void);
+
+// Enables the fixed-function performance counters locally.
 void configure_perf_ctrs_FF_Intel(bool usr, bool os);
 
-// Clears the programmable performance counters and writes the configurations to the corresponding MSRs.
+// Writes the configurations of the programmable performance counters to the corresponding MSRs.
 // next_pfc_config is an index into the pfc_configs array; the function takes up to n_counters many configurations from this array;
 // it returns the index of the next configuration, and writes the descriptions of the applicable configurations to the corresponding array.
-size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, bool usr, bool os, char* descriptions[]);
+// If the i-th bit in avoid_counters is set, then counter i is not used, except for events that can only be counted on counter i.
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, bool usr, bool os, int n_counters, int avoid_counters, char* descriptions[]);
 
 void configure_MSRs(struct msr_config config);
 

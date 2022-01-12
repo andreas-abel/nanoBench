@@ -72,7 +72,7 @@ iTCO_wdt_prev_loaded=$?
 iTCO_vendor_support_prev_loaded=$?
 
 prev_nmi_watchdog=$(cat /proc/sys/kernel/nmi_watchdog)
-echo 0 > /proc/sys/kernel/nmi_watchdog
+[ $prev_nmi_watchdog != 0 ] && echo 0 > /proc/sys/kernel/nmi_watchdog
 
 if [ "$debug" = true ]; then
     gdb -ex=run --args user/nanoBench $@
@@ -84,7 +84,7 @@ fi
 
 rm -f asm-*.bin
 
-echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog
+[ $prev_nmi_watchdog != 0 ] && echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog
 
 if [ -d "/sys/bus/event_source/devices/cpu" ]; then
     echo $prev_rdpmc > /sys/bus/event_source/devices/cpu/rdpmc

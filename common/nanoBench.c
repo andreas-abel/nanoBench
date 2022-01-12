@@ -329,36 +329,63 @@ void write_msr(unsigned int msr, uint64_t value) {
     #endif
 }
 
-void configure_perf_ctrs_FF_Intel(bool usr, bool os) {
-    uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
-    global_ctrl |= ((uint64_t)7 << 32) | 15;
-    write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
-
-    uint64_t fixed_ctrl = read_msr(MSR_IA32_FIXED_CTR_CTRL);
-    // disable fixed counters
-    fixed_ctrl &= ~((1 << 12) - 1);
-    write_msr(MSR_IA32_FIXED_CTR_CTRL, fixed_ctrl);
-    // clear
-    for (int i=0; i<3; i++) {
-        write_msr(MSR_IA32_FIXED_CTR0+i, 0);
+void clear_perf_counters() {
+    if (is_Intel_CPU) {
+        for (int i=0; i<3; i++) {
+            write_msr(MSR_IA32_FIXED_CTR0+i, 0);
+        }
+        for (int i=0; i<n_programmable_counters; i++) {
+            write_msr(MSR_IA32_PMC0+i, 0);
+        }
+    } else {
+        for (int i=0; i<n_programmable_counters; i++) {
+            write_msr(CORE_X86_MSR_PERF_CTR+(2*i), 0);
+        }
     }
-    //enable fixed counters
+}
+
+void clear_perf_counter_configurations() {
+    if (is_Intel_CPU) {
+        write_msr(MSR_IA32_FIXED_CTR_CTRL, 0);
+        for (int i=0; i<n_programmable_counters; i++) {
+            write_msr(MSR_IA32_PERFEVTSEL0+i, 0);
+        }
+    } else {
+        for (int i=0; i<n_programmable_counters; i++) {
+            write_msr(CORE_X86_MSR_PERF_CTL + (2*i), 0);
+        }
+    }
+}
+
+void clear_overflow_status_bits() {
+    if (is_Intel_CPU) {
+        write_msr(IA32_PERF_GLOBAL_STATUS_RESET, read_msr(IA32_PERF_GLOBAL_STATUS));
+    }
+}
+
+void enable_perf_ctrs_globally() {
+    if (is_Intel_CPU) {
+        write_msr(MSR_IA32_PERF_GLOBAL_CTRL, ((uint64_t)7 << 32) | ((1 << n_programmable_counters) - 1));
+    }
+}
+
+void disable_perf_ctrs_globally() {
+    if (is_Intel_CPU) {
+        write_msr(MSR_IA32_PERF_GLOBAL_CTRL, 0);
+    }
+}
+
+void configure_perf_ctrs_FF_Intel(bool usr, bool os) {
+    uint64_t fixed_ctrl = 0;
     fixed_ctrl |= (os << 8) | (os << 4) | os;
     fixed_ctrl |= (usr << 9) | (usr << 5) | (usr << 1);
     write_msr(MSR_IA32_FIXED_CTR_CTRL, fixed_ctrl);
 }
 
-size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, bool usr, bool os, char* descriptions[]) {
+size_t configure_perf_ctrs_programmable(size_t next_pfc_config, bool usr, bool os, int n_counters, int avoid_counters, char* descriptions[]) {
     if (is_Intel_CPU) {
-        uint64_t global_ctrl = read_msr(MSR_IA32_PERF_GLOBAL_CTRL);
-        global_ctrl |= ((uint64_t)7 << 32) | 15;
-        write_msr(MSR_IA32_PERF_GLOBAL_CTRL, global_ctrl);
-
         bool evt_added = false;
         for (int i=0; i<n_counters; i++) {
-            // clear
-            write_msr(MSR_IA32_PMC0+i, 0);
-
             if (next_pfc_config >= n_pfc_configs) {
                 break;
             }
@@ -368,6 +395,13 @@ size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, 
                 break;
             }
             if ((config.ctr != -1) && (config.ctr != i)) {
+                if (config.ctr >= n_counters) {
+                    print_error("Counter %u is not available", config.ctr);
+                    next_pfc_config++;
+                }
+                continue;
+            }
+            if (((avoid_counters >> i) & 1) && (config.ctr != i)) {
                 continue;
             }
             next_pfc_config++;
@@ -405,15 +439,23 @@ size_t configure_perf_ctrs_programmable(size_t next_pfc_config, int n_counters, 
         }
     } else {
         for (int i=0; i<n_counters; i++) {
-            // clear
-            write_msr(CORE_X86_MSR_PERF_CTR+(2*i), 0);
-
             if (next_pfc_config >= n_pfc_configs) {
                 write_msr(CORE_X86_MSR_PERF_CTL + (2*i), 0);
                 continue;
             }
 
             struct pfc_config config = pfc_configs[next_pfc_config];
+            if ((config.ctr != -1) && (config.ctr != i)) {
+                if (config.ctr >= n_counters) {
+                    print_error("Counter %u is not available", config.ctr);
+                    next_pfc_config++;
+                }
+                continue;
+            }
+            if (((avoid_counters >> i) & 1) && (config.ctr != i)) {
+                print_error("avoiding %d", i);
+                continue;
+            }
             next_pfc_config++;
 
             descriptions[i] = config.description;

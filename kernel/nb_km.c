@@ -576,6 +576,11 @@ static int run_nanoBench(struct seq_file *m, void *v) {
     kernel_fpu_begin();
     disable_interrupts_preemption();
 
+    clear_perf_counter_configurations();
+    clear_perf_counters();
+    clear_overflow_status_bits();
+    enable_perf_ctrs_globally();
+
     long base_unroll_count = (basic_mode?0:unroll_count);
     long main_unroll_count = (basic_mode?unroll_count:2*unroll_count);
     long base_loop_count = (basic_mode?0:loop_count);
@@ -670,7 +675,7 @@ static int run_nanoBench(struct seq_file *m, void *v) {
     size_t next_pfc_config = 0;
     while (next_pfc_config < n_pfc_configs) {
         char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
-        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, n_used_counters, true, true, pfc_descriptions);
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, true, true, n_used_counters, 0, pfc_descriptions);
         // on some microarchitectures (e.g., Broadwell), some events (e.g., L1 misses) are not counted properly if only the OS field is set
 
         run_experiment(measurement_template, measurement_results_base, n_used_counters, base_unroll_count, base_loop_count);

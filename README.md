@@ -7,6 +7,8 @@ There are two variants of the tool: A user-space implementation and a kernel mod
 
 *nanoBench* is used for running the microbenchmarks for obtaining the latency, throughput, and port usage data that is available on [uops.info](http:www.uops.info).
 
+More information about *nanoBench* can be found in the paper [nanoBench: A Low-Overhead Tool for Running Microbenchmarks on x86 Systems](https://arxiv.org/abs/1911.03282).
+
 ## Installation
 
 ### User-space Version
