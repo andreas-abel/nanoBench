@@ -430,6 +430,7 @@ static ssize_t code_offset_show(struct kobject *kobj, struct kobj_attribute *att
 }
 static ssize_t code_offset_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
     sscanf(buf, "%zu", &code_offset);
+    runtime_code = runtime_code_base + code_offset;
     return count;
 }
 static struct kobj_attribute code_offset_attribute =__ATTR(code_offset, 0660, code_offset_show, code_offset_store);
@@ -558,20 +559,26 @@ static void disable_interrupts_preemption(void) {
     apic_write(APIC_LVTERR, prev_LVTERR | APIC_LVT_MASKED);
 }
 
-static int run_nanoBench(struct seq_file *m, void *v) {
+static bool check_memory_allocations(void) {
     for (int i=0; i<MAX_PROGRAMMABLE_COUNTERS; i++) {
         if (!measurement_results[i] || !measurement_results_base[i]) {
             pr_err("Could not allocate memory for measurement_results\n");
-            return -1;
+            return false;
         }
     }
 
     size_t req_code_length = code_offset + get_required_runtime_code_length();
     if (req_code_length > runtime_code_base_memory_size) {
         pr_err("Maximum supported code size %zu kB; requested %zu kB\n", runtime_code_base_memory_size/1024, req_code_length/1024);
+        return false;
+    }
+    return true;
+}
+
+static int run_nanoBench(struct seq_file *m, void *v) {
+    if (!check_memory_allocations()) {
         return -1;
     }
-    runtime_code = runtime_code_base + code_offset;
 
     kernel_fpu_begin();
     disable_interrupts_preemption();
