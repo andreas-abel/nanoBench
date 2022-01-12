@@ -453,7 +453,6 @@ size_t configure_perf_ctrs_programmable(size_t next_pfc_config, bool usr, bool o
                 continue;
             }
             if (((avoid_counters >> i) & 1) && (config.ctr != i)) {
-                print_error("avoiding %d", i);
                 continue;
             }
             next_pfc_config++;
@@ -491,7 +490,7 @@ size_t get_required_runtime_code_length() {
             req_code_length += 100;
         }
     }
-    return code_init_length + code_late_init_length + (drain_frontend?3*64*15:0) + 2*unroll_count*req_code_length + 10000;
+    return code_init_length + code_late_init_length + (drain_frontend?3*(192+64*15):0) + 2*unroll_count*req_code_length + 10000;
 }
 
 int get_distance_to_code(char* measurement_template, size_t templateI) {
@@ -541,6 +540,9 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
 
             if (drain_frontend) {
                 strcpy(&runtime_code[rcI], "\x0F\xAE\xE8"); rcI += 3; // lfence
+                for (int i=0; i<192; i++) {
+                    strcpy(&runtime_code[rcI], NOPS[1]); rcI += 1;
+                }
                 for (int i=0; i<64; i++) {
                     strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;
                 }
@@ -562,19 +564,25 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
             templateI += 8;
 
             if (unrollI == 0 && codeI == 0) {
-                rcI_code_start = rcI;
-
                 if (code_late_init_length > 0) {
                     memcpy(&runtime_code[rcI], code_late_init, code_late_init_length);
                     rcI += code_late_init_length;
                 }
 
                 if (drain_frontend) {
-                    // the length of the following code sequence is a multiple of 64, and thus doesn't affect the alignment
+                    // We first execute an lfence instruction, then, we fill the front-end buffers with 1-Byte NOPs, and then, we drain the buffers using
+                    // 15-Byte NOPs; this makes sure that before the first 15-Byte NOP is predecoded, the front-end buffers contain only NOPs that can be
+                    // issued at the maximum rate. The length of the added instructions is a multiple of 64, and thus doesn't affect the alignment.
+                    strcpy(&runtime_code[rcI], "\x0F\xAE\xE8"); rcI += 3; // lfence
+                    for (int i=0; i<189; i++) {
+                        strcpy(&runtime_code[rcI], NOPS[1]); rcI += 1;
+                    }
                     for (int i=0; i<64; i++) {
                         strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;
                     }
                 }
+
+                rcI_code_start = rcI;
             }
 
             if (!code_contains_magic_bytes) {
@@ -611,8 +619,11 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                 }
 
                 if (drain_frontend) {
-                    // add an lfence and 64 nops s.t. the front end gets drained and the following instruction begins on a 32-byte boundary.
+                    // We add an lfence followed by nop instructions s.t. the front end gets drained and the following instruction begins on a 32-byte boundary.
                     strcpy(&runtime_code[rcI], "\x0F\xAE\xE8"); rcI += 3; // lfence
+                    for (int i=0; i<189; i++) {
+                        strcpy(&runtime_code[rcI], NOPS[1]); rcI += 1;
+                    }
 
                     for (int i=0; i<61; i++) {
                         strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;

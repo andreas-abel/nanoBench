@@ -105,7 +105,8 @@ extern long initial_warm_up_count;
 extern size_t alignment_offset;
 #define ALIGNMENT_OFFSET_DEFAULT 0;
 
-// If enabled, the front-end buffers are drained between code_late_init and code by executing a sequence of 128 15-Byte NOP instructions.
+// If enabled, the front-end buffers are drained after code_init, after code_late_init, and after the last instance of code by executing an lfence, followed
+// by a long sequence of 1-Byte NOPs, followed by a long sequence of 15-Byte NOPs.
 extern int drain_frontend;
 #define DRAIN_FRONTEND_DEFAULT false;
 
