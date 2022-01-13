@@ -1,5 +1,5 @@
-# Based on https://download.01.org/perfmon/GLP/goldmontplus_core_v1.01.json
-# Applies to processors with family-model in {6-7A}
+# Based on https://download.01.org/perfmon/GLM/goldmont_core_v13.json
+# Applies to processors with family-model in {6-5C, 6-5F}
 
 3C.00 CORE_CYCLES
 C0.00 INST_RETIRED
