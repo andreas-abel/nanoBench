@@ -221,10 +221,10 @@ static ssize_t msr_config_store(struct kobject *kobj, struct kobj_attribute *att
 static struct kobj_attribute msr_config_attribute =__ATTR(msr_config, 0660, msr_config_show, msr_config_store);
 
 static ssize_t fixed_counters_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
-    return sprintf(buf, "%u\n", use_fixed_counters);
+    return sprintf(buf, "%d\n", use_fixed_counters);
 }
 static ssize_t fixed_counters_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
-    sscanf(buf, "%u", &use_fixed_counters);
+    sscanf(buf, "%d", &use_fixed_counters);
     return count;
 }
 static struct kobj_attribute fixed_counters_attribute =__ATTR(fixed_counters, 0660, fixed_counters_show, fixed_counters_store);
@@ -300,37 +300,37 @@ static ssize_t alignment_offset_store(struct kobject *kobj, struct kobj_attribut
 static struct kobj_attribute alignment_offset_attribute =__ATTR(alignment_offset, 0660, alignment_offset_show, alignment_offset_store);
 
 static ssize_t drain_frontend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
-    return sprintf(buf, "%u\n", drain_frontend);
+    return sprintf(buf, "%d\n", drain_frontend);
 }
 static ssize_t drain_frontend_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
-    sscanf(buf, "%u", &drain_frontend);
+    sscanf(buf, "%d", &drain_frontend);
     return count;
 }
 static struct kobj_attribute drain_frontend_attribute =__ATTR(drain_frontend, 0660, drain_frontend_show, drain_frontend_store);
 
 static ssize_t basic_mode_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
-    return sprintf(buf, "%u\n", basic_mode);
+    return sprintf(buf, "%d\n", basic_mode);
 }
 static ssize_t basic_mode_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
-    sscanf(buf, "%u", &basic_mode);
+    sscanf(buf, "%d", &basic_mode);
     return count;
 }
 static struct kobj_attribute basic_mode_attribute =__ATTR(basic_mode, 0660, basic_mode_show, basic_mode_store);
 
 static ssize_t no_mem_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
-    return sprintf(buf, "%u\n", no_mem);
+    return sprintf(buf, "%d\n", no_mem);
 }
 static ssize_t no_mem_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
-    sscanf(buf, "%u", &no_mem);
+    sscanf(buf, "%d", &no_mem);
     return count;
 }
 static struct kobj_attribute no_mem_attribute =__ATTR(no_mem, 0660, no_mem_show, no_mem_store);
 
 static ssize_t no_normalization_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
-    return sprintf(buf, "%u\n", no_normalization);
+    return sprintf(buf, "%d\n", no_normalization);
 }
 static ssize_t no_normalization_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
-    sscanf(buf, "%u", &no_normalization);
+    sscanf(buf, "%d", &no_normalization);
     return count;
 }
 static struct kobj_attribute no_normalization_attribute =__ATTR(no_normalization, 0660, no_normalization_show, no_normalization_store);
@@ -450,10 +450,10 @@ static ssize_t addresses_store(struct kobject *kobj, struct kobj_attribute *attr
 static struct kobj_attribute addresses_attribute =__ATTR(addresses, 0660, addresses_show, addresses_store);
 
 static ssize_t verbose_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
-    return sprintf(buf, "%u\n", verbose);
+    return sprintf(buf, "%d\n", verbose);
 }
 static ssize_t verbose_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
-    sscanf(buf, "%u", &verbose);
+    sscanf(buf, "%d", &verbose);
     return count;
 }
 static struct kobj_attribute verbose_attribute =__ATTR(verbose, 0660, verbose_show, verbose_store);
