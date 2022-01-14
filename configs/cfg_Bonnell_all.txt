@@ -1,0 +1,803 @@
+# Based on https://download.01.org/perfmon/BNL/Bonnell_core_V4.json
+# Applies to processors with family-model in {6-1C, 6-26, 6-27, 6-36, 6-35}
+
+# Good store forwards
+02.81 STORE_FORWARDS.GOOD
+
+# All store forwards
+02.83 STORE_FORWARDS.ANY
+
+# Micro-op reissues on a store-load collision
+03.01 REISSUE.OVERLAP_STORE
+
+# Micro-op reissues for any cause
+03.7F REISSUE.ANY
+
+# Micro-op reissues on a store-load collision (At Retirement)
+03.81 REISSUE.OVERLAP_STORE.AR
+
+# Micro-op reissues for any cause (At Retirement)
+03.FF REISSUE.ANY.AR
+
+# Load splits
+05.09 MISALIGN_MEM_REF.LD_SPLIT
+
+# Store splits
+05.0A MISALIGN_MEM_REF.ST_SPLIT
+
+# Memory references that cross an 8-byte boundary.
+05.0F MISALIGN_MEM_REF.SPLIT
+
+# Load splits (At Retirement)
+05.89 MISALIGN_MEM_REF.LD_SPLIT.AR
+
+# Store splits (Ar Retirement)
+05.8A MISALIGN_MEM_REF.ST_SPLIT.AR
+
+# ld-op-st splits
+05.8C MISALIGN_MEM_REF.RMW_SPLIT
+
+# Memory references that cross an 8-byte boundary (At Retirement)
+05.8F MISALIGN_MEM_REF.SPLIT.AR
+
+# Nonzero segbase load 1 bubble
+05.91 MISALIGN_MEM_REF.LD_BUBBLE
+
+# Nonzero segbase store 1 bubble
+05.92 MISALIGN_MEM_REF.ST_BUBBLE
+
+# Nonzero segbase ld-op-st 1 bubble
+05.94 MISALIGN_MEM_REF.RMW_BUBBLE
+
+# Nonzero segbase 1 bubble
+05.97 MISALIGN_MEM_REF.BUBBLE
+
+# Number of segment register loads.
+06.80 SEGMENT_REG_LOADS.ANY
+
+# Any Software prefetch
+07.0F PREFETCH.SOFTWARE_PREFETCH
+
+# L1 hardware prefetch request
+07.10 PREFETCH.HW_PREFETCH
+
+# Streaming SIMD Extensions (SSE) PrefetchT0 instructions executed.
+07.81 PREFETCH.PREFETCHT0
+
+# Streaming SIMD Extensions (SSE) PrefetchT1 instructions executed.
+07.82 PREFETCH.PREFETCHT1
+
+# Streaming SIMD Extensions (SSE) PrefetchT2 instructions executed.
+07.84 PREFETCH.PREFETCHT2
+
+# Streaming SIMD Extensions (SSE) PrefetchT1 and PrefetchT2 instructions executed
+07.86 PREFETCH.SW_L2
+
+# Streaming SIMD Extensions (SSE) Prefetch NTA instructions executed
+07.88 PREFETCH.PREFETCHNTA
+
+# Any Software prefetch
+07.8F PREFETCH.SOFTWARE_PREFETCH.AR
+
+# DTLB misses due to load operations.
+08.05 DATA_TLB_MISSES.DTLB_MISS_LD
+
+# DTLB misses due to store operations.
+08.06 DATA_TLB_MISSES.DTLB_MISS_ST
+
+# Memory accesses that missed the DTLB.
+08.07 DATA_TLB_MISSES.DTLB_MISS
+
+# L0 DTLB misses due to load operations.
+08.09 DATA_TLB_MISSES.L0_DTLB_MISS_LD
+
+# L0 DTLB misses due to store operations
+08.0A DATA_TLB_MISSES.L0_DTLB_MISS_ST
+
+# Memory cluster signals to block micro-op dispatch for any reason
+09.20 DISPATCH_BLOCKED.ANY
+
+# Duration of D-side only page walks
+0C.01 PAGE_WALKS.D_SIDE_CYCLES
+
+# Number of D-side only page walks
+0C.01 PAGE_WALKS.D_SIDE_WALKS
+
+# Duration of I-Side page walks
+0C.02 PAGE_WALKS.I_SIDE_CYCLES
+
+# Number of I-Side page walks
+0C.02 PAGE_WALKS.I_SIDE_WALKS
+
+# Duration of page-walks in core cycles
+0C.03 PAGE_WALKS.CYCLES
+
+# Number of page-walks executed.
+0C.03 PAGE_WALKS.WALKS
+
+# Floating point computational micro-ops executed.
+10.01 X87_COMP_OPS_EXE.ANY.S
+
+# FXCH uops executed.
+10.02 X87_COMP_OPS_EXE.FXCH.S
+
+# Floating point computational micro-ops retired.
+10.81 X87_COMP_OPS_EXE.ANY.AR
+
+# FXCH uops retired.
+10.82 X87_COMP_OPS_EXE.FXCH.AR
+
+# Floating point assists.
+11.01 FP_ASSIST.S
+
+# Floating point assists for retired operations.
+11.81 FP_ASSIST.AR
+
+# Multiply operations executed.
+12.01 MUL.S
+
+# Multiply operations retired
+12.81 MUL.AR
+
+# Divide operations executed.
+13.01 DIV.S
+
+# Divide operations retired
+13.81 DIV.AR
+
+# Cycles the divider is busy.
+14.01 CYCLES_DIV_BUSY
+
+# Cycles L2 address bus is in use.
+21.40 L2_ADS.SELF
+
+# Cycles the L2 cache data bus is busy.
+22.40 L2_DBUS_BUSY.SELF
+
+# Cycles the L2 transfers data to the core.
+23.40 L2_DBUS_BUSY_RD.SELF
+
+# L2 cache misses.
+24.40 L2_LINES_IN.SELF.DEMAND
+
+# L2 cache misses.
+24.50 L2_LINES_IN.SELF.PREFETCH
+
+# L2 cache misses.
+24.70 L2_LINES_IN.SELF.ANY
+
+# L2 cache line modifications.
+25.40 L2_M_LINES_IN.SELF
+
+# L2 cache lines evicted.
+26.40 L2_LINES_OUT.SELF.DEMAND
+
+# L2 cache lines evicted.
+26.50 L2_LINES_OUT.SELF.PREFETCH
+
+# L2 cache lines evicted.
+26.70 L2_LINES_OUT.SELF.ANY
+
+# Modified lines evicted from the L2 cache
+27.40 L2_M_LINES_OUT.SELF.DEMAND
+
+# Modified lines evicted from the L2 cache
+27.50 L2_M_LINES_OUT.SELF.PREFETCH
+
+# Modified lines evicted from the L2 cache
+27.70 L2_M_LINES_OUT.SELF.ANY
+
+# L2 cacheable instruction fetch requests
+28.41 L2_IFETCH.SELF.I_STATE
+
+# L2 cacheable instruction fetch requests
+28.42 L2_IFETCH.SELF.S_STATE
+
+# L2 cacheable instruction fetch requests
+28.44 L2_IFETCH.SELF.E_STATE
+
+# L2 cacheable instruction fetch requests
+28.48 L2_IFETCH.SELF.M_STATE
+
+# L2 cacheable instruction fetch requests
+28.4F L2_IFETCH.SELF.MESI
+
+# L2 cache reads
+29.41 L2_LD.SELF.DEMAND.I_STATE
+
+# L2 cache reads
+29.42 L2_LD.SELF.DEMAND.S_STATE
+
+# L2 cache reads
+29.44 L2_LD.SELF.DEMAND.E_STATE
+
+# L2 cache reads
+29.48 L2_LD.SELF.DEMAND.M_STATE
+
+# L2 cache reads
+29.4F L2_LD.SELF.DEMAND.MESI
+
+# L2 cache reads
+29.51 L2_LD.SELF.PREFETCH.I_STATE
+
+# L2 cache reads
+29.52 L2_LD.SELF.PREFETCH.S_STATE
+
+# L2 cache reads
+29.54 L2_LD.SELF.PREFETCH.E_STATE
+
+# L2 cache reads
+29.58 L2_LD.SELF.PREFETCH.M_STATE
+
+# L2 cache reads
+29.5F L2_LD.SELF.PREFETCH.MESI
+
+# L2 cache reads
+29.71 L2_LD.SELF.ANY.I_STATE
+
+# L2 cache reads
+29.72 L2_LD.SELF.ANY.S_STATE
+
+# L2 cache reads
+29.74 L2_LD.SELF.ANY.E_STATE
+
+# L2 cache reads
+29.78 L2_LD.SELF.ANY.M_STATE
+
+# L2 cache reads
+29.7F L2_LD.SELF.ANY.MESI
+
+# L2 store requests
+2A.41 L2_ST.SELF.I_STATE
+
+# L2 store requests
+2A.42 L2_ST.SELF.S_STATE
+
+# L2 store requests
+2A.44 L2_ST.SELF.E_STATE
+
+# L2 store requests
+2A.48 L2_ST.SELF.M_STATE
+
+# L2 store requests
+2A.4F L2_ST.SELF.MESI
+
+# L2 locked accesses
+2B.41 L2_LOCK.SELF.I_STATE
+
+# L2 locked accesses
+2B.42 L2_LOCK.SELF.S_STATE
+
+# L2 locked accesses
+2B.44 L2_LOCK.SELF.E_STATE
+
+# L2 locked accesses
+2B.48 L2_LOCK.SELF.M_STATE
+
+# L2 locked accesses
+2B.4F L2_LOCK.SELF.MESI
+
+# All data requests from the L1 data cache
+2C.41 L2_DATA_RQSTS.SELF.I_STATE
+
+# All data requests from the L1 data cache
+2C.42 L2_DATA_RQSTS.SELF.S_STATE
+
+# All data requests from the L1 data cache
+2C.44 L2_DATA_RQSTS.SELF.E_STATE
+
+# All data requests from the L1 data cache
+2C.48 L2_DATA_RQSTS.SELF.M_STATE
+
+# All data requests from the L1 data cache
+2C.4F L2_DATA_RQSTS.SELF.MESI
+
+# All read requests from L1 instruction and data caches
+2D.41 L2_LD_IFETCH.SELF.I_STATE
+
+# All read requests from L1 instruction and data caches
+2D.42 L2_LD_IFETCH.SELF.S_STATE
+
+# All read requests from L1 instruction and data caches
+2D.44 L2_LD_IFETCH.SELF.E_STATE
+
+# All read requests from L1 instruction and data caches
+2D.48 L2_LD_IFETCH.SELF.M_STATE
+
+# All read requests from L1 instruction and data caches
+2D.4F L2_LD_IFETCH.SELF.MESI
+
+# L2 cache demand requests from this core that missed the L2
+2E.41 L2_RQSTS.SELF.DEMAND.I_STATE
+
+# L2 cache requests
+2E.42 L2_RQSTS.SELF.DEMAND.S_STATE
+
+# L2 cache requests
+2E.44 L2_RQSTS.SELF.DEMAND.E_STATE
+
+# L2 cache requests
+2E.48 L2_RQSTS.SELF.DEMAND.M_STATE
+
+# L2 cache demand requests from this core
+2E.4F L2_RQSTS.SELF.DEMAND.MESI
+
+# L2 cache requests
+2E.51 L2_RQSTS.SELF.PREFETCH.I_STATE
+
+# L2 cache requests
+2E.52 L2_RQSTS.SELF.PREFETCH.S_STATE
+
+# L2 cache requests
+2E.54 L2_RQSTS.SELF.PREFETCH.E_STATE
+
+# L2 cache requests
+2E.58 L2_RQSTS.SELF.PREFETCH.M_STATE
+
+# L2 cache requests
+2E.5F L2_RQSTS.SELF.PREFETCH.MESI
+
+# L2 cache requests
+2E.71 L2_RQSTS.SELF.ANY.I_STATE
+
+# L2 cache requests
+2E.72 L2_RQSTS.SELF.ANY.S_STATE
+
+# L2 cache requests
+2E.74 L2_RQSTS.SELF.ANY.E_STATE
+
+# L2 cache requests
+2E.78 L2_RQSTS.SELF.ANY.M_STATE
+
+# L2 cache requests
+2E.7F L2_RQSTS.SELF.ANY.MESI
+
+# Rejected L2 cache requests
+30.41 L2_REJECT_BUSQ.SELF.DEMAND.I_STATE
+
+# Rejected L2 cache requests
+30.42 L2_REJECT_BUSQ.SELF.DEMAND.S_STATE
+
+# Rejected L2 cache requests
+30.44 L2_REJECT_BUSQ.SELF.DEMAND.E_STATE
+
+# Rejected L2 cache requests
+30.48 L2_REJECT_BUSQ.SELF.DEMAND.M_STATE
+
+# Rejected L2 cache requests
+30.4F L2_REJECT_BUSQ.SELF.DEMAND.MESI
+
+# Rejected L2 cache requests
+30.51 L2_REJECT_BUSQ.SELF.PREFETCH.I_STATE
+
+# Rejected L2 cache requests
+30.52 L2_REJECT_BUSQ.SELF.PREFETCH.S_STATE
+
+# Rejected L2 cache requests
+30.54 L2_REJECT_BUSQ.SELF.PREFETCH.E_STATE
+
+# Rejected L2 cache requests
+30.58 L2_REJECT_BUSQ.SELF.PREFETCH.M_STATE
+
+# Rejected L2 cache requests
+30.5F L2_REJECT_BUSQ.SELF.PREFETCH.MESI
+
+# Rejected L2 cache requests
+30.71 L2_REJECT_BUSQ.SELF.ANY.I_STATE
+
+# Rejected L2 cache requests
+30.72 L2_REJECT_BUSQ.SELF.ANY.S_STATE
+
+# Rejected L2 cache requests
+30.74 L2_REJECT_BUSQ.SELF.ANY.E_STATE
+
+# Rejected L2 cache requests
+30.78 L2_REJECT_BUSQ.SELF.ANY.M_STATE
+
+# Rejected L2 cache requests
+30.7F L2_REJECT_BUSQ.SELF.ANY.MESI
+
+# Cycles no L2 cache requests are pending
+32.40 L2_NO_REQ.SELF
+
+# Number of Enhanced Intel SpeedStep(R) Technology (EIST) transitions
+3A.00 EIST_TRANS
+
+# Number of thermal trips
+3B.C0 THERMAL_TRIP
+
+# Core cycles when core is not halted
+3C.00 CPU_CLK_UNHALTED.CORE_P
+
+# Bus cycles when core is not halted
+3C.01 CPU_CLK_UNHALTED.BUS
+
+# L1 Data line replacements
+40.08 L1D_CACHE.REPL
+
+# Modified cache lines evicted from the L1 data cache
+40.10 L1D_CACHE.EVICT
+
+# Modified cache lines allocated in the L1 data cache
+40.48 L1D_CACHE.REPLM
+
+# L1 Data reads and writes
+40.83 L1D_CACHE.ALL_REF
+
+# L1 Cacheable Data Reads
+40.A1 L1D_CACHE.LD
+
+# L1 Cacheable Data Writes
+40.A2 L1D_CACHE.ST
+
+# L1 Data Cacheable reads and writes
+40.A3 L1D_CACHE.ALL_CACHE_REF
+
+# Outstanding cacheable data read bus requests duration.
+60.40 BUS_REQUEST_OUTSTANDING.SELF
+
+# Outstanding cacheable data read bus requests duration.
+60.E0 BUS_REQUEST_OUTSTANDING.ALL_AGENTS
+
+# Number of Bus Not Ready signals asserted.
+61.00 BUS_BNR_DRV.THIS_AGENT
+
+# Number of Bus Not Ready signals asserted.
+61.20 BUS_BNR_DRV.ALL_AGENTS
+
+# Bus cycles when data is sent on the bus.
+62.00 BUS_DRDY_CLOCKS.THIS_AGENT
+
+# Bus cycles when data is sent on the bus.
+62.20 BUS_DRDY_CLOCKS.ALL_AGENTS
+
+# Bus cycles when a LOCK signal is asserted.
+63.40 BUS_LOCK_CLOCKS.SELF
+
+# Bus cycles when a LOCK signal is asserted.
+63.E0 BUS_LOCK_CLOCKS.ALL_AGENTS
+
+# Bus cycles while processor receives data.
+64.40 BUS_DATA_RCV.SELF
+
+# Burst read bus transactions.
+65.40 BUS_TRANS_BRD.SELF
+
+# Burst read bus transactions.
+65.E0 BUS_TRANS_BRD.ALL_AGENTS
+
+# RFO bus transactions.
+66.40 BUS_TRANS_RFO.SELF
+
+# RFO bus transactions.
+66.E0 BUS_TRANS_RFO.ALL_AGENTS
+
+# Explicit writeback bus transactions.
+67.40 BUS_TRANS_WB.SELF
+
+# Explicit writeback bus transactions.
+67.E0 BUS_TRANS_WB.ALL_AGENTS
+
+# Instruction-fetch bus transactions.
+68.40 BUS_TRANS_IFETCH.SELF
+
+# Instruction-fetch bus transactions.
+68.E0 BUS_TRANS_IFETCH.ALL_AGENTS
+
+# Invalidate bus transactions.
+69.40 BUS_TRANS_INVAL.SELF
+
+# Invalidate bus transactions.
+69.E0 BUS_TRANS_INVAL.ALL_AGENTS
+
+# Partial write bus transaction.
+6A.40 BUS_TRANS_PWR.SELF
+
+# Partial write bus transaction.
+6A.E0 BUS_TRANS_PWR.ALL_AGENTS
+
+# Partial bus transactions.
+6B.40 BUS_TRANS_P.SELF
+
+# Partial bus transactions.
+6B.E0 BUS_TRANS_P.ALL_AGENTS
+
+# IO bus transactions.
+6C.40 BUS_TRANS_IO.SELF
+
+# IO bus transactions.
+6C.E0 BUS_TRANS_IO.ALL_AGENTS
+
+# Deferred bus transactions.
+6D.40 BUS_TRANS_DEF.SELF
+
+# Deferred bus transactions.
+6D.E0 BUS_TRANS_DEF.ALL_AGENTS
+
+# Burst (full cache-line) bus transactions.
+6E.40 BUS_TRANS_BURST.SELF
+
+# Burst (full cache-line) bus transactions.
+6E.E0 BUS_TRANS_BURST.ALL_AGENTS
+
+# Memory bus transactions.
+6F.40 BUS_TRANS_MEM.SELF
+
+# Memory bus transactions.
+6F.E0 BUS_TRANS_MEM.ALL_AGENTS
+
+# All bus transactions.
+70.40 BUS_TRANS_ANY.SELF
+
+# All bus transactions.
+70.E0 BUS_TRANS_ANY.ALL_AGENTS
+
+# External snoops.
+77.01 EXT_SNOOP.THIS_AGENT.CLEAN
+
+# External snoops.
+77.02 EXT_SNOOP.THIS_AGENT.HIT
+
+# External snoops.
+77.08 EXT_SNOOP.THIS_AGENT.HITM
+
+# External snoops.
+77.0B EXT_SNOOP.THIS_AGENT.ANY
+
+# External snoops.
+77.21 EXT_SNOOP.ALL_AGENTS.CLEAN
+
+# External snoops.
+77.22 EXT_SNOOP.ALL_AGENTS.HIT
+
+# External snoops.
+77.28 EXT_SNOOP.ALL_AGENTS.HITM
+
+# External snoops.
+77.2B EXT_SNOOP.ALL_AGENTS.ANY
+
+# HIT signal asserted.
+7A.00 BUS_HIT_DRV.THIS_AGENT
+
+# HIT signal asserted.
+7A.20 BUS_HIT_DRV.ALL_AGENTS
+
+# HITM signal asserted.
+7B.00 BUS_HITM_DRV.THIS_AGENT
+
+# HITM signal asserted.
+7B.20 BUS_HITM_DRV.ALL_AGENTS
+
+# Bus queue is empty.
+7D.40 BUSQ_EMPTY.SELF
+
+# Bus stalled for snoops.
+7E.40 SNOOP_STALL_DRV.SELF
+
+# Bus stalled for snoops.
+7E.E0 SNOOP_STALL_DRV.ALL_AGENTS
+
+# IO requests waiting in the bus queue.
+7F.40 BUS_IO_WAIT.SELF
+
+# Icache hit
+80.01 ICACHE.HIT
+
+# Icache miss
+80.02 ICACHE.MISSES
+
+# Instruction fetches.
+80.03 ICACHE.ACCESSES
+
+# ITLB hits.
+82.01 ITLB.HIT
+
+# ITLB misses.
+82.02 ITLB.MISSES
+
+# ITLB flushes.
+82.04 ITLB.FLUSH
+
+# Cycles during which instruction fetches are  stalled.
+86.01 CYCLES_ICACHE_MEM_STALLED.ICACHE_MEM_STALLED
+
+# Decode stall due to PFB empty
+87.01 DECODE_STALL.PFB_EMPTY
+
+# Decode stall due to IQ full
+87.02 DECODE_STALL.IQ_FULL
+
+# All macro conditional branch instructions.
+88.01 BR_INST_TYPE_RETIRED.COND
+
+# All macro unconditional branch instructions, excluding calls and indirects
+88.02 BR_INST_TYPE_RETIRED.UNCOND
+
+# All indirect branches that are not calls.
+88.04 BR_INST_TYPE_RETIRED.IND
+
+# All indirect branches that have a return mnemonic
+88.08 BR_INST_TYPE_RETIRED.RET
+
+# All non-indirect calls
+88.10 BR_INST_TYPE_RETIRED.DIR_CALL
+
+# All indirect calls, including both register and memory indirect.
+88.20 BR_INST_TYPE_RETIRED.IND_CALL
+
+# Only taken macro conditional branch instructions
+88.41 BR_INST_TYPE_RETIRED.COND_TAKEN
+
+# Mispredicted cond branch instructions retired
+89.01 BR_MISSP_TYPE_RETIRED.COND
+
+# Mispredicted ind branches that are not calls
+89.02 BR_MISSP_TYPE_RETIRED.IND
+
+# Mispredicted return branches
+89.04 BR_MISSP_TYPE_RETIRED.RETURN
+
+# Mispredicted indirect calls, including both register and memory indirect. 
+89.08 BR_MISSP_TYPE_RETIRED.IND_CALL
+
+# Mispredicted and taken cond branch instructions retired
+89.11 BR_MISSP_TYPE_RETIRED.COND_TAKEN
+
+# This event counts the cycles where 1 or more uops are issued by the micro-sequencer (MS), including microcode assists and inserted flows, and written to the IQ. 
+A9.01.CMSK=1 UOPS.MS_CYCLES
+
+# Non-CISC nacro instructions decoded
+AA.01 MACRO_INSTS.NON_CISC_DECODED
+
+# CISC macro instructions decoded
+AA.02 MACRO_INSTS.CISC_DECODED
+
+# All Instructions decoded
+AA.03 MACRO_INSTS.ALL_DECODED
+
+# SIMD micro-ops executed (excluding stores).
+B0.00 SIMD_UOPS_EXEC.S
+
+# SIMD micro-ops retired (excluding stores).
+B0.80 SIMD_UOPS_EXEC.AR
+
+# SIMD saturated arithmetic micro-ops executed.
+B1.00 SIMD_SAT_UOP_EXEC.S
+
+# SIMD saturated arithmetic micro-ops retired.
+B1.80 SIMD_SAT_UOP_EXEC.AR
+
+# SIMD packed multiply micro-ops executed
+B3.01 SIMD_UOP_TYPE_EXEC.MUL.S
+
+# SIMD packed shift micro-ops executed
+B3.02 SIMD_UOP_TYPE_EXEC.SHIFT.S
+
+# SIMD packed micro-ops executed
+B3.04 SIMD_UOP_TYPE_EXEC.PACK.S
+
+# SIMD unpacked micro-ops executed
+B3.08 SIMD_UOP_TYPE_EXEC.UNPACK.S
+
+# SIMD packed logical micro-ops executed
+B3.10 SIMD_UOP_TYPE_EXEC.LOGICAL.S
+
+# SIMD packed arithmetic micro-ops executed
+B3.20 SIMD_UOP_TYPE_EXEC.ARITHMETIC.S
+
+# SIMD packed multiply micro-ops retired
+B3.81 SIMD_UOP_TYPE_EXEC.MUL.AR
+
+# SIMD packed shift micro-ops retired
+B3.82 SIMD_UOP_TYPE_EXEC.SHIFT.AR
+
+# SIMD packed micro-ops retired
+B3.84 SIMD_UOP_TYPE_EXEC.PACK.AR
+
+# SIMD unpacked micro-ops retired
+B3.88 SIMD_UOP_TYPE_EXEC.UNPACK.AR
+
+# SIMD packed logical micro-ops retired
+B3.90 SIMD_UOP_TYPE_EXEC.LOGICAL.AR
+
+# SIMD packed arithmetic micro-ops retired
+B3.A0 SIMD_UOP_TYPE_EXEC.ARITHMETIC.AR
+
+# Instructions retired (precise event).
+C0.00 INST_RETIRED.ANY_P
+
+# Micro-ops retired.
+C2.10 UOPS_RETIRED.ANY
+
+# Cycles no micro-ops retired.
+C2.10 UOPS_RETIRED.STALLED_CYCLES
+
+# Periods no micro-ops retired.
+C2.10 UOPS_RETIRED.STALLS
+
+# Self-Modifying Code detected.
+C3.01 MACHINE_CLEARS.SMC
+
+# Retired branch instructions.
+C4.00 BR_INST_RETIRED.ANY
+
+# Retired branch instructions that were predicted not-taken.
+C4.01 BR_INST_RETIRED.PRED_NOT_TAKEN
+
+# Retired branch instructions that were mispredicted not-taken.
+C4.02 BR_INST_RETIRED.MISPRED_NOT_TAKEN
+
+# Retired branch instructions that were predicted taken.
+C4.04 BR_INST_RETIRED.PRED_TAKEN
+
+# Retired branch instructions that were mispredicted taken.
+C4.08 BR_INST_RETIRED.MISPRED_TAKEN
+
+# Retired taken branch instructions.
+C4.0C BR_INST_RETIRED.TAKEN
+
+# Retired branch instructions.
+C4.0F BR_INST_RETIRED.ANY1
+
+# Retired mispredicted branch instructions (precise event).
+C5.00 BR_INST_RETIRED.MISPRED
+
+# Cycles during which interrupts are disabled.
+C6.01 CYCLES_INT_MASKED.CYCLES_INT_MASKED
+
+# Cycles during which interrupts are pending and disabled.
+C6.02 CYCLES_INT_MASKED.CYCLES_INT_PENDING_AND_MASKED
+
+# Retired Streaming SIMD Extensions (SSE) packed-single instructions.
+C7.01 SIMD_INST_RETIRED.PACKED_SINGLE
+
+# Retired Streaming SIMD Extensions (SSE) scalar-single instructions.
+C7.02 SIMD_INST_RETIRED.SCALAR_SINGLE
+
+# Retired Streaming SIMD Extensions 2 (SSE2) scalar-double instructions.
+C7.08 SIMD_INST_RETIRED.SCALAR_DOUBLE
+
+# Retired Streaming SIMD Extensions 2 (SSE2) vector instructions.
+C7.10 SIMD_INST_RETIRED.VECTOR
+
+# Hardware interrupts received.
+C8.00 HW_INT_RCV
+
+# Retired computational Streaming SIMD Extensions (SSE) packed-single instructions.
+CA.01 SIMD_COMP_INST_RETIRED.PACKED_SINGLE
+
+# Retired computational Streaming SIMD Extensions (SSE) scalar-single instructions.
+CA.02 SIMD_COMP_INST_RETIRED.SCALAR_SINGLE
+
+# Retired computational Streaming SIMD Extensions 2 (SSE2) scalar-double instructions.
+CA.08 SIMD_COMP_INST_RETIRED.SCALAR_DOUBLE
+
+# Retired loads that hit the L2 cache (precise event).
+CB.01 MEM_LOAD_RETIRED.L2_HIT
+
+# Retired loads that miss the L2 cache
+CB.02 MEM_LOAD_RETIRED.L2_MISS
+
+# Retired loads that miss the DTLB (precise event).
+CB.04 MEM_LOAD_RETIRED.DTLB_MISS
+
+# SIMD assists invoked.
+CD.00 SIMD_ASSIST
+
+# SIMD Instructions retired.
+CE.00 SIMD_INSTR_RETIRED
+
+# Saturated arithmetic instructions retired.
+CF.00 SIMD_SAT_INSTR_RETIRED
+
+# Cycles issue is stalled due to div busy.
+DC.02 RESOURCE_STALLS.DIV_BUSY
+
+# Branch instructions decoded
+E0.01 BR_INST_DECODED
+
+# Bogus branches
+E4.01 BOGUS_BR
+
+# BACLEARS asserted.
+E6.01 BACLEARS.ANY
