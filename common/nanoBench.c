@@ -329,6 +329,27 @@ void write_msr(unsigned int msr, uint64_t value) {
     #endif
 }
 
+void change_bit_in_msr(unsigned int msr, unsigned int bit, bool bit_value) {
+    uint64_t msr_value = read_msr(msr);
+    msr_value &= ~((uint64_t)1 << bit);
+    msr_value |= ((uint64_t)bit_value << bit);
+    write_msr(msr, msr_value);
+}
+
+void set_bit_in_msr(unsigned int msr, unsigned int bit) {
+    change_bit_in_msr(msr, bit, true);
+}
+
+void clear_bit_in_msr(unsigned int msr, unsigned int bit) {
+    change_bit_in_msr(msr, bit, false);
+}
+
+uint64_t read_pmc(unsigned int counter) {
+    unsigned long lo, hi;
+    asm volatile("rdpmc" : "=a"(lo), "=d"(hi) : "c"(counter));
+    return lo | ((uint64_t)hi) << 32;
+}
+
 void clear_perf_counters() {
     if (is_Intel_CPU) {
         for (int i=0; i<3; i++) {
@@ -372,6 +393,18 @@ void enable_perf_ctrs_globally() {
 void disable_perf_ctrs_globally() {
     if (is_Intel_CPU) {
         write_msr(MSR_IA32_PERF_GLOBAL_CTRL, 0);
+    }
+}
+
+void enable_freeze_on_PMI(void) {
+    if (is_Intel_CPU) {
+        set_bit_in_msr(MSR_IA32_DEBUGCTL, 12);
+    }
+}
+
+void disable_freeze_on_PMI(void) {
+    if (is_Intel_CPU) {
+        clear_bit_in_msr(MSR_IA32_DEBUGCTL, 12);
     }
 }
 

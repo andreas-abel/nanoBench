@@ -232,6 +232,11 @@ uint64_t read_value_from_cmd(char* cmd);
 
 uint64_t read_msr(unsigned int msr);
 void write_msr(unsigned int msr, uint64_t value);
+void change_bit_in_msr(unsigned int msr, unsigned int bit, bool bit_value);
+void set_bit_in_msr(unsigned int msr, unsigned int bit);
+void clear_bit_in_msr(unsigned int msr, unsigned int bit);
+
+uint64_t read_pmc(unsigned int counter);
 
 void clear_perf_counters(void);
 void clear_perf_counter_configurations(void);
@@ -239,6 +244,9 @@ void clear_overflow_status_bits(void);
 
 void enable_perf_ctrs_globally(void);
 void disable_perf_ctrs_globally(void);
+
+void enable_freeze_on_PMI(void);
+void disable_freeze_on_PMI(void);
 
 // Enables the fixed-function performance counters locally.
 void configure_perf_ctrs_FF_Intel(bool usr, bool os);
