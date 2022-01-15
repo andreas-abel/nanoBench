@@ -106,6 +106,7 @@ def main():
 
       with open(args.output ,'w') as f:
          f.write('\n'.join(html))
+      os.chown(args.output, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
    else:
       policyClass = cacheSim.AllPolicies[args.sim]
       cacheSim.getPermutations(policyClass, args.simAssoc)

@@ -4,6 +4,7 @@ from itertools import count
 from collections import namedtuple, OrderedDict
 
 import argparse
+import os
 import sys
 
 from cacheLib import *
@@ -84,7 +85,8 @@ def main():
    with open(args.output ,'w') as f:
       f.write('\n'.join(html))
       print('Graph written to ' + args.output)
-
+   if not args.sim:
+      os.chown(args.output, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
 if __name__ == "__main__":
     main()

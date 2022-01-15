@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import random
 
 from plotly.offline import plot
@@ -123,6 +124,7 @@ def main():
    with open(args.output ,'w') as f:
       f.write('\n'.join(html))
       print('Output written to ' + args.output)
+   os.chown(args.output, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
 
 if __name__ == "__main__":

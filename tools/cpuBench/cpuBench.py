@@ -2793,7 +2793,8 @@ def writeHtmlFile(folder, instrNode, title, body):
    folder = '/tmp/cpu-html/' + folder
    if not os.path.exists(folder):
       os.makedirs(folder)
-   with open(os.path.join(folder, filename), "w") as f:
+   htmlFilename = os.path.join(folder, filename)
+   with open(htmlFilename, "w") as f:
       f.write('<html>\n'
               '<head>\n'
               '<title>' + title + '</title>\n'
@@ -2802,6 +2803,7 @@ def writeHtmlFile(folder, instrNode, title, body):
               + body +
               '</body>\n'
               '</html>\n')
+   os.chown(htmlFilename, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
 
 # returns list of xml instruction nodes
@@ -3492,9 +3494,12 @@ def main():
          rough_string = ET.tostring(XMLRoot, 'utf-8')
          reparsed = minidom.parseString(rough_string)
       f.write('\n'.join([line for line in reparsed.toprettyxml(indent='  ').split('\n') if line.strip()]))
+   os.chown(args.output, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
-   with tarfile.open('genhtml-' + arch + (('-IACA' + iacaVersion) if useIACA else '-Measurements') + '.tar.gz', "w:gz") as tar:
+   tarFilename = 'genhtml-' + arch + (('-IACA' + iacaVersion) if useIACA else '-Measurements') + '.tar.gz'
+   with tarfile.open(tarFilename, "w:gz") as tar:
       tar.add('/tmp/cpu-html/', arcname=os.path.sep)
+   os.chown(tarFilename, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
    shutil.rmtree('/tmp/cpu-html/')
 
