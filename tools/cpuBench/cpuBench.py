@@ -1001,7 +1001,7 @@ def getTPConfigsForDiv(instrNode):
       if dataType == 'D':
          maxArg = '0x465a61fe1acdc21c' # 8.3610378602352937E30
          minArg = '0x3ff0000000000000' # 1.0
-      if dataType == 'S':
+      elif dataType == 'S':
          maxArg = '0x72d30ff172d30ff1' # 8.36104E30 in high and low 32-bit
          minArg = '0x3f8000003f800000' # 1.0 in high and low 32-bit
       else:  # dataType == 'H'
@@ -1750,7 +1750,7 @@ def getDivLatConfigLists(instrNode, opNode1, opNode2, cRep):
       if dataType == 'D':
          maxArg = '0x465a61fe1acdc21c' # 8.3610378602352937E30
          minArg = '0x3ff0000000000000' # 1.0
-      if dataType == 'S':
+      elif dataType == 'S':
          maxArg = '0x72d30ff172d30ff1' # 8.36104E30 in high and low 32-bit
          minArg = '0x3f8000003f800000' # 1.0 in high and low 32-bit
       else:  # dataType == 'H'
