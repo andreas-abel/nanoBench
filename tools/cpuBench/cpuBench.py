@@ -2840,9 +2840,10 @@ def filterInstructions(XMLRoot):
          # AMD
          if extension in ['3DNOW', 'CLZERO', 'FMA4', 'MONITORX', 'SSE4a', 'SVM', 'TBM', 'XOP']: instrSet.discard(XMLInstr)
          # Future instruction set extensions
-         if extension in ['CLDEMOTE', 'ENQCMD', 'MOVDIR', 'PCONFIG', 'WAITPKG']: instrSet.discard(XMLInstr)
+         if extension in ['CLDEMOTE', 'ENQCMD', 'HRESET', 'MOVDIR', 'PCONFIG', 'SERIALIZE', 'SNP', 'UINTR', 'WAITPKG']: instrSet.discard(XMLInstr)
          if extension in ['AVX512EVEX'] and any(x in isaSet for x in ['4FMAPS', '4VNNIW', 'ER', 'PF']): instrSet.discard(XMLInstr)
-         if any(x in isaSet for x in ['BF16', 'BITALG', 'GFNI', 'VAES', 'VBMI2', 'VNNI', 'VP2INTERSECT', 'VPCLMULQDQ', 'VPOPCNTDQ']): instrSet.discard(XMLInstr)
+         if any(x in isaSet for x in ['AMX', 'BF16', 'BITALG', 'GFNI', 'VAES', 'VBMI2', 'VNNI', 'VP2INTERSECT', 'VPCLMULQDQ', 'VPOPCNTDQ']):
+            instrSet.discard(XMLInstr)
 
    if useIACA: return list(instrSet)
 
