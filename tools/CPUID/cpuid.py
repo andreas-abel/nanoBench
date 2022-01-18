@@ -250,8 +250,8 @@ def micro_arch(cpu):
       return 'RKL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x6A), (0x06, 0x6C)]:
       return 'ICX'
-   if (vi.displ_family, vi.displ_model) in [(0x06, 0x96)]:
-      return 'EHL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x96), (0x06, 0x9C)]:
+      return 'TRM'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x97), (0x06, 0x9A)]:
       return 'ADL-' + ('P' if (vi.core_type == 0x40) else 'E')
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x01), (0x17, 0x11)]:

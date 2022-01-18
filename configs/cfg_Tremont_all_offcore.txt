@@ -1,0 +1,29 @@
+# Based on https://download.01.org/perfmon/EHL/elkhartlake_core_v1.02.json
+# Applies to processors with family-model in {6-96}
+
+# Counts cacheable demand data reads, L1 data cache hardware prefetches and software prefetches (except PREFETCHW) that have any type of response.
+B7.01.MSR_RSP0=0x10001.TakenAlone OCR.DEMAND_DATA_AND_L1PF_RD.ANY_RESPONSE
+
+# This event is deprecated. Refer to new event OCR.DEMAND_DATA_AND_L1PF_RD.ANY_RESPONSE
+B7.01.MSR_RSP0=0x10001.TakenAlone OCR.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts demand reads for ownership (RFO) and software prefetches for exclusive ownership (PREFETCHW) that have any type of response.
+B7.01.MSR_RSP0=0x10002.TakenAlone OCR.DEMAND_RFO.ANY_RESPONSE
+
+# Counts cacheable demand data reads, L1 data cache hardware prefetches and software prefetches (except PREFETCHW) that were not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x2104000001.TakenAlone OCR.DEMAND_DATA_AND_L1PF_RD.L3_MISS
+
+# Counts cacheable demand data reads, L1 data cache hardware prefetches and software prefetches (except PREFETCHW) that were not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x2104000001.TakenAlone OCR.DEMAND_DATA_AND_L1PF_RD.L3_MISS_LOCAL
+
+# This event is deprecated. Refer to new event OCR.DEMAND_DATA_AND_L1PF_RD.L3_MISS
+B7.01.MSR_RSP0=0x2104000001.TakenAlone OCR.DEMAND_DATA_RD.L3_MISS
+
+# This event is deprecated. Refer to new event OCR.DEMAND_DATA_AND_L1PF_RD.L3_MISS_LOCAL
+B7.01.MSR_RSP0=0x2104000001.TakenAlone OCR.DEMAND_DATA_RD.L3_MISS_LOCAL
+
+# Counts demand reads for ownership (RFO) and software prefetches for exclusive ownership (PREFETCHW) that were not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x2104000002.TakenAlone OCR.DEMAND_RFO.L3_MISS
+
+# Counts demand reads for ownership (RFO) and software prefetches for exclusive ownership (PREFETCHW) that were not supplied by the L3 cache.
+B7.01.MSR_RSP0=0x2104000002.TakenAlone OCR.DEMAND_RFO.L3_MISS_LOCAL
