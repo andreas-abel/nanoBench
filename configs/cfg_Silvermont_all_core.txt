@@ -1,0 +1,212 @@
+# Based on https://download.01.org/perfmon/SLM/Silvermont_core_V14.json
+# Applies to processors with family-model in {6-37, 6-4D, 6-4C}
+
+# Loads blocked due to store forward restriction
+03.01 REHABQ.LD_BLOCK_ST_FORWARD
+
+# Loads blocked due to store data not ready
+03.02 REHABQ.LD_BLOCK_STD_NOTREADY
+
+# Store uops that split cache line boundary
+03.04 REHABQ.ST_SPLITS
+
+# Load uops that split cache line boundary
+03.08 REHABQ.LD_SPLITS
+
+# Uops with lock semantics
+03.10 REHABQ.LOCK
+
+# Store address buffer full
+03.20 REHABQ.STA_FULL
+
+# Any reissued load uops
+03.40 REHABQ.ANY_LD
+
+# Any reissued store uops
+03.80 REHABQ.ANY_ST
+
+# Loads missed L1
+04.01 MEM_UOPS_RETIRED.L1_MISS_LOADS
+
+# Loads hit L2
+04.02 MEM_UOPS_RETIRED.L2_HIT_LOADS
+
+# Loads missed L2
+04.04 MEM_UOPS_RETIRED.L2_MISS_LOADS
+
+# Loads missed DTLB
+04.08 MEM_UOPS_RETIRED.DTLB_MISS_LOADS
+
+# Loads missed UTLB
+04.10 MEM_UOPS_RETIRED.UTLB_MISS
+
+# Cross core or cross module hitm
+04.20 MEM_UOPS_RETIRED.HITM
+
+# All Loads
+04.40 MEM_UOPS_RETIRED.ALL_LOADS
+
+# All Stores
+04.80 MEM_UOPS_RETIRED.ALL_STORES
+
+# Duration of D-side page-walks in core cycles
+05.01 PAGE_WALKS.D_SIDE_CYCLES
+
+# D-side page-walks
+05.01.EDG PAGE_WALKS.D_SIDE_WALKS
+
+# Duration of I-side page-walks in core cycles
+05.02 PAGE_WALKS.I_SIDE_CYCLES
+
+# I-side page-walks
+05.02.EDG PAGE_WALKS.I_SIDE_WALKS
+
+# Total cycles for all the page walks. (I-side and D-side)
+05.03 PAGE_WALKS.CYCLES
+
+# Total page walks that are completed (I-side and D-side)
+05.03.EDG PAGE_WALKS.WALKS
+
+# L2 cache request misses
+2E.41 LONGEST_LAT_CACHE.MISS
+
+# L2 cache requests from this core
+2E.4F LONGEST_LAT_CACHE.REFERENCE
+
+# Counts the number of request from the L2 that were not accepted into the XQ
+30.00 L2_REJECT_XQ.ALL
+
+# Counts the number of request that were not accepted into the L2Q because the L2Q is FULL.
+31.00 CORE_REJECT_L2Q.ALL
+
+# Core cycles when core is not halted
+3C.00 CPU_CLK_UNHALTED.CORE_P
+
+# Reference cycles when core is not halted
+3C.01 CPU_CLK_UNHALTED.REF
+
+# Instruction fetches from Icache
+80.01 ICACHE.HIT
+
+# Icache miss
+80.02 ICACHE.MISSES
+
+# Instruction fetches
+80.03 ICACHE.ACCESSES
+
+# Cycles code-fetch stalled due to an outstanding ITLB miss.
+86.02 FETCH_STALL.ITLB_FILL_PENDING_CYCLES
+
+# Cycles code-fetch stalled due to an outstanding ICache miss.
+86.04 FETCH_STALL.ICACHE_FILL_PENDING_CYCLES
+
+# Cycles code-fetch stalled due to any reason.
+86.3F FETCH_STALL.ALL
+
+# Instructions retired
+C0.00 INST_RETIRED.ANY_P
+
+# MSROM micro-ops retired
+C2.01 UOPS_RETIRED.MS
+
+# Micro-ops retired
+C2.10 UOPS_RETIRED.ALL
+
+# Self-Modifying Code detected
+C3.01 MACHINE_CLEARS.SMC
+
+# Stalls due to Memory ordering
+C3.02 MACHINE_CLEARS.MEMORY_ORDERING
+
+# Stalls due to FP assists
+C3.04 MACHINE_CLEARS.FP_ASSIST
+
+# Counts all machine clears
+C3.08 MACHINE_CLEARS.ALL
+
+# Counts the number of branch instructions retired...
+C4.00 BR_INST_RETIRED.ALL_BRANCHES
+
+# Counts the number of JCC branch instructions retired
+C4.7E BR_INST_RETIRED.JCC
+
+# Counts the number of taken branch instructions retired
+C4.80 BR_INST_RETIRED.ALL_TAKEN_BRANCHES
+
+# Counts the number of far branch instructions retired
+C4.BF BR_INST_RETIRED.FAR_BRANCH
+
+# Counts the number of near indirect JMP and near indirect CALL branch instructions retired
+C4.EB BR_INST_RETIRED.NON_RETURN_IND
+
+# Counts the number of near RET branch instructions retired
+C4.F7 BR_INST_RETIRED.RETURN
+
+# Counts the number of near CALL branch instructions retired
+C4.F9 BR_INST_RETIRED.CALL
+
+# Counts the number of near indirect CALL branch instructions retired
+C4.FB BR_INST_RETIRED.IND_CALL
+
+# Counts the number of near relative CALL branch instructions retired
+C4.FD BR_INST_RETIRED.REL_CALL
+
+# Counts the number of taken JCC branch instructions retired
+C4.FE BR_INST_RETIRED.TAKEN_JCC
+
+# Counts the number of mispredicted branch instructions retired
+C5.00 BR_MISP_RETIRED.ALL_BRANCHES
+
+# Counts the number of mispredicted JCC branch instructions retired
+C5.7E BR_MISP_RETIRED.JCC
+
+# Counts the number of mispredicted near indirect JMP and near indirect CALL branch instructions retired
+C5.EB BR_MISP_RETIRED.NON_RETURN_IND
+
+# Counts the number of mispredicted near RET branch instructions retired
+C5.F7 BR_MISP_RETIRED.RETURN
+
+# Counts the number of mispredicted near indirect CALL branch instructions retired
+C5.FB BR_MISP_RETIRED.IND_CALL
+
+# Counts the number of mispredicted taken JCC branch instructions retired
+C5.FE BR_MISP_RETIRED.TAKEN_JCC
+
+# Counts the number of cycles when no uops are allocated and the ROB is full (less than 2 entries available)
+CA.01 NO_ALLOC_CYCLES.ROB_FULL
+
+# Counts the number of cycles when no uops are allocated and the alloc pipe is stalled waiting for a mispredicted jump to retire.  After the misprediction is detected, the front end will start immediately but the allocate pipe stalls until the mispredicted
+CA.04 NO_ALLOC_CYCLES.MISPREDICTS
+
+# Counts the number of cycles when no uops are allocated and a RATstall is asserted.
+CA.20 NO_ALLOC_CYCLES.RAT_STALL
+
+# Counts the number of cycles when no uops are allocated for any reason.
+CA.3F NO_ALLOC_CYCLES.ALL
+
+# Counts the number of cycles when no uops are allocated, the IQ is empty, and no other condition is blocking allocation.
+CA.50 NO_ALLOC_CYCLES.NOT_DELIVERED
+
+# Counts the number of cycles and allocation pipeline is stalled and is waiting for a free MEC reservation station entry.  The cycles should be appropriately counted in case of the cracked ops e.g. In case of a cracked load-op, the load portion is sent to M
+CB.01 RS_FULL_STALL.MEC
+
+# Counts the number of cycles the Alloc pipeline is stalled when any one of the RSs (IEC, FPC and MEC) is full. This event is a superset of all the individual RS stall event counts.
+CB.1F RS_FULL_STALL.ALL
+
+# Cycles the divider is busy.  Does not imply a stall waiting for the divider.
+CD.01 CYCLES_DIV_BUSY.ALL
+
+# Counts the number of baclears
+E6.01 BACLEARS.ALL
+
+# Counts the number of RETURN baclears
+E6.08 BACLEARS.RETURN
+
+# Counts the number of JCC baclears
+E6.10 BACLEARS.COND
+
+# Counts the number of times entered into a ucode flow in the FEC.  Includes inserted flows due to front-end detected faults or assists.  Speculative count.
+E7.01 MS_DECODED.MS_ENTRY
+
+# Counts the number of times a decode restriction reduced the decode throughput due to wrong instruction length prediction
+E9.01 DECODE_RESTRICTION.PREDECODE_WRONG

@@ -213,8 +213,10 @@ def micro_arch(cpu):
       return 'HSX'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x3D), (0x06, 0x47), (0x06, 0x56), (0x06, 0x4F)]:
       return 'BDW'
-   if (vi.displ_family, vi.displ_model) in [(0x06, 0x37), (0x06, 0x4C), (0x06, 0x4D)]:
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x37), (0x06, 0x4D)]:
       return 'SLM'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x4C)]:
+      return 'AMT'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x5C), (0x06, 0x5F)]:
       return 'GLM'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x57)]:

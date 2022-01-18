@@ -209,7 +209,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
       if evt == 'UOPS':
          if arch in ['CON', 'WOL']: evt = 'RS_UOPS_DISPATCHED'
          elif arch in ['NHM', 'WSM', 'BNL', 'GLM', 'GLP']: evt = 'UOPS_RETIRED.ANY'
-         elif arch in ['SNB', 'ADL-E']: evt = 'UOPS_RETIRED.ALL'
+         elif arch in ['SNB', 'SLM', 'AMT', 'ADL-E']: evt = 'UOPS_RETIRED.ALL'
          elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
          elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: evt = 'UOPS_EXECUTED.THREAD'
       localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
@@ -276,7 +276,7 @@ def getEventConfig(event):
       if arch in ['NHM', 'WSM', 'SNB' ]: return 'C2.01' # UOPS_RETIRED.ANY
       if arch in ['SNB']: return 'C2.01' # UOPS_RETIRED.ALL
       if arch in ['GLM', 'GLP', 'ADL-E']: return 'C2.00' # UOPS_RETIRED.ALL
-      if arch in ['BNL']: return 'C2.10' # UOPS_RETIRED.ANY
+      if arch in ['BNL', 'SLM', 'AMT']: return 'C2.10' # UOPS_RETIRED.ANY
       if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
       if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return 'B1.01' # UOPS_EXECUTED.THREAD
       if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0C1.00'
@@ -290,7 +290,7 @@ def getEventConfig(event):
       if arch in ['NHM', 'WSM']: return 'D1.02'
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '79.30'
       if arch in ['ADL-P']: return '79.20'
-      if arch in ['GLM', 'GLP', 'ADL-E']: return 'C2.01'
+      if arch in ['SLM', 'AMT', 'GLM', 'GLP', 'ADL-E']: return 'C2.01'
       if arch in ['BNL']: return 'A9.01' # undocumented, but seems to work
    if event == 'UOPS_PORT_0':
       if arch in ['CON', 'WOL']: return 'A1.01.CTR=0'
