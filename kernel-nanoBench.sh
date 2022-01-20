@@ -21,6 +21,7 @@ fi
 cat /sys/nb/reset
 
 taskset=""
+filter_output="cat"
 
 while [ "$1" ]; do
     if [[ "$1" == -asm_i* ]]; then
@@ -109,6 +110,9 @@ while [ "$1" ]; do
     elif [[ "$1" == -avg* ]]; then
         echo "avg" > /sys/nb/agg
         shift
+    elif [[ "$1" == -r* ]]; then
+        filter_output="grep -v 0.00"
+        shift
     elif [[ "$1" == -h* ]]; then
         echo "kernel-nanoBench.sh usage:"
         echo
@@ -134,6 +138,7 @@ while [ "$1" ]; do
         echo "  -basic_mode:                Enables basic mode."
         echo "  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses."
         echo "  -no_normalization:          The measurement results are not divided by the number of repetitions."
+        echo "  -remove_empty_events:       Removes events from the output that did not occur."
         echo "  -cpu <n>:                   Pins the measurement thread to CPU n."
         echo "  -verbose:                   Outputs the results of all performance counter readings."
         exit 0
@@ -146,6 +151,9 @@ done
 prev_nmi_watchdog=$(cat /proc/sys/kernel/nmi_watchdog)
 [ $prev_nmi_watchdog != 0 ] && echo 0 > /proc/sys/kernel/nmi_watchdog
 
-$taskset cat /proc/nanoBench
+$taskset cat /proc/nanoBench | $filter_output
+return_value=${PIPESTATUS[0]}
 
 [ $prev_nmi_watchdog != 0 ] && echo $prev_nmi_watchdog > /proc/sys/kernel/nmi_watchdog
+
+exit $return_value

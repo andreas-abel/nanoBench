@@ -18,15 +18,11 @@ if [ $(cat /sys/devices/system/cpu/smt/active) -ne 0 ]; then
     echo "Note: Hyper-threading is enabled; it can be disabled with \"sudo ./disable-HT.sh\"" >&2
 fi
 
-debug=false
-for p in "$@"; do
-    if [[ "$p" == -de* ]]; then
-        debug=true
-    fi
-done
+debug=""
+filter_output="cat"
 
 args=''
-while [ "$2" ]; do
+while [ "$1" ]; do
     if [[ "$1" == -asm_i* ]]; then
         assemble "$2" asm-init.bin
         args="$args -code_init asm-init.bin"
@@ -43,12 +39,18 @@ while [ "$2" ]; do
         assemble "$2" asm-code.bin
         args="$args -code asm-code.bin"
         shift 2
+    elif [[ "$1" == -de* ]]; then
+        debug="gdb -ex=run --args"
+        args="$args $1"
+        shift
+    elif [[ "$1" == -r* ]]; then
+        filter_output="grep -v 0.00"
+        shift
     else
         args="$args $1"
         shift
     fi
 done
-args="$args $1"
 set "$args"
 
 if [ -d "/sys/bus/event_source/devices/cpu" ]; then
@@ -74,13 +76,8 @@ iTCO_vendor_support_prev_loaded=$?
 prev_nmi_watchdog=$(cat /proc/sys/kernel/nmi_watchdog)
 [ $prev_nmi_watchdog != 0 ] && echo 0 > /proc/sys/kernel/nmi_watchdog
 
-if [ "$debug" = true ]; then
-    gdb -ex=run --args user/nanoBench $@
-    return_value=$?
-else
-    user/nanoBench $@
-    return_value=$?
-fi
+$debug user/nanoBench $@ | $filter_output
+return_value=${PIPESTATUS[0]}
 
 rm -f asm-*.bin
 
@@ -104,4 +101,5 @@ fi
 if [[ $iTCO_vendor_support_prev_loaded != 0 ]]; then
     modprobe iTCO_vendor_support &>/dev/null
 fi
+
 exit $return_value
