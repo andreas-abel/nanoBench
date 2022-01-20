@@ -80,6 +80,10 @@
 #define CORE_X86_MSR_PERF_CTR         0xC0010201
 #endif
 
+#define FIXED_CTR_INST_RETIRED 0
+#define FIXED_CTR_CORE_CYCLES  1
+#define FIXED_CTR_REF_CYCLES   2
+
 
 // How often the measurement will be repeated.
 extern long n_measurements;
@@ -311,6 +315,8 @@ void measurement_RDTSC_template(void);
 void measurement_RDTSC_template_noMem(void);
 void measurement_RDMSR_template(void);
 void measurement_RDMSR_template_noMem(void);
+void measurement_cycleByCycle_template_Intel(void);
+void measurement_cycleByCycle_template_Intel_noMem(void);
 void one_time_init_template(void);
 void initial_warm_up_template(void);
 

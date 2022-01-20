@@ -1,8 +1,10 @@
 import atexit
-import collections
 import os
 import subprocess
 import sys
+
+from collections import OrderedDict
+from shutil import copyfile
 
 PFC_START_ASM = '.quad 0xE0B513B1C2813F04'
 PFC_STOP_ASM = '.quad 0xF0B513B1C2813F04'
@@ -24,7 +26,7 @@ def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
          code = code.replace('|13', '.byte 0x66,0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;')
          code = code.replace('|12', '.byte 0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;')
          code = code.replace('|11', '.byte 0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;')
-         code = code.replace('|10',  'byte 0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;')
+         code = code.replace('|10', '.byte 0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;')
          code = code.replace('|9',  '.byte 0x66,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;')
          code = code.replace('|8',  '.byte 0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;')
          code = code.replace('|7',  '.byte 0x0f,0x1f,0x80,0x00,0x00,0x00,0x00;')
@@ -53,12 +55,17 @@ def objcopy(sourceFile, targetFile):
       exit(1)
 
 
-def filecopy(sourceFile, targetFile):
-   try:
-      subprocess.check_call(['cp', sourceFile, targetFile])
-   except subprocess.CalledProcessError as e:
-      sys.stderr.write("Error (cp): " + str(e))
-      exit(1)
+def createBinaryFile(targetFile, asm=None, objFile=None, binFile=None):
+   if asm:
+      objFile = '/tmp/ramdisk/tmp.o'
+      assemble(asm, objFile)
+   if objFile is not None:
+      objcopy(objFile, targetFile)
+      return True
+   if binFile is not None:
+      copyfile(binFile, targetFile)
+      return True
+   return False
 
 
 # Returns the size in bytes.
@@ -87,7 +94,7 @@ paramDict = dict()
 # Otherwise, reset() needs to be called first.
 def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConfigFile=None, fixedCounters=None, nMeasurements=None, unrollCount=None,
                            loopCount=None, warmUpCount=None, initialWarmUpCount=None, alignmentOffset=None, codeOffset=None, drainFrontend=None,
-                           aggregateFunction=None, basicMode=None, noMem=None, noNormalization=None, verbose=None):
+                           aggregateFunction=None, basicMode=None, noMem=None, noNormalization=None, verbose=None, endToEnd=None):
    if config is not None:
       if paramDict.get('config', None) != config:
          configFile = '/tmp/ramdisk/config'
@@ -174,73 +181,174 @@ def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConf
          writeFile('/sys/nb/verbose', str(int(verbose)))
          paramDict['verbose'] = verbose
 
+   if endToEnd is not None:
+      if paramDict.get('endToEnd', None) != endToEnd:
+         writeFile('/sys/nb/end_to_end', str(int(endToEnd)))
+         paramDict['endToEnd'] = endToEnd
+
 
 def resetNanoBench():
    with open('/sys/nb/reset') as resetFile: resetFile.read()
    paramDict.clear()
 
 
+def _getNanoBenchOutput(procFile, code, codeObjFile, codeBinFile,
+                                  init, initObjFile, initBinFile,
+                                  lateInit, lateInitObjFile, lateInitBinFile,
+                                  oneTimeInit, oneTimeInitObjFile, oneTimeInitBinFile, cpu, detP23):
+   with open('/sys/nb/clear') as clearFile: clearFile.read()
+
+   tmpCodeBinFile = '/tmp/ramdisk/code.bin'
+   if createBinaryFile(tmpCodeBinFile, code, codeObjFile, codeBinFile):
+      writeFile('/sys/nb/code', tmpCodeBinFile)
+
+   tmpInitBinFiles = []
+   if detP23:
+      tmpP23BinFile = '/tmp/ramdisk/p23.bin'
+      tmpInitBinFiles.append(tmpP23BinFile)
+      createBinaryFile(tmpP23BinFile, asm=detP23Asm)
+   tmpInitMainBinFile = '/tmp/ramdisk/init_main.bin'
+   if createBinaryFile(tmpInitMainBinFile, init, initObjFile, initBinFile):
+      tmpInitBinFiles.append(tmpInitMainBinFile)
+   if tmpInitBinFiles:
+      tmpInitBinFile = '/tmp/ramdisk/init.bin'
+      with open(tmpInitBinFile, 'wb') as initBin:
+         for filename in tmpInitBinFiles:
+            with open(filename, 'rb') as f:
+               initBin.write(f.read())
+      writeFile('/sys/nb/init', tmpInitBinFile)
+
+   tmpLateInitBinFile = '/tmp/ramdisk/late_init.bin'
+   if createBinaryFile(tmpLateInitBinFile, lateInit, lateInitObjFile, lateInitBinFile):
+      writeFile('/sys/nb/late_init', tmpLateInitBinFile)
+
+   tmpOneTimeInitBinFile = '/tmp/ramdisk/one_time_init.bin'
+   if createBinaryFile(tmpOneTimeInitBinFile, oneTimeInit, oneTimeInitObjFile, oneTimeInitBinFile):
+      writeFile('/sys/nb/one_time_init', tmpOneTimeInitBinFile)
+
+   try:
+      if cpu is None:
+         output = readFile(procFile)
+      else:
+         output = subprocess.check_output(['taskset', '-c', str(cpu), 'cat', procFile]).decode()
+   except Exception as e:
+      print('nanoBench failed; details might be available from dmesg', file=sys.stderr)
+      sys.exit()
+
+   return output
+
+
 # code, codeObjFile, codeBinFile cannot be specified at the same time (same for init, initObjFile and initBinFile)
 def runNanoBench(code='', codeObjFile=None, codeBinFile=None,
                  init='', initObjFile=None, initBinFile=None,
                  lateInit='', lateInitObjFile=None, lateInitBinFile=None,
-                 oneTimeInit='', oneTimeInitObjFile=None, oneTimeInitBinFile=None,
-                 cpu=None):
-   with open('/sys/nb/clear') as clearFile: clearFile.read()
+                 oneTimeInit='', oneTimeInitObjFile=None, oneTimeInitBinFile=None, cpu=None, detP23=False):
+   output = _getNanoBenchOutput('/proc/nanoBench', code, codeObjFile, codeBinFile,
+                                                   init, initObjFile, initBinFile,
+                                                   lateInit, lateInitObjFile, lateInitBinFile,
+                                                   oneTimeInit, oneTimeInitObjFile, oneTimeInitBinFile, cpu, detP23)
 
-   if code:
-      codeObjFile = '/tmp/ramdisk/code.o'
-      assemble(code, codeObjFile)
-   if codeObjFile is not None:
-      objcopy(codeObjFile, '/tmp/ramdisk/code.bin')
-      writeFile('/sys/nb/code', '/tmp/ramdisk/code.bin')
-   elif codeBinFile is not None:
-      writeFile('/sys/nb/code', codeBinFile)
-
-   if init:
-      initObjFile = '/tmp/ramdisk/init.o'
-      assemble(init, initObjFile)
-   if initObjFile is not None:
-      objcopy(initObjFile, '/tmp/ramdisk/init.bin')
-      writeFile('/sys/nb/init', '/tmp/ramdisk/init.bin')
-   elif initBinFile is not None:
-      writeFile('/sys/nb/init', initBinFile)
-
-   if lateInit:
-      lateInitObjFile = '/tmp/ramdisk/late_init.o'
-      assemble(lateInit, lateInitObjFile)
-   if lateInitObjFile is not None:
-      objcopy(lateInitObjFile, '/tmp/ramdisk/late_init.bin')
-      writeFile('/sys/nb/late_init', '/tmp/ramdisk/late_init.bin')
-   elif lateInitBinFile is not None:
-      writeFile('/sys/nb/late_init', lateInitBinFile)
-
-   if oneTimeInit:
-      oneTimeInitObjFile = '/tmp/ramdisk/one_time_init.o'
-      assemble(oneTimeInit, oneTimeInitObjFile)
-   if oneTimeInitObjFile is not None:
-      objcopy(oneTimeInitObjFile, '/tmp/ramdisk/one_time_init.bin')
-      writeFile('/sys/nb/one_time_init', '/tmp/ramdisk/one_time_init.bin')
-   elif oneTimeInitBinFile is not None:
-      writeFile('/sys/nb/one_time_init', oneTimeInitBinFile)
-
-   if cpu is None:
-      output = readFile('/proc/nanoBench')
-   else:
-      try:
-         output = subprocess.check_output(['taskset', '-c', str(cpu), 'cat', '/proc/nanoBench']).decode()
-      except subprocess.CalledProcessError as e:
-         sys.exit(e)
-
-   ret = collections.OrderedDict()
+   ret = OrderedDict()
    for line in output.split('\n'):
       if not ':' in line: continue
-      line_split = line.split(':')
-      counter = line_split[0].strip()
-      value = float(line_split[1].strip())
+      lineSplit = line.split(':')
+      counter = lineSplit[0].strip()
+      value = float(lineSplit[1].strip())
       ret[counter] = value
-
    return ret
+
+
+# code, codeObjFile, codeBinFile cannot be specified at the same time (same for init, initObjFile and initBinFile)
+def runNanoBenchCycleByCycle(code='', codeObjFile=None, codeBinFile=None,
+                             init='', initObjFile=None, initBinFile=None,
+                             lateInit='', lateInitObjFile=None, lateInitBinFile=None,
+                             oneTimeInit='', oneTimeInitObjFile=None, oneTimeInitBinFile=None, cpu=None, detP23=False):
+   prevConfig = paramDict.get('config', '')
+   if not paramDict.get('endToEnd'):
+      curConfig = prevConfig +  '\n'
+      curConfig += '79.30 IDQ.MS_UOPS_internal\n'
+      curConfig += 'C0.00 INST_RETIRED_internal\n'
+      setNanoBenchParameters(config=curConfig)
+
+   output = _getNanoBenchOutput('/proc/nanoBenchCycleByCycle', code, codeObjFile, codeBinFile,
+                                                               init, initObjFile, initBinFile,
+                                                               lateInit, lateInitObjFile, lateInitBinFile,
+                                                               oneTimeInit, oneTimeInitObjFile, oneTimeInitBinFile, cpu, detP23)
+
+   if not paramDict.get('endToEnd'):
+      setNanoBenchParameters(config=prevConfig)
+
+   nbDict = OrderedDict()
+   for line in output.split('\n'):
+      if not ',' in line: continue
+      lineSplit = line.split(',')
+      counter = lineSplit[0].strip()
+      valueEmpty = int(lineSplit[1])
+      valueEmptyWithLfence = int(lineSplit[2])
+      values = [int(v) for v in lineSplit[3:]]
+      nbDict[counter] = (valueEmpty, valueEmptyWithLfence, values)
+
+   if paramDict.get('verbose'):
+      print('\n'.join((k + ': ' + str(v)) for k, v in nbDict.items()))
+
+   if paramDict.get('endToEnd'):
+      return OrderedDict((k, v) for k, (_, _, v) in nbDict.items() if "_internal" not in k)
+   else:
+      instRetired = nbDict['INST_RETIRED_internal'][2]
+      if len(instRetired) < 3:
+         return None
+      if (instRetired[-1] == instRetired[-2]) or (instRetired[-2] != instRetired[-3]):
+         return None
+      cycleLastInstrRetired = min(i for i, v in enumerate(instRetired) if v == instRetired[-2])
+
+      msUops = nbDict['IDQ.MS_UOPS_internal'][2]
+      cycleOfLfenceUop = max((i for i, v in enumerate(msUops) if v < msUops[-1] and msUops[i] == msUops[i+1]), default=None)
+      if cycleOfLfenceUop is None:
+         return None
+
+      result = OrderedDict()
+      for k, (valueEmpty, valueEmptyWithLfence, values) in nbDict.items():
+         if "_internal" in k: continue
+
+         leftMin = values[0]
+         rightMax = values[-1]
+
+         if any((x in k.upper()) for x in ['RETIRE']):
+            leftMin = valueEmpty
+            if 'UOP' in k.upper():
+               rightMax = values[-1] - (valueEmptyWithLfence - valueEmpty)
+            else:
+               rightMax = values[cycleLastInstrRetired]
+         elif any((x in k.upper()) for x in ['ISSUE']):
+            rightMax = values[cycleLastInstrRetired-1] - (valueEmpty - values[0])
+         elif 'IDQ' in k:
+            rightMax = values[cycleOfLfenceUop - 1]
+
+         result[k] = [max(0, min(v, rightMax) - leftMin) for v in values[:cycleLastInstrRetired + 1]]
+
+      return result
+
+
+detP23Asm = ("push rax; push rcx; push rdx;" # save registers
+             "mov ecx, 0x186; rdmsr; push rax; push rdx;" # save IA32_PERFEVTSEL0
+             "mov ecx, 0x0C1; rdmsr; push rax; push rdx;" # save IA32_PMC0
+             "mov ecx, 0x38F; rdmsr; push rax; push rdx;" # save IA32_PERF_GLOBAL_CTRL
+             "mov ecx, 0x38F; mov eax, 0; mov edx, 0; wrmsr;" # disable all counters
+             "mov ecx, 0x186; mov eax, 0x4204A1; mov edx, 0; wrmsr;" # count UOPS_DISPATCHED_PORT.PORT_2 on counter 0
+             "mov ecx, 0x0C1; mov eax, 0; mov edx, 0; wrmsr;" # clear counter 0
+             "mov ecx, 0x38F; mov eax, 1; mov edx, 0; wrmsr;" # enable counter 0
+             "mov eax, [rsp];" # perform one memory access
+             "mov ecx, 0x38F; mov eax, 0; mov edx, 0; wrmsr;" # disable counter 0
+             "mov ecx, 0; rdpmc;" # read counter 0
+             "test eax, eax;"
+             "lfence;"
+             "jnz end;"
+             "mov eax, [rsp];" # perform another access if first access was not on port 2
+             "end:"
+             "mov ecx, 0x38F; pop rdx; pop rax; wrmsr;" # restore IA32_PERF_GLOBAL_CTRL
+             "mov ecx, 0x0C1; pop rdx; pop rax; wrmsr;" # restore IA32_PMC0
+             "mov ecx, 0x186; pop rdx; pop rax; wrmsr;" # restore IA32_PERFEVTSEL0
+             "pop rdx; pop rcx; pop rax;") # restore registers
 
 
 def createRamdisk():

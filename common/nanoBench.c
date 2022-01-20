@@ -571,16 +571,6 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                 *(int32_t*)(&runtime_code[rcI]) = (int32_t)local_loop_count; rcI += 4; // mov R15, local_loop_count
             }
 
-            if (drain_frontend) {
-                strcpy(&runtime_code[rcI], "\x0F\xAE\xE8"); rcI += 3; // lfence
-                for (int i=0; i<192; i++) {
-                    strcpy(&runtime_code[rcI], NOPS[1]); rcI += 1;
-                }
-                for (int i=0; i<64; i++) {
-                    strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;
-                }
-            }
-
             int dist = get_distance_to_code(measurement_template, templateI) + code_late_init_length;
             int n_fill = (64 - ((uintptr_t)&runtime_code[rcI+dist] % 64)) % 64;
             n_fill += alignment_offset;
@@ -588,6 +578,16 @@ void create_runtime_code(char* measurement_template, long local_unroll_count, lo
                 int nop_len = min(15, n_fill);
                 strcpy(&runtime_code[rcI], NOPS[nop_len]); rcI += nop_len;
                 n_fill -= nop_len;
+            }
+
+            if (drain_frontend) {
+                strcpy(&runtime_code[rcI], "\x0F\xAE\xE8"); rcI += 3; // lfence
+                for (int i=0; i<189; i++) {
+                    strcpy(&runtime_code[rcI], NOPS[1]); rcI += 1;
+                }
+                for (int i=0; i<64; i++) {
+                    strcpy(&runtime_code[rcI], NOPS[15]); rcI += 15;
+                }
             }
         } else if (starts_with_magic_bytes(&measurement_template[templateI], MAGIC_BYTES_PFC_START)) {
             magic_bytes_pfc_start_I = templateI;
@@ -1565,6 +1565,52 @@ void measurement_RDMSR_template_noMem() {
         ".att_syntax noprefix                    ");
     RESTORE_REGS_FLAGS();
     asm(".quad "STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
+}
+
+void measurement_cycleByCycle_template_Intel() {
+    SAVE_REGS_FLAGS();
+    asm(".intel_syntax noprefix                 \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT) "   \n"
+        "push rax                               \n"
+        "push rcx                               \n"
+        "push rdx                               \n"
+        "mov rcx, 0x38F                         \n"
+        "mov rax, 0xF                           \n"
+        "mov rdx, 0x7                           \n"
+        "wrmsr                                  \n"
+        "pop rdx                                \n"
+        "pop rcx                                \n"
+        "pop rax                                \n"
+        "lfence                                 \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE) "   \n"
+        "lfence                                 \n"
+        "mov rcx, 0x38F                         \n"
+        "mov rax, 0x0                           \n"
+        "mov rdx, 0x0                           \n"
+        "wrmsr                                  \n"
+        ".att_syntax prefix                     \n");
+    RESTORE_REGS_FLAGS();
+    asm(".quad " STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
+}
+
+void measurement_cycleByCycle_template_Intel_noMem() {
+    SAVE_REGS_FLAGS();
+    asm(".intel_syntax noprefix                 \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_INIT) "   \n"
+        "mov rcx, 0x38F                         \n"
+        "mov rax, 0xF                           \n"
+        "mov rdx, 0x7                           \n"
+        "wrmsr                                  \n"
+        "lfence                                 \n"
+        ".quad "STRINGIFY(MAGIC_BYTES_CODE) "   \n"
+        "lfence                                 \n"
+        "mov rcx, 0x38F                         \n"
+        "mov rax, 0x0                           \n"
+        "mov rdx, 0x0                           \n"
+        "wrmsr                                  \n"
+        ".att_syntax prefix                     \n");
+    RESTORE_REGS_FLAGS();
+    asm(".quad " STRINGIFY(MAGIC_BYTES_TEMPLATE_END));
 }
 
 void one_time_init_template() {

@@ -23,6 +23,8 @@ More information about *nanoBench* can be found in the paper [nanoBench: A Low-O
 ### Kernel Module
 *Note: The following is not necessary if you would just like to use the user-space version.*
 
+    sudo apt install python3 python3-pip
+    pip3 install plotly
     git clone https://github.com/andreas-abel/nanoBench.git
     cd nanoBench
     make kernel
@@ -41,7 +43,7 @@ For obtaining repeatable results, it can help to disable hyper-threading. This c
 
 The following command will benchmark the assembler code sequence "ADD RAX, RBX; ADD RBX, RAX" on a Skylake-based system.
 
-    sudo ./nanoBench.sh -asm "ADD RAX, RBX; add RBX, RAX" -config configs/cfg_Skylake_common.txt
+    sudo ./nanoBench.sh -asm "ADD RAX, RBX; ADD RBX, RAX" -config configs/cfg_Skylake_common.txt
 
 It will produce an output similar to the following.
 
@@ -71,7 +73,7 @@ All other registers have initially undefined values. They can, however, be initi
 
 ### Example 2: Load Latency
 
-    sudo ./nanoBench.sh -asm_init "mov RAX, R14; sub RAX, 8; mov [RAX], RAX" -asm "mov RAX, [RAX]" -config configs/cfg_Skylake_common.txt
+    sudo ./nanoBench.sh -asm_init "MOV RAX, R14; SUB RAX, 8; MOV [RAX], RAX" -asm "MOV RAX, [RAX]" -config configs/cfg_Skylake_common.txt
 
 The `asm-init` code is executed once in the beginning. It first sets RAX to R14-8 (thus, RAX now contains a valid memory address), and then sets the memory at address RAX to its own address. Then, the `asm` code is executed repeatedly. This code loads the value at the address in RAX into RAX. Thus, the execution time of this instruction corresponds to the L1 data cache latency.
 
@@ -120,8 +122,6 @@ We will now take a look behind the scenes at the code that *nanoBench* generates
 The result that is finally reported by *nanoBench* is the difference between these two executions divided by `max(loop_count * unroll_count, unroll_count)`.
 
 Before the first execution of `run(...)`, the performance counters are configured according to the event specifications in the `-config` file. If this file contains more events than there are programmable performance counters available, `run(...)` is executed multiple times with different performance counter configurations.
-
-
 
 ## Command-line Options
 
@@ -173,6 +173,23 @@ The following parameter is only supported by `kernel-nanoBench.sh`.
 |----------------------|-------------|
 | `-msr_config <file>` | File with performance counter event specifications for counters that can only be read with the `RDMSR` instruction, such as uncore counters. Details are described [below](#msr-performance-counter-config-files). |
 
+## Cycle-by-Cycle Measurements
+
+The `cycleByCycle.py` script provides the option to perform cycle-by-cycle measurements on recent Intel CPUs. This is achieved by enabling the `Freeze_Perfmon_On_PMI` feature, by setting the value of the core cycles counter to *N* cycles below overflow, and by repeating the measurements multiple times with different values for *N*. This approach is based on [Brandon Falk's Sushi Roll technique](https://gamozolabs.github.io/metrology/2019/08/19/sushi_roll.html).
+
+As an example, the script can be used as follows.
+
+    sudo ./cycleByCycle.py -asm "MOVQ XMM0, RAX; MOVQ RAX, XMM0" -config configs/cfg_Skylake_common.txt -unroll 10
+
+`cycleByCycle.py` supports mostly the same options as `kernel-nanoBench.sh`, with the following exceptions. The `-fixed_counters` and `-msr_config` options are not available. The `-basic_mode`, `-df`, and `-no_normalization` options are used by default. The default for the `-unroll_count` parameter is `1`, and the default aggregate function is the median.
+
+`cycleByCycle.py` supports the following additional parameters.
+
+| Option             | Description |
+|--------------------|-------------|
+| `-html <filename>` | Generates an HTML file with a graphical representation of the measurement data. The filename is optional. `[Default: graph.html]` |
+| `-csv <filename>`  | Generates a CSV file that contains the measurement data. The filename is optional. `[Default: stdout]` |
+| `-end_to_end`      | By default, `cycleByCycle.py` tries to remove the overhead that comes from the instructions that enable/disable the performance counters, and from the instructions that drain the front end before/after the code of the benchmark is executed. However, this does not always work properly. In such cases, the `-end_to_end` option can be used; with this option, the output includes all of the overhead. |
 
 ## Performance Counter Config Files
 
@@ -198,7 +215,7 @@ can be used to count the number of last-level cache lookups in C-Box 0 on a Skyl
 
 ## Pausing Performance Counting
 
-If the `-no_mem` option is used, nanoBench provides a feature to temporarily pause performance counting. This is enabled by including the *magic* byte sequences `0xF0B513B1C2813F04` (for stopping the counters), and `0xE0B513B1C2813F04` (for restarting them) in the code of the microbenchmark.
+If the `-no_mem` option is used, nanoBench provides a feature to temporarily pause performance counting (however, this feature is not available for cycle-by-cycle measurements). This is enabled by including the *magic* byte sequences `0xF0B513B1C2813F04` (for stopping the counters), and `0xE0B513B1C2813F04` (for restarting them) in the code of the microbenchmark.
 
 Using this feature incurs a certain timing overhead that will be included in the measurement results. It is therefore, in particular, useful for microbenchmarks that do not measure the time, but e.g., cache hits or misses, such as the microbenchmarks generated by the tools in [tools/CacheAnalyzer](tools/CacheAnalyzer).
 
@@ -208,6 +225,6 @@ If the debug mode is enabled, the [generated code](#generated-code) contains a b
 
 ## Supported Platforms
 
-*nanoBench* should work with all Intel processors supporting architectural performance monitoring version ≥ 2, as well as with AMD Family 17h processors.
+*nanoBench* should work with all Intel processors supporting architectural performance monitoring version ≥ 2, as well as with AMD Family 17h processors. Cycle-by-cycle measurements are only available on Intel CPUs with at least four programmable performance counters.
 
-The code was developed and tested using Ubuntu 18.04.
+The code was developed and tested using Ubuntu 18.04 and 20.04.

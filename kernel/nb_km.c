@@ -68,6 +68,10 @@ unsigned long kallsyms_lookup_name(const char* name) {
 // 4 Mb is the maximum that kmalloc supports on my machines
 #define KMALLOC_MAX (4*1024*1024)
 
+// If enabled, for cycle-by-cycle measurements, the output includes all of the measurement overhead; otherwise, only the cycles between adding the first
+// instruction of the benchmark to the IDQ, and retiring the last instruction of the benchmark are considered.
+int end_to_end = false;
+
 char* runtime_code_base = NULL;
 
 size_t code_offset = 0;
@@ -299,6 +303,15 @@ static ssize_t alignment_offset_store(struct kobject *kobj, struct kobj_attribut
 }
 static struct kobj_attribute alignment_offset_attribute =__ATTR(alignment_offset, 0660, alignment_offset_show, alignment_offset_store);
 
+static ssize_t end_to_end_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%d\n", end_to_end);
+}
+static ssize_t end_to_end_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%d", &end_to_end);
+    return count;
+}
+static struct kobj_attribute end_to_end_attribute =__ATTR(end_to_end, 0660, end_to_end_show, end_to_end_store);
+
 static ssize_t drain_frontend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%d\n", drain_frontend);
 }
@@ -485,6 +498,8 @@ static ssize_t reset_show(struct kobject *kobj, struct kobj_attribute *attr, cha
     verbose = VERBOSE_DEFAULT;
     alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
     drain_frontend = DRAIN_FRONTEND_DEFAULT;
+
+    end_to_end = false;
 
     code_init_length = 0;
     code_late_init_length = 0;
@@ -731,11 +746,244 @@ static int run_nanoBench(struct seq_file *m, void *v) {
     return 0;
 }
 
-static int open_nanoBench(struct inode *inode, struct  file *file) {
-    return single_open_size(file, run_nanoBench, NULL, (n_pfc_configs+4*use_fixed_counters)*128);
+// Unlike with run_experiment(), create_runtime_code() needs to be called before calling run_experiment_with_freeze_on_PMI().
+// If n_used_counters is > 0, the programmable counters from 0 to n_used_counters-1 are read; otherwise, the fixed counters are read.
+// pmi_counter: 0-2: fixed counters, 3-n: programmable counters
+// pmi_counter_val: value that is written to pmi_counter before each measurement
+static void run_experiment_with_freeze_on_PMI(int64_t* results[], int n_used_counters, int pmi_counter, uint64_t pmi_counter_val) {
+    if (pmi_counter <= 2) {
+        set_bit_in_msr(MSR_IA32_FIXED_CTR_CTRL, pmi_counter*4 + 3);
+    } else {
+        set_bit_in_msr(MSR_IA32_PERFEVTSEL0 + (pmi_counter - 3), 20);
+    }
+
+    for (long ri=-warm_up_count; ri<n_measurements; ri++) {
+        disable_perf_ctrs_globally();
+        clear_perf_counters();
+        clear_overflow_status_bits();
+
+        if (pmi_counter <= 2) {
+            write_msr(MSR_IA32_FIXED_CTR0 + pmi_counter, pmi_counter_val);
+        } else {
+            write_msr(MSR_IA32_PMC0 + (pmi_counter - 3), pmi_counter_val);
+        }
+
+        ((void(*)(void))runtime_code)();
+
+        if (n_used_counters > 0) {
+            for (int c=0; c<n_used_counters; c++) {
+                results[c][max(0L, ri)] = read_pmc(c);
+            }
+        } else {
+            for (int c=0; c<3; c++) {
+                results[c][max(0L, ri)] = read_pmc(0x40000000 + c);
+            }
+        }
+    }
+
+    if (pmi_counter <= 2) {
+        clear_bit_in_msr(MSR_IA32_FIXED_CTR_CTRL, pmi_counter*4 + 3);
+    } else {
+        clear_bit_in_msr(MSR_IA32_PERFEVTSEL0 + (pmi_counter - 3), 20);
+    }
 }
 
-// since 5.6 the struct for fileops has changed
+static uint64_t get_max_FF_ctr_value(void) {
+    return ((uint64_t)1 << Intel_FF_ctr_width) - 1;
+}
+
+static uint64_t get_max_programmable_ctr_value(void) {
+    return ((uint64_t)1 << Intel_programmable_ctr_width) - 1;
+}
+
+static uint64_t get_end_to_end_cycles(void) {
+    run_experiment_with_freeze_on_PMI(measurement_results, 0, 0, 0);
+    uint64_t cycles = get_aggregate_value(measurement_results[FIXED_CTR_CORE_CYCLES], n_measurements, 1);
+    print_verbose("End-to-end cycles: %llu\n", cycles);
+    return cycles;
+}
+
+static uint64_t get_end_to_end_retired(void) {
+    run_experiment_with_freeze_on_PMI(measurement_results, 0, 0, 0);
+    uint64_t retired = get_aggregate_value(measurement_results[FIXED_CTR_INST_RETIRED], n_measurements, 1);
+    print_verbose("End-to-end retired instructions: %llu\n", retired);
+    return retired;
+}
+
+// Returns the cycle with which the fixed cycle counter has to be programmed such that the programmable counters are frozen immediately after retiring the last
+// instruction of the benchmark (if include_lfence is true, after retiring the lfence instruction that follows the code of the benchmark).
+static uint64_t get_cycle_last_retired(bool include_lfence) {
+    uint64_t perfevtsel2 = (uint64_t)0xC0 | (1ULL << 17) | (1ULL << 22); // Instructions retired
+    // we use counter 2 here, because the counters 0 and 1 do not freeze at the same time on some microarchitectures
+    write_msr(MSR_IA32_PERFEVTSEL0+2, perfevtsel2);
+
+    uint64_t last_applicable_instr = get_end_to_end_retired() - 258 + include_lfence;
+
+    run_experiment_with_freeze_on_PMI(measurement_results, 0, 3 + 2, get_max_programmable_ctr_value() - last_applicable_instr);
+    uint64_t time_to_last_retired = get_aggregate_value(measurement_results[1], n_measurements, 1);
+
+    // The counters freeze a few cycles after an overflow happens; additionally the programmable and fixed counters do not freeze (or do not start) at exactly
+    // the same time. In the following, we search for the value that we have to write to the fixed counter such that the programmable counters stop immediately
+    // after the last applicable instruction is retired.
+    uint64_t cycle_last_retired = 0;
+    for (int64_t cycle=time_to_last_retired; cycle>=0; cycle--) {
+        run_experiment_with_freeze_on_PMI(measurement_results, 3, FIXED_CTR_CORE_CYCLES, get_max_FF_ctr_value() - cycle);
+        if (get_aggregate_value(measurement_results[2], n_measurements, 1) < last_applicable_instr) {
+            cycle_last_retired = cycle+1;
+            break;
+        }
+    }
+    print_verbose("Last instruction of benchmark retired in cycle: %llu\n", cycle_last_retired);
+    return cycle_last_retired;
+}
+
+// Returns the cycle with which the fixed cycle counter has to be programmed such that the programmable counters are frozen in the cycle in which the first
+// instruction of the benchmark is added to the IDQ.
+static uint64_t get_cycle_first_added_to_IDQ(uint64_t cycle_last_retired_empty) {
+    uint64_t perfevtsel2 = (uint64_t)0x79 | ((uint64_t)0x04 << 8) | (1ULL << 22) | (1ULL << 17); // IDQ.MITE_UOPS
+    write_msr(MSR_IA32_PERFEVTSEL0+2, perfevtsel2);
+
+    uint64_t cycle_first_added_to_IDQ = 0;
+    uint64_t prev_uops = 0;
+    for (int64_t cycle=cycle_last_retired_empty-3; cycle>=0; cycle--) {
+        run_experiment_with_freeze_on_PMI(measurement_results, 3, FIXED_CTR_CORE_CYCLES, get_max_FF_ctr_value() - cycle);
+        uint64_t uops = get_aggregate_value(measurement_results[2], n_measurements, 1);
+
+        if ((prev_uops != 0) && (prev_uops - uops > 1)) {
+            cycle_first_added_to_IDQ = cycle + 1;
+            break;
+        }
+        prev_uops = uops;
+    }
+    print_verbose("First instruction added to IDQ in cycle: %llu\n", cycle_first_added_to_IDQ);
+    return cycle_first_added_to_IDQ;
+}
+
+// Programs the fixed cycle counter such that it overflows in the specified cycle, runs the benchmark,
+// and stores the measurements of the programmable counters in results.
+static void perform_measurements_for_cycle(uint64_t cycle, uint64_t* results) {
+    // on several microarchitectures, the counters 0 or 1 do not freeze at the same time as the other counters
+    int avoid_counters = 0;
+    if (displ_model == 0x97) { // Alder Lake
+        avoid_counters = (1 << 0);
+    } else if ((Intel_perf_mon_ver >= 3) && (Intel_perf_mon_ver <= 4) && (displ_model >= 0x3A)) {
+        avoid_counters = (1 << 1);
+    }
+
+    // the higher counters don't count some of the events properly (e.g., D1.01 on RKL)
+    int n_used_counters = 4;
+
+    size_t next_pfc_config = 0;
+    while (next_pfc_config < n_pfc_configs) {
+        size_t cur_pfc_config = next_pfc_config;
+        char* pfc_descriptions[MAX_PROGRAMMABLE_COUNTERS] = {0};
+        next_pfc_config = configure_perf_ctrs_programmable(next_pfc_config, true, true, n_used_counters, avoid_counters, pfc_descriptions);
+
+        run_experiment_with_freeze_on_PMI(measurement_results, n_used_counters, FIXED_CTR_CORE_CYCLES, get_max_FF_ctr_value() - cycle);
+
+        for (size_t c=0; c<n_used_counters; c++) {
+            if (pfc_descriptions[c]) {
+                results[cur_pfc_config] = get_aggregate_value(measurement_results[c], n_measurements, 1);
+                cur_pfc_config++;
+            }
+        }
+    }
+}
+
+static int run_nanoBench_cycle_by_cycle(struct seq_file *m, void *v) {
+    if (is_AMD_CPU) {
+        pr_err("Cycle-by-cycle measurements are not supported on AMD CPUs\n");
+        return -1;
+    }
+    if (n_programmable_counters < 4) {
+        pr_err("Cycle-by-cycle measurements require at least four programmable counters\n");
+        return -1;
+    }
+    if (!check_memory_allocations()) {
+        return -1;
+    }
+
+    kernel_fpu_begin();
+    disable_interrupts_preemption();
+
+    clear_perf_counter_configurations();
+    enable_freeze_on_PMI();
+    configure_perf_ctrs_FF_Intel(0, 1);
+
+    char* measurement_template;
+    if (no_mem) {
+        measurement_template = (char*)&measurement_cycleByCycle_template_Intel_noMem;
+    } else {
+        measurement_template = (char*)&measurement_cycleByCycle_template_Intel;
+    }
+
+    create_runtime_code(measurement_template, 0, 0); // empty benchmark
+
+    uint64_t cycle_last_retired_empty = get_cycle_last_retired(false);
+    uint64_t* results_empty = vmalloc(sizeof(uint64_t[n_pfc_configs]));
+    perform_measurements_for_cycle(cycle_last_retired_empty, results_empty);
+
+
+    uint64_t cycle_last_retired_empty_with_lfence = get_cycle_last_retired(true);
+    uint64_t* results_empty_with_lfence = vmalloc(sizeof(uint64_t[n_pfc_configs]));
+    perform_measurements_for_cycle(cycle_last_retired_empty_with_lfence, results_empty_with_lfence);
+
+    uint64_t first_cycle = 0;
+    uint64_t last_cycle = 0;
+
+    if (!end_to_end) {
+        first_cycle = get_cycle_first_added_to_IDQ(cycle_last_retired_empty);
+    }
+
+    create_runtime_code(measurement_template, unroll_count, loop_count);
+
+    if (end_to_end) {
+        last_cycle = get_end_to_end_cycles();
+    } else {
+        // Here, we take the cycle after retiring the lfence instruction because some uops of the lfence might retire in the same cycle
+        // as the last instruction of the benchmark; this way it is easier to determine the correct count for the number of retired uops.
+        last_cycle = get_cycle_last_retired(true);
+    }
+
+    uint64_t (*results)[n_pfc_configs] = vmalloc(sizeof(uint64_t[last_cycle+1][n_pfc_configs]));
+
+    for (uint64_t cycle=first_cycle; cycle<=last_cycle; cycle++) {
+        perform_measurements_for_cycle(cycle, results[cycle]);
+    }
+
+    disable_perf_ctrs_globally();
+    disable_freeze_on_PMI();
+    clear_overflow_status_bits();
+    clear_perf_counter_configurations();
+
+    restore_interrupts_preemption();
+    kernel_fpu_end();
+
+    for (size_t i=0; i<n_pfc_configs; i++) {
+        seq_printf(m, "%s", pfc_configs[i].description);
+        seq_printf(m, ",%lld", results_empty[i]);
+        seq_printf(m, ",%lld", results_empty_with_lfence[i]);
+        for (long cycle=first_cycle; cycle<=last_cycle; cycle++) {
+            seq_printf(m, ",%lld", results[cycle][i]);
+        }
+        seq_printf(m, "\n");
+    }
+
+    vfree(results_empty);
+    vfree(results_empty_with_lfence);
+    vfree(results);
+    return 0;
+}
+
+static int open_nanoBench(struct inode *inode, struct file *file) {
+    return single_open_size(file, run_nanoBench, NULL, (n_pfc_configs + n_msr_configs + 4*use_fixed_counters) * 128);
+}
+
+static int open_nanoBenchCycleByCycle(struct inode *inode, struct file *file) {
+    return single_open_size(file, run_nanoBench_cycle_by_cycle, NULL, n_pfc_configs * 4096);
+}
+
+// in kernel 5.6, the struct for fileops has changed
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 static const struct proc_ops proc_file_fops_nanoBench = {
     .proc_lseek = seq_lseek,
@@ -743,10 +991,23 @@ static const struct proc_ops proc_file_fops_nanoBench = {
     .proc_read = seq_read,
     .proc_release = single_release,
 };
+static const struct proc_ops proc_file_fops_nanoBenchCycleByCycle = {
+    .proc_lseek = seq_lseek,
+    .proc_open = open_nanoBenchCycleByCycle,
+    .proc_read = seq_read,
+    .proc_release = single_release,
+};
 #else
 static const struct file_operations proc_file_fops_nanoBench = {
     .llseek = seq_lseek,
     .open = open_nanoBench,
+    .owner = THIS_MODULE,
+    .read = seq_read,
+    .release = single_release,
+};
+static const struct file_operations proc_file_fops_nanoBenchCycleByCycle = {
+    .llseek = seq_lseek,
+    .open = open_nanoBenchCycleByCycle,
     .owner = THIS_MODULE,
     .read = seq_read,
     .release = single_release,
@@ -825,6 +1086,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &warm_up_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &initial_warm_up_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &alignment_offset_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &end_to_end_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &drain_frontend_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &agg_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &basic_mode_attribute.attr);
@@ -842,7 +1104,8 @@ static int __init nb_init(void) {
     }
 
     struct proc_dir_entry* proc_file_entry = proc_create("nanoBench", 0, NULL, &proc_file_fops_nanoBench);
-    if(proc_file_entry == NULL) {
+    struct proc_dir_entry* proc_file_entry2 = proc_create("nanoBenchCycleByCycle", 0, NULL, &proc_file_fops_nanoBenchCycleByCycle);
+    if(proc_file_entry == NULL || proc_file_entry2 == NULL) {
         pr_err("failed to create file in /proc/\n");
         return -1;
     }
@@ -883,6 +1146,7 @@ static void __exit nb_exit(void) {
 
     kobject_put(nb_kobject);
     remove_proc_entry("nanoBench", NULL);
+    remove_proc_entry("nanoBenchCycleByCycle", NULL);
 }
 
 module_init(nb_init);
