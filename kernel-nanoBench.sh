@@ -29,7 +29,7 @@ while [ "$1" ]; do
         echo -n "asm-init.bin" > /sys/nb/init
         rm -f asm-init.bin
         shift 2
-   elif [[ "$1" == -asm_l* ]]; then
+    elif [[ "$1" == -asm_l* ]]; then
         assemble "$2" asm-late-init.bin
         echo -n "asm-late-init.bin" > /sys/nb/late_init
         rm -f asm-late-init.bin
@@ -46,6 +46,9 @@ while [ "$1" ]; do
         shift 2
     elif [[ "$1" == -code_i* ]]; then
         echo -n "$2" > /sys/nb/init
+        shift 2
+    elif [[ "$1" == -code_l* ]]; then
+        echo -n "$2" > /sys/nb/late_init
         shift 2
     elif [[ "$1" == -code_o* ]]; then
         echo -n "$2" > /sys/nb/one_time_init
@@ -116,31 +119,33 @@ while [ "$1" ]; do
     elif [[ "$1" == -h* ]]; then
         echo "kernel-nanoBench.sh usage:"
         echo
-        echo "  -asm <code>:                Assembler code string (in Intel syntax) to be benchmarked."
-        echo "  -asm_init <code>:           Assembler code string (in Intel syntax) to be executed once in the beginning."
-        echo "  -asm_late_init <code>:      Assembler code string (in Intel syntax) to be executed once immediately before the code to be benchmarked."
-        echo "  -code <filename>:           Binary file containing the code to be benchmarked."
-        echo "  -code_init <filename>:      Binary file containing code to be executed once in the beginning."
-        echo "  -code_late_init <filename>: Binary file containing code to be executed once immediately before the code to be benchmarked."
-        echo "  -config <filename>:         File with performance counter event specifications."
-        echo "  -fixed_counters:            Reads the fixed-function performance counters.\n"
-        echo "  -n_measurements <n>:        Number of times the measurements are repeated."
-        echo "  -unroll_count <n>:          Number of copies of the benchmark code inside the inner loop."
-        echo "  -loop_count <n>:            Number of iterations of the inner loop."
-        echo "  -warm_up_count <n>:         Number of runs before the first measurement gets recorded."
-        echo "  -initial_warm_up_count <n>: Number of runs before any measurement is performed."
-        echo "  -alignment_offset <n>:      Alignment offset."
-        echo "  -df:                        Drains front-end buffers between executing code_late_init and code."
-        echo "  -avg:                       Selects the arithmetic mean as the aggregate function."
-        echo "  -median:                    Selects the median as the aggregate function."
-        echo "  -min:                       Selects the minimum as the aggregate function."
-        echo "  -max:                       Selects the maximum as the aggregate function."
-        echo "  -basic_mode:                Enables basic mode."
-        echo "  -no_mem:                    The code for reading the perf. ctrs. does not make memory accesses."
-        echo "  -no_normalization:          The measurement results are not divided by the number of repetitions."
-        echo "  -remove_empty_events:       Removes events from the output that did not occur."
-        echo "  -cpu <n>:                   Pins the measurement thread to CPU n."
-        echo "  -verbose:                   Outputs the results of all performance counter readings."
+        echo "  -asm <code>:                    Assembler code string (in Intel syntax) to be benchmarked."
+        echo "  -asm_init <code>:               Assembler code string (in Intel syntax) to be executed once in the beginning."
+        echo "  -asm_late_init <code>:          Assembler code string (in Intel syntax) to be executed once immediately before the code to be benchmarked."
+        echo "  -asm_one_time_init <code>:      Assembler code string (in Intel syntax) to be executed once before the first measurement."
+        echo "  -code <filename>:               Binary file containing the code to be benchmarked."
+        echo "  -code_init <filename>:          Binary file containing code to be executed once in the beginning."
+        echo "  -code_late_init <filename>:     Binary file containing code to be executed once immediately before the code to be benchmarked."
+        echo "  -code_one_time_init <filename>: Binary file containing code to be executed once before the first measurement."
+        echo "  -config <filename>:             File with performance counter event specifications."
+        echo "  -fixed_counters:                Reads the fixed-function performance counters.\n"
+        echo "  -n_measurements <n>:            Number of times the measurements are repeated."
+        echo "  -unroll_count <n>:              Number of copies of the benchmark code inside the inner loop."
+        echo "  -loop_count <n>:                Number of iterations of the inner loop."
+        echo "  -warm_up_count <n>:             Number of runs before the first measurement gets recorded."
+        echo "  -initial_warm_up_count <n>:     Number of runs before any measurement is performed."
+        echo "  -alignment_offset <n>:          Alignment offset."
+        echo "  -df:                            Drains front-end buffers between executing code_late_init and code."
+        echo "  -avg:                           Selects the arithmetic mean as the aggregate function."
+        echo "  -median:                        Selects the median as the aggregate function."
+        echo "  -min:                           Selects the minimum as the aggregate function."
+        echo "  -max:                           Selects the maximum as the aggregate function."
+        echo "  -basic_mode:                    Enables basic mode."
+        echo "  -no_mem:                        The code for reading the perf. ctrs. does not make memory accesses."
+        echo "  -no_normalization:              The measurement results are not divided by the number of repetitions."
+        echo "  -remove_empty_events:           Removes events from the output that did not occur."
+        echo "  -cpu <n>:                       Pins the measurement thread to CPU n."
+        echo "  -verbose:                       Outputs the results of all performance counter readings."
         exit 0
     else
         echo "Invalid option: $1"
