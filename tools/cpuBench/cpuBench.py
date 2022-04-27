@@ -876,11 +876,11 @@ def getPreInstr(instrNode):
 
    if iform in ['CALL_NEAR_GPRv', 'JMP_GPRv']:
       preInstrCode = 'lea RAX, [RIP+2]'
-      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D32 (R64)']]
 
    if iform in ['CALL_NEAR_MEMv', 'JMP_MEMv']:
       preInstrCode = 'lea RAX, [RIP+6]; mov [R14], RAX'
-      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, R64)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D32 (R64)'], instrNodeDict['MOV (M64, R64)']]
 
    if iform == 'LEAVE':
       preInstrCode = 'lea RBP, [R14]'
@@ -896,11 +896,11 @@ def getPreInstr(instrNode):
 
    if iform == 'RET_NEAR':
       preInstrCode = 'lea RAX, [RIP+5]; mov [RSP], RAX'
-      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, R64)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D32 (R64)'], instrNodeDict['MOV (M64, R64)']]
 
    if iform == 'RET_NEAR_IMMw':
       preInstrCode = 'lea RAX, [RIP+7]; mov [RSP], RAX'
-      preInstrNodes = [instrNodeDict['LEA_R_D8 (R64)'], instrNodeDict['MOV (M64, R64)']]
+      preInstrNodes = [instrNodeDict['LEA_R_D32 (R64)'], instrNodeDict['MOV (M64, R64)']]
 
    return (preInstrCode, preInstrNodes)
 
@@ -3236,6 +3236,7 @@ def main():
             # we need one instruction with 1*FP45;
             # their throughput is limited to 1 per cycle; thus, they are disallowed by the TP_noDepBreaking_noLoop check above
             disallowedBlockingInstrs.remove(instrNodeDict['MOVD (R32, XMM)'])
+            disallowedBlockingInstrs.remove(instrNodeDict['VMOVD (R32, XMM)'])
 
       print('disallowedBlockingInstrs')
       for instrNode in disallowedBlockingInstrs:
