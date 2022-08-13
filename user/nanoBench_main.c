@@ -222,6 +222,11 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Error: Could not allocate memory for runtime_r*\n");
         return 1;
     }
+    memset(runtime_r14, 0, RUNTIME_R_SIZE);
+    memset(runtime_rbp, 0, RUNTIME_R_SIZE);
+    memset(runtime_rdi, 0, RUNTIME_R_SIZE);
+    memset(runtime_rsi, 0, RUNTIME_R_SIZE);
+    memset(runtime_rsp, 0, RUNTIME_R_SIZE);
     runtime_r14 += RUNTIME_R_SIZE/2;
     runtime_rbp += RUNTIME_R_SIZE/2;
     runtime_rdi += RUNTIME_R_SIZE/2;
