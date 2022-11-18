@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2021 Andreas Abel
+# Copyright (C) 2022 Andreas Abel
 #
 # This file was modified from https://github.com/flababah/cpuid.py
 #
@@ -258,10 +258,12 @@ def micro_arch(cpu):
       return 'ZEN'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x08), (0x17, 0x18)]:
       return 'ZEN+'
-   if (vi.displ_family, vi.displ_model) in [(0x17, 0x71)]:
+   if (vi.displ_family == 0x17) and (vi.displ_model >= 0x31):
       return 'ZEN2'
-   if (vi.displ_family, vi.displ_model) in [(0x19, 0x21)]:
+   if (vi.displ_family == 0x19) and ((vi.displ_model >> 4) in [0x0, 0x2, 0x3, 0x4, 0x5]):
       return 'ZEN3'
+   if (vi.displ_family == 0x19) and ((vi.displ_model >> 4) in [0x1, 0x6, 0x7]):
+      return 'ZEN4'
 
    return 'unknown'
 

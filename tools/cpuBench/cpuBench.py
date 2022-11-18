@@ -57,7 +57,7 @@ serializingInstructions = {'INVD', 'INVEPT', 'INVLPG', 'INVVPID', 'LGDT', 'LIDT'
                            'CPUID', 'IRET', 'RSM', 'SFENCE', 'LFENCE', 'MFENCE'}
 
 def isAMDCPU():
-   return arch in ['ZEN+', 'ZEN2', 'ZEN3']
+   return arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']
 
 def isIntelCPU():
    return not isAMDCPU()
@@ -281,7 +281,7 @@ def getEventConfig(event):
       if arch in ['BNL', 'SLM', 'AMT']: return 'C2.10' # UOPS_RETIRED.ANY
       if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
       if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return 'B1.01' # UOPS_EXECUTED.THREAD
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0C1.00'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return 'C2.02'
    if event == 'UOPS_MITE':
@@ -346,25 +346,25 @@ def getEventConfig(event):
    if event == 'DIV_CYCLES':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01' # undocumented on HSW, but seems to work
       if arch in ['ICL', 'TGL', 'RKL']: return '14.09'
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '0D3.00'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '0D3.00'
       if arch in ['ADL-P']: return 'B0.09.CMSK=1'
    if event == 'ILD_STALL.LCP':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return '87.01'
    if event == 'INST_DECODED.DEC0':
       if arch in ['NHM', 'WSM']: return '18.01'
    if event == 'FpuPipeAssignment.Total0':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.01'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.01'
    if event == 'FpuPipeAssignment.Total1':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.02'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.02'
    if event == 'FpuPipeAssignment.Total2':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.04'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.04'
    if event == 'FpuPipeAssignment.Total3':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3']: return '000.08'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.08'
    # the following two counters are undocumented so far, but seem to work
    if event == 'FpuPipeAssignment.Total4':
-      if arch in ['ZEN3']: return '000.10'
+      if arch in ['ZEN3', 'ZEN4']: return '000.10'
    if event == 'FpuPipeAssignment.Total5':
-      if arch in ['ZEN3']: return '000.20'
+      if arch in ['ZEN3', 'ZEN4']: return '000.20'
    return None
 
 
@@ -612,7 +612,7 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
       else:
          if arch in ['ZEN+', 'ZEN2']:
             events = ['FpuPipeAssignment.Total'+str(p) for p in range(0,4)]
-         elif arch in ['ZEN3']:
+         elif arch in ['ZEN3', 'ZEN4']:
             events = ['FpuPipeAssignment.Total'+str(p) for p in range(0,6)]
 
       configurePFCs(events)
@@ -814,7 +814,10 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
    if 'LOOP' in iform or 'REP' in iform:
       configs = []
       for regVal in ['0', '1', '2']:
-         config = TPConfig(independentInstrs=independentInstrs, preInstrCode='mov RCX, '+regVal, note='With RCX='+regVal)
+         preInstrCode='mov RCX, '+regVal
+         preInstrNodes = [instrNodeDict['MOV (R64, I32)']]
+         note='With RCX='+regVal
+         config = TPConfig(independentInstrs=independentInstrs, preInstrCode=preInstrCode, preInstrNodes=preInstrNodes, note=note)
          if instrNode.attrib['category'] in ['IOSTRINGOP']:
             config.init = ['mov DX, 0x80']
          configs.append(config)
@@ -854,7 +857,8 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
    if iform == 'POPFQ':
       config.init = ['PUSHFQ; pop RAX']
 
-   if iform in ['RDMSR', 'WRMSR']: config.init = ['MOV RCX, 0xE7'] #TSC Frequency Clock Counter
+   if iform in ['RDMSR', 'WRMSR']: config.init = ['MOV RCX, 0xE7'] # TSC Frequency Clock Counter
+   if iform == 'WRMSR': config.init += ['rdmsr'] # without this, Zen4 hangs ("smpboot: Scheduler frequency invariance went wobbly, disabling!")
    if iform in ['RDPMC']: config.init = ['MOV RCX, 0']
 
    if iform == 'RET_NEAR_IMMw':
@@ -1937,7 +1941,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
    if cType == 'FP':
       # We use (V)SHUFPD instead of (V)MOV*PD because the latter is a 0-latency operation on some CPUs in some cases
       if isAVXInstr(instrNode):
-         if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
+         if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']:
             # on ZEN, all shuffles are integer operations
             chainInstrFP = 'VANDPD {0}, {1}, {1};'.format(targetReg, startReg)
             chainInstrFP += 'VANDPD {0}, {0}, {0};'.format(targetReg) * cRep
@@ -1947,7 +1951,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
             chainInstrFP += 'VSHUFPD {0}, {0}, {0}, 0;'.format(targetReg) * cRep
             chainLatencyFP = basicLatency['VSHUFPD'] * (cRep+1)
       else:
-         if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
+         if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']:
             # on ZEN, all shuffles are integer operations
             chainInstrFP = 'VANDPD {0}, {1}, {1};'.format(targetReg, startReg)
             chainInstrFP += 'VANDPD {0}, {0}, {0};'.format(targetReg) * cRep
@@ -2364,7 +2368,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                reg2Size = min(32, regSize)
                chainInstrs = 'MOVSX R12, {};'.format(regToSize(reg, reg2Size))
                chainInstrs += 'MOVSX R12, R12d;' * (cRep-1)
-               chainInstrs += 'mov [{}], {};'.format(addrReg, regToSize('R12', regSize))
+               chainInstrs += 'mov [{}], {};'.format(addrReg, regToSize('R12', memWidth))
                chainLatency = basicLatency['MOVSX_R64_R'+str(reg2Size)] + basicLatency['MOVSX_R64_R32'] * (cRep-1)
                chainLatency += int(basicLatency['MOV_10MOVSX_MOV_'+str(regSize)] >= 12) # 0 if CPU supports zero-latency store forwarding
             if reg in High8Regs:
@@ -2805,7 +2809,6 @@ def writeHtmlFile(folder, instrNode, title, body):
               + body +
               '</body>\n'
               '</html>\n')
-   os.chown(htmlFilename, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
 
 # returns list of xml instruction nodes
@@ -2853,7 +2856,7 @@ def filterInstructions(XMLRoot):
 
    _, _, ecx1, edx1 = cpu(0x01)
    _, ebx7, ecx7, edx7 = cpu(0x07)
-   eax7_1, _, _, _ = cpu(0x07, 0x01)
+   eax7_1, _, _, edx7_1 = cpu(0x07, 0x01)
    eaxD_1, _, _, _ = cpu(0x0D, 0x01)
    _, _, ecx8_1, edx8_1 = cpu(0x80000001)
    _, ebx8_8, _, _ = cpu(0x80000008)
@@ -2943,9 +2946,18 @@ def filterInstructions(XMLRoot):
       if isaSet.startswith('AVX512_FP16') and not cpuid.get_bit(edx7, 23): instrSet.discard(XMLInstr)
       if extension == 'AMX_TILE' and not cpuid.get_bit(edx7, 24): instrSet.discard(XMLInstr)
       if extension == 'AMX_INT8' and not cpuid.get_bit(edx7, 25): instrSet.discard(XMLInstr)
+      if extension == 'RAO_INT' and not cpuid.get_bit(eax7_1, 3): instrSet.discard(XMLInstr)
       if extension == 'AVX_VNNI' and not cpuid.get_bit(eax7_1, 4): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_BF16') and not cpuid.get_bit(eax7_1, 5): instrSet.discard(XMLInstr)
+      if extension == 'CMPCCXADD' and not cpuid.get_bit(eax7_1, 7): instrSet.discard(XMLInstr)
+      if extension == 'WRMSRNS' and not cpuid.get_bit(eax7_1, 19): instrSet.discard(XMLInstr)
+      if extension == 'AMX_FP16' and not cpuid.get_bit(eax7_1, 21): instrSet.discard(XMLInstr)
       if extension == 'HRESET' and not cpuid.get_bit(eax7_1, 22): instrSet.discard(XMLInstr)
+      if extension == 'AVX_IFMA' and not cpuid.get_bit(eax7_1, 23): instrSet.discard(XMLInstr)
+      if extension == 'MSRLIST' and not cpuid.get_bit(eax7_1, 27): instrSet.discard(XMLInstr)
+      if extension == 'AVX_VNNI_INT8' and not cpuid.get_bit(edx7_1, 4): instrSet.discard(XMLInstr)
+      if extension == 'AVX_NE_CONVERT' and not cpuid.get_bit(edx7_1, 5): instrSet.discard(XMLInstr)
+      if extension == 'ICACHE_PREFETCH' and not cpuid.get_bit(edx7_1, 14): instrSet.discard(XMLInstr)
       if extension == 'XSAVEOPT' and not cpuid.get_bit(eaxD_1, 0): instrSet.discard(XMLInstr)
       if extension == 'XSAVEC' and not cpuid.get_bit(eaxD_1, 1): instrSet.discard(XMLInstr)
       if extension == 'XSAVES' and not cpuid.get_bit(eaxD_1, 3): instrSet.discard(XMLInstr)
@@ -3036,7 +3048,7 @@ def main():
 
       resetNanoBench()
 
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3']:
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']:
          configurePFCs(['UOPS','FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3',
                         'FpuPipeAssignment.Total4', 'FpuPipeAssignment.Total5', 'DIV_CYCLES'])
       else:
@@ -3232,7 +3244,7 @@ def main():
          # combining FP with non-FP instr. can lead to wrong port counts
          #disallowedBlockingInstrs |= set(instr for instr in instrNodeList if instr.attrib['category'] in ['LOGICAL_FP'] or
          #                                any(not 'f' in o.attrib.get('xtype','f') for o in instr.findall('./operand')))
-         if arch in ['ZEN3']:
+         if arch in ['ZEN3', 'ZEN4']:
             # we need one instruction with 1*FP45;
             # their throughput is limited to 1 per cycle; thus, they are disallowed by the TP_noDepBreaking_noLoop check above
             disallowedBlockingInstrs.remove(instrNodeDict['MOVD (R32, XMM)'])
@@ -3500,12 +3512,10 @@ def main():
          rough_string = ET.tostring(XMLRoot, 'utf-8')
          reparsed = minidom.parseString(rough_string)
       f.write('\n'.join([line for line in reparsed.toprettyxml(indent='  ').split('\n') if line.strip()]))
-   os.chown(args.output, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
    tarFilename = 'genhtml-' + arch + (('-IACA' + iacaVersion) if useIACA else '-Measurements') + '.tar.gz'
    with tarfile.open(tarFilename, "w:gz") as tar:
       tar.add('/tmp/cpu-html/', arcname=os.path.sep)
-   os.chown(tarFilename, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
 
    shutil.rmtree('/tmp/cpu-html/')
 
