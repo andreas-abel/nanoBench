@@ -29,8 +29,6 @@ def main():
       matchingLines = []
       if iclass == 'INT':
          matchingLines = [lineDict[('INTn:INTO:INT3:INT1.html', 'INT n')]]
-      elif iclass == 'IRETQ':
-         matchingLines = [lineDict[('IRET:IRETD.html', 'IRET')]]
       if iclass == 'MOV':
          matchingLines = [lineDict[('MOV.html', 'MOV')]]
       elif iclass == 'MOV_CR':
@@ -48,6 +46,8 @@ def main():
             matchingLines = [lineDict[('CMPS:CMPSB:CMPSW:CMPSD:CMPSQ.html', 'CMPSD')]]
          else:
             matchingLines = [lineDict[('CMPSD.html', 'CMPSD')]]
+      elif iclass in ['IRETW', 'IRETD', 'IRETQ']:
+         matchingLines = [lineDict[('IRET:IRETD:IRETQ.html', 'IRET')]]
       elif iclass in ['MOVQ', 'VMOVQ']:
          if 'GPR' in iform:
             matchingLines = [lineDict[('MOVD:MOVQ.html', 'MOVQ')]]
@@ -133,15 +133,15 @@ def main():
          exit(1)
 
       instrNode.attrib['url'] = 'uops.info/html-instr/' + canonicalizeInstrString(instrNode.attrib['string']) + '.html'
-      if matchingLines:         
+      if matchingLines:
          instrNode.attrib['summary'] = str(matchingLines[0][2])
          instrNode.attrib['url-ref'] = 'felixcloutier.com/x86/' + matchingLines[0][0]
-         
+
    with open(args.output, "w") as f:
       rough_string = ET.tostring(root, 'utf-8')
       reparsed = minidom.parseString(rough_string)
       f.write('\n'.join([line for line in reparsed.toprettyxml(indent=' '*2).split('\n') if line.strip()]))
-   
+
 
 if __name__ == "__main__":
     main()

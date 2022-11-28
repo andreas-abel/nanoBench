@@ -567,8 +567,11 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
          subprocess.check_output(['as', '/tmp/ramdisk/asm.s', '-o', '/tmp/ramdisk/asm.o'])
          iacaOut = subprocess.check_output(iacaCMDLine + (['-analysis', 'THROUGHPUT'] if iacaVersion=='2.1' else []) + ['/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
       except subprocess.CalledProcessError as e:
-         print('Error: ' + e.output.decode())
+         logging.warning('Error: ' + e.output.decode())
+         htmlReports.append('<pre>' + e.output.decode() + '</pre>')
          return None
+
+      htmlReports.append('<pre>' + iacaOut + '</pre>')
 
       if not iacaOut or ' !' in iacaOut or ' X' in iacaOut or ' 0X' in iacaOut or not 'Total Num Of Uops' in iacaOut:
          print('IACA error')
@@ -587,8 +590,6 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
          instrPortsCol = instrPortsLine.split('|')[int(p)+2].split()
          if instrPortsCol:
             instrUopsOnBlockedPorts += float(instrPortsCol[0])
-
-      htmlReports.append('<pre>' + iacaOut + '</pre>')
 
       if allUopsOnBlockedPorts < blockInstrRep-.5:
          # something went wrong; fewer uops on ports than blockInstrRep
@@ -744,7 +745,8 @@ def getThroughputIacaNoInteriteration(instrNode, htmlReports):
       subprocess.check_output(['as', '/tmp/ramdisk/asm.s', '-o', '/tmp/ramdisk/asm.o'])
       iaca_tp = subprocess.check_output(iacaCMDLine + (['-analysis', 'THROUGHPUT'] if iacaVersion=='2.1' else []) + ['-no_interiteration', '/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
    except subprocess.CalledProcessError as e:
-      print('Error: ' + e.output.decode())
+      logging.warning('Error: ' + e.output.decode())
+      htmlReports.append('<pre>' + e.output.decode() + '</pre>\n')
       return None
 
    if debugOutput:
@@ -1092,17 +1094,17 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                iaca_out = subprocess.check_output(iacaCMDLine + ['/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
             except subprocess.CalledProcessError as e:
                logging.warning('Error: ' + e.output.decode())
+               htmlReports.append('<pre>' + e.output.decode() + '</pre>\n')
                if minTP != sys.maxsize:
-                  htmlReports.append('<pre>' + e.output.decode() + '</pre>\n')
                   continue # on SNB, IACA 2.2 crashes on only some (larger) inputs
                else:
                   return None
 
+            htmlReports.append('<pre>' + iaca_out + '</pre>\n')
+
             if not iaca_out or ' ! ' in iaca_out or ' X ' in iaca_out or ' 0X ' in iaca_out or not 'Total Num Of Uops' in iaca_out:
                print('IACA error')
                return None
-
-            htmlReports.append('<pre>' + iaca_out + '</pre>\n')
 
             cycles = float(iaca_out.split('\n')[3].split()[2])
             cycles = cycles/ic
@@ -2483,17 +2485,17 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
             subprocess.check_output(['as', '/tmp/ramdisk/asm.s', '-o', '/tmp/ramdisk/asm.o'])
             iaca_lat = subprocess.check_output(iacaCMDLine + ['-analysis', 'LATENCY', '/tmp/ramdisk/asm.o'], stderr=subprocess.STDOUT).decode()
          except subprocess.CalledProcessError as e:
-            print('Error: ' + e.output.decode())
+            logging.warning('Error: ' + e.output.decode())
+            htmlReports.append('<pre>' + e.output.decode() + '</pre>\n')
             return None
+
+         htmlReports.append('<pre>' + iaca_lat + '</pre>\n')
 
          if '!' in iaca_lat or not 'Latency' in iaca_lat:
             print('IACA error')
             return None
 
          latency = iaca_lat.split('\n')[3].split()[1]
-
-         htmlReports.append('<pre>' + iaca_lat + '</pre>\n')
-
          return latency
    else:
       if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'MOVDIR64B', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR',
@@ -3006,7 +3008,7 @@ def main():
    parser = argparse.ArgumentParser(description='CPU Benchmarks')
    parser.add_argument("-iaca", help="IACA command line; if not specified, perf. ctrs. are used")
    parser.add_argument("-input", help="Instructions XML file", required=True)
-   parser.add_argument("-output", help="Output XML file", default='result.xml')
+   parser.add_argument("-output", help="Output XML file")
    parser.add_argument("-arch", help="Architecture, Supported: [NHM, ...]")
    parser.add_argument("-noPretty", help="Disable pretty printing XML file", action='store_true')
    parser.add_argument("-noPorts", help="Don't measure port usage", action='store_true')
@@ -3506,7 +3508,7 @@ def main():
                print('Could not solve LP for ' + instrNode.attrib['string'] + ':')
                print(err)
 
-   with open(args.output, "w") as f:
+   with open(args.output or 'result_'+arch+(('_IACA_' + iacaVersion) if useIACA else '_measured')+'.xml' , "w") as f:
       reparsed = XMLRoot
       if not args.noPretty:
          rough_string = ET.tostring(XMLRoot, 'utf-8')
