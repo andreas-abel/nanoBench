@@ -813,6 +813,12 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
       config1 = TPConfig(independentInstrs=independentInstrs, init=['mov RCX, 1'], note='With RCX=1')
       return [config0, config1]
 
+   if instrNode.attrib['string'] in ['MOV_89 (R32, R32)', 'MOV_8B (R32, R32)']:
+      # see https://github.com/andreas-abel/nanoBench/issues/26
+      config0 = TPConfig(independentInstrs)
+      config1 = TPConfig(independentInstrs, init=['xor {0}, {0}'.format(instrI.opRegDict[2]) for instrI in independentInstrs], note='With "clean" inputs')
+      return [config0, config1]
+
    if 'LOOP' in iform or 'REP' in iform:
       configs = []
       for regVal in ['0', '1', '2']:
@@ -3236,6 +3242,7 @@ def main():
                                         or instr.attrib['category'] == 'SYSTEM'
                                         or instr.attrib['extension'] == 'X87'
                                         or '_AL_' in instr.attrib['iform'] or '_OrAX_' in instr.attrib['iform']
+                                        or instr.attrib.get('high8')
                                         or tpDict[instr].TP_noDepBreaking_noLoop - .2 > max([uops for _, uops in tpDict[instr].unblocked_ports.items()] or [0])
                                         or '512' in instr.attrib['isa-set']) # on SKX, some AVX-512 instructions can 'shut down' vector units on port 1
 
