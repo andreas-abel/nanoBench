@@ -146,7 +146,7 @@ def getRegMemInit(instrNode, opRegDict, memOffset, useIndexedAddr):
    return init
 
 nExperiments = 0
-def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0, warmUpCount=10, basicMode=False, htmlReports=None, maxRepeat=1):
+def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0, warmUpCount=10, basicMode=False, htmlReports=None):
    # we use a default warmUpCount of 10, as ICL requires at least about that much before memory operations run at full speed
 
    if init is None: init = []
@@ -201,49 +201,47 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
 
    setNanoBenchParameters(unrollCount=unrollCount, loopCount=loopCount, warmUpCount=warmUpCount, basicMode=basicMode)
 
-   ret = runNanoBench(codeObjFile=codeObjFile, initObjFile=initObjFile, lateInitObjFile=lateInitObjFile)
+   measuredCycles = []
+   while True:
+      ret = runNanoBench(codeObjFile=codeObjFile, initObjFile=initObjFile, lateInitObjFile=lateInitObjFile)
+      cycles = ret['APERF'] if isAMDCPU() else ret['Core cycles']
 
-   localHtmlReports.append('<li>Results:\n<ul>\n')
-   for evt, value in ret.items():
-      if 'RDTSC' in evt: continue
-      if evt == 'UOPS':
-         if arch in ['CON', 'WOL']: evt = 'RS_UOPS_DISPATCHED'
-         elif arch in ['NHM', 'WSM', 'BNL', 'GLM', 'GLP']: evt = 'UOPS_RETIRED.ANY'
-         elif arch in ['SNB', 'SLM', 'AMT', 'ADL-E']: evt = 'UOPS_RETIRED.ALL'
-         elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
-         elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: evt = 'UOPS_EXECUTED.THREAD'
-         elif arch in ['TRM']: evt = 'TOPDOWN_RETIRING.ALL'
-      localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
-   localHtmlReports.append('</ul>\n</li>')
+      maxPortUops = max((v/len(e.replace('UOPS_PORT_', '')) for e,v in ret.items() if 'PORT' in e), default=0)
+      sumPortUops = sum(v for e,v in ret.items() if 'PORT' in e)
+      if (not basicMode) and (len(measuredCycles) < 3) and ((cycles not in measuredCycles) or any(v<0 for v in ret.values())
+                                                            or (maxPortUops * .98 > cycles) or (sumPortUops - int(sumPortUops) > .2)):
+         measuredCycles.append(cycles)
+         if len(measuredCycles) >= 3:
+            basicMode = True
+            setNanoBenchParameters(basicMode=basicMode)
+         continue
 
-   if arch in ['NHM', 'WSM'] and 'UOPS_PORT_3' in ret:
-      # Workaround for broken port4 and port5 counters
-      ret['UOPS_PORT_4'] = ret['UOPS_PORT_3']
-      ret['UOPS_PORT_5'] = max(0, ret['UOPS'] - ret['UOPS_PORT_0'] - ret['UOPS_PORT_1'] - ret['UOPS_PORT_2'] - ret['UOPS_PORT_3'] - ret['UOPS_PORT_4'])
+      localHtmlReports.append('<li>Results:\n<ul>\n')
+      for evt, value in ret.items():
+         if 'RDTSC' in evt: continue
+         if evt == 'UOPS':
+            if arch in ['CON', 'WOL']: evt = 'RS_UOPS_DISPATCHED'
+            elif arch in ['NHM', 'WSM', 'BNL', 'GLM', 'GLP']: evt = 'UOPS_RETIRED.ANY'
+            elif arch in ['SNB', 'SLM', 'AMT', 'ADL-E']: evt = 'UOPS_RETIRED.ALL'
+            elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
+            elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: evt = 'UOPS_EXECUTED.THREAD'
+            elif arch in ['TRM']: evt = 'TOPDOWN_RETIRING.ALL'
+         localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
+      localHtmlReports.append('</ul>\n</li>')
 
-   if arch in ['SNB'] and all(('UOPS_PORT_'+str(p) in ret) for p in range(0,6)):
-      # some retired uops are not executed due to, e.g., move el. and zero idioms; however, using the sum of the uops on all ports may overcount due to replays
-      ret['UOPS'] = min(ret['UOPS'], sum(ret['UOPS_PORT_'+str(p)] for p in range(0,6)))
+      if isAMDCPU():
+         ret['Core cycles'] = cycles
 
-   if isAMDCPU():
-      ret['Core cycles'] = ret['APERF']
+      if arch in ['NHM', 'WSM'] and 'UOPS_PORT_3' in ret:
+         # Workaround for broken port4 and port5 counters
+         ret['UOPS_PORT_4'] = ret['UOPS_PORT_3']
+         ret['UOPS_PORT_5'] = max(0, ret['UOPS'] - ret['UOPS_PORT_0'] - ret['UOPS_PORT_1'] - ret['UOPS_PORT_2'] - ret['UOPS_PORT_3'] - ret['UOPS_PORT_4'])
 
-   if maxRepeat>0:
-      if any(v<-0.05 for v in ret.values()):
-         print('Repeating experiment because there was a value < 0')
-         return runExperiment(instrNode, instrCode, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=True, htmlReports=htmlReports, maxRepeat=maxRepeat-1)
+      if arch in ['SNB'] and all(('UOPS_PORT_'+str(p) in ret) for p in range(0,6)):
+         # some retired uops are not executed due to, e.g., move el. and zero idioms; however, using the sum of the uops on all ports may overcount due to replays
+         ret['UOPS'] = min(ret['UOPS'], sum(ret['UOPS_PORT_'+str(p)] for p in range(0,6)))
 
-      #sumPortUops = sum(v for e,v in ret.items() if 'PORT' in e and not '4' in e)
-      #if (sumPortUops % 1) > .2 and (sumPortUops % 1) < .8:
-      #   print('Repeating experiment because the sum of the port usages is not an integer')
-      #   print(ret)
-      #   return runExperiment(instrNode, instrCode, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=basicMode, htmlReports=htmlReports, maxRepeat=maxRepeat-1)
-
-      if any('PORT' in e for e in ret):
-         maxPortUops = max(v/len(e.replace('UOPS_PORT_', '')) for e,v in ret.items() if 'PORT' in e)
-         if maxPortUops * .98 > ret['Core cycles']:
-            print('Repeating experiment because there were more uops on a port than core cycles')
-            return runExperiment(instrNode, instrCode, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=True, htmlReports=htmlReports, maxRepeat=maxRepeat-1)
+      break
 
    if htmlReports is not None:
       htmlReports.extend(localHtmlReports)
@@ -598,7 +596,6 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
 
       return int(.2+instrUopsOnBlockedPorts)
    else:
-
       if isIntelCPU():
          if arch in ['NHM', 'WSM']:
             # Needed for workaround for broken port 5 counter
@@ -627,12 +624,9 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
       init = list(chain.from_iterable([x.regMemInit for x in blockInstrsList])) + instrInstance.regMemInit + config.init
 
       htmlReports.append('<ul>\n')
-      measurementResult = runExperiment(instrNode, blockInstrAsm + ';' + config.preInstrCode + ';' + instr, init=init, unrollCount=unrollCount, htmlReports=htmlReports)
+      measurementResult = runExperiment(instrNode, blockInstrAsm + ';' + config.preInstrCode + ';' + instr, init=init, unrollCount=unrollCount,
+                                        basicMode=True, htmlReports=htmlReports)
       htmlReports.append('</ul>\n')
-
-      if float(measurementResult['Core cycles']) < -10:
-         # something went wrong; this happens for example on HSW with long sequences of JMP instructions
-         if debugOutput: print('Core cycles < -10 in getUopsOnBlockedPorts')
 
       if 'UOPS_PORT_5B>=2' in measurementResult:
          measurementResult['UOPS_PORT_5'] = measurementResult['UOPS_PORT_5B'] - measurementResult['UOPS_PORT_5B>=2']
