@@ -15,7 +15,7 @@ $(MODULE_NAME)-objs += $(SRC:.c=.o)
 
 obj-m += $(MODULE_NAME).o
 
-ccflags-y+=-std=gnu99 -Wno-declaration-after-statement -Wno-vla -isystem $(shell $(CC) -print-file-name=include)
+ccflags-y+=-std=gnu99 -Wno-declaration-after-statement -Wno-vla -isystem $(shell $(CC) -print-file-name=include) -mfunction-return=keep
 
 OBJECT_FILES_NON_STANDARD := y
 
