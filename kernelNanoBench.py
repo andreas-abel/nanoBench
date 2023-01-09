@@ -1,5 +1,6 @@
 import atexit
 import os
+import re
 import subprocess
 import sys
 
@@ -36,7 +37,7 @@ def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
          code = code.replace('|3',  '.byte 0x0f,0x1f,0x00;')
          code = code.replace('|2',  '.byte 0x66,0x90;')
          code = code.replace('|1',  'nop;')
-         code = code.replace('|',   '')
+         code = re.sub(r'(\d*)\*\|(.*?)\|', lambda m: int(m.group(1))*(m.group(2)+';'), code)
       code = '.intel_syntax noprefix;' + code + ';1:;.att_syntax prefix\n'
       with open(asmFile, 'w') as f:
          f.write(code);

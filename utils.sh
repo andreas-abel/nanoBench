@@ -1,9 +1,8 @@
 assemble() {
     asm=$1
     filename=$2
-    echo ".intel_syntax noprefix" > asm-tmp.s
-    echo "$asm" >> asm-tmp.s
-    sed -i "
+
+    asm=`sed "
         s/|15/.byte 0x66,0x66,0x66,0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;/g
         s/|14/.byte 0x66,0x66,0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;/g
         s/|13/.byte 0x66,0x66,0x66,0x66,0x2e,0x0f,0x1f,0x84,0x00,0x00,0x00,0x00,0x00;/g
@@ -19,8 +18,12 @@ assemble() {
         s/|3/.byte 0x0f,0x1f,0x00;/g
         s/|2/.byte 0x66,0x90;/g
         s/|1/nop;/g
-        s/|//g
-    " asm-tmp.s
+    " <<< "$asm"`
+
+    asm=`python3 -c 'import sys, re; print(re.sub(r"(\d*)\*\|(.*?)\|", lambda m: int(m.group(1))*(m.group(2)+";"), sys.argv[1]))' "$asm"`
+
+    echo ".intel_syntax noprefix" > asm-tmp.s
+    echo "$asm" >> asm-tmp.s
     as asm-tmp.s -o asm-tmp.o || exit
     objcopy -j .text -O binary asm-tmp.o "$filename"
     rm asm-tmp.*

@@ -157,7 +157,7 @@ Both `nanoBench.sh` and `kernel-nanoBench.sh` support the following command-line
 | `-cpu <n>`                   | Pins the measurement thread to CPU n. `[Default: Pin the thread to the CPU it is currently running on.]` |
 | `-verbose`                   | Outputs the results of all performance counter readings. In the user-space version, the results are printed to stdout. The output of the kernel module can be accessed using `dmesg`. |
 
-<sup id="syntax">1</sup> As an extension, the tool also supports statements of the form `|n` (with 1&le;n&le;15) that are translated to n-byte NOPs.
+<sup id="syntax">1</sup> As an extension, the tool also supports statements of the form `|n` (with 1&le;n&le;15) that are translated to n-byte NOPs, and statements of the form `n*|x|` that unroll x n times (nesting is not supported).
 
 The following parameters are only supported by `nanoBench.sh`.
 
