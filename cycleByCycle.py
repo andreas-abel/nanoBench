@@ -47,6 +47,7 @@ def main():
    parser.add_argument('-median', action='store_const', const='med', help='Selects the median as the aggregate function.')
    parser.add_argument('-min', action='store_const', const='min', help='Selects the minimum as the aggregate function.')
    parser.add_argument('-max', action='store_const', const='max', help='Selects the maximum as the aggregate function.')
+   parser.add_argument('-range', action='store_true', help='Outputs the range of the measured values (i.e., the minimum and the maximum).')
    parser.add_argument('-no_mem', action='store_true', help='The code for reading the perf. ctrs. does not make memory accesses.')
    parser.add_argument('-remove_empty_events', action='store_true', help='Removes events from the output that did not occur.')
    parser.add_argument('-verbose', action='store_true', help='Outputs the results of all performance counter readings.')
@@ -65,6 +66,7 @@ def main():
                           initialWarmUpCount=args.initial_warm_up_count,
                           alignmentOffset=args.alignment_offset,
                           aggregateFunction=(args.avg or args.median or args.min or args.max or 'med'),
+                          range=args.range,
                           noMem=args.no_mem,
                           verbose=args.verbose,
                           endToEnd=args.end_to_end)
@@ -87,11 +89,14 @@ def main():
 
    if args.remove_empty_events:
       for k in list(nbDict.keys()):
-         if max(nbDict[k]) == 0:
+         if max(nbDict[k][0]) == 0:
             del nbDict[k]
 
    if args.csv is not None:
-      csvString = '\n'.join(k + ',' + ','.join(map(str, v)) for k, v in nbDict.items())
+      if args.range:
+         csvString = '\n'.join(k + ',' + ','.join(map(str, sum(zip(v, vMin, vMax), ()))) for k, (v, vMin, vMax) in nbDict.items())
+      else:
+         csvString = '\n'.join(k + ',' + ','.join(map(str, v)) for k, (v, _, _) in nbDict.items())
       if args.csv:
          with open(args.csv, 'w') as f:
             f.write(csvString + '\n')
@@ -106,8 +111,13 @@ def main():
       fig = go.Figure()
       fig.update_xaxes(title_text='Cycle')
 
-      for name, values in nbDict.items():
-         fig.add_trace(go.Scatter(y=values, mode='lines+markers', line_shape='linear', name=name, marker_size=5, hoverlabel = dict(namelength = -1)))
+      for name, (values, minValues, maxValues) in nbDict.items():
+         e = None
+         if args.range:
+            array = [(m-v) for (v, m) in zip(values, maxValues)]
+            arrayminus = [(v-m) for (v, m) in zip(values, minValues)]
+            e = dict(type='data', symmetric=False, array=array, arrayminus=arrayminus)
+         fig.add_trace(go.Scatter(y=values, error_y=e, mode='lines+markers', line_shape='linear', name=name, marker_size=5, hoverlabel = dict(namelength = -1)))
 
       config = {'displayModeBar': True,
                 'modeBarButtonsToRemove': ['autoScale2d', 'select2d', 'lasso2d'],
@@ -123,7 +133,6 @@ def main():
 
       htmlFilename = args.html or 'graph.html'
       writeHtmlFile(htmlFilename, 'Graph', '', body, includeDOCTYPE=False) # if DOCTYPE is included, scaling doesn't work properly
-      os.chown(htmlFilename, int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID']))
       print('Output written to ' + htmlFilename)
 
 

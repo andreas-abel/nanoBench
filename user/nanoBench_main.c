@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
         {"median", no_argument, &aggregate_function, MED},
         {"min", no_argument, &aggregate_function, MIN},
         {"max", no_argument, &aggregate_function, MAX},
+        {"range", no_argument, &output_range, true},
         {"basic_mode", no_argument, &basic_mode, true},
         {"no_mem", no_argument, &no_mem, true},
         {"no_normalization", no_argument, &no_normalization, true},

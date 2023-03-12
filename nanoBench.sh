@@ -43,7 +43,7 @@ while [ "$1" ]; do
         debug="gdb -ex=run --args"
         args="$args $1"
         shift
-    elif [[ "$1" == -r* ]]; then
+    elif [[ "$1" == -re* ]]; then
         filter_output="grep -v 0.00"
         shift
     else

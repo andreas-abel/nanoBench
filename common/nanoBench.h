@@ -138,6 +138,10 @@ enum agg_enum {AVG_20_80, MIN, MAX, MED};
 extern int aggregate_function;
 #define AGGREGATE_FUNCTION_DEFAULT AVG_20_80;
 
+// If enabled, the range of the measured values (i.e., the minimum and the maximum) are included in the output.
+extern int output_range;
+#define OUTPUT_RANGE_DEFAULT false;
+
 extern int verbose;
 #define VERBOSE_DEFAULT false;
 
@@ -271,7 +275,8 @@ void run_experiment(char* measurement_template, int64_t* results[], int n_counte
 void create_and_run_one_time_init_code(void);
 
 char* compute_result_str(char* buf, size_t buf_len, char* desc, int counter);
-int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale);
+int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale, int agg_func);
+int64_t normalize(int64_t value);
 int cmpInt64(const void *a, const void *b);
 long long ll_abs(long long val);
 

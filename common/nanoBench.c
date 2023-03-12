@@ -23,6 +23,7 @@ int no_normalization = NO_NORMALIZATION_DEFAULT;
 int basic_mode = BASIC_MODE_DEFAULT;
 int use_fixed_counters = USE_FIXED_COUNTERS_DEFAULT;
 int aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
+int output_range = OUTPUT_RANGE_DEFAULT;
 int verbose = VERBOSE_DEFAULT;
 int debug = DEBUG_DEFAULT;
 
@@ -786,24 +787,37 @@ void run_experiment(char* measurement_template, int64_t* results[], int n_counte
 }
 
 char* compute_result_str(char* buf, size_t buf_len, char* desc, int counter) {
-    int64_t agg = get_aggregate_value(measurement_results[counter], n_measurements, no_normalization?1:100);
-    int64_t agg_base = get_aggregate_value(measurement_results_base[counter], n_measurements, no_normalization?1:100);
+    int64_t agg = get_aggregate_value(measurement_results[counter], n_measurements, no_normalization?1:100, aggregate_function);
+    int64_t agg_base = get_aggregate_value(measurement_results_base[counter], n_measurements, no_normalization?1:100, aggregate_function);
+
+    char range_buf[50] = "";
+    if (output_range) {
+        int64_t min = get_aggregate_value(measurement_results[counter], n_measurements, no_normalization?1:100, MIN);
+        int64_t min_base =  get_aggregate_value(measurement_results_base[counter], n_measurements, no_normalization?1:100, MIN);
+        int64_t max = get_aggregate_value(measurement_results[counter], n_measurements, no_normalization?1:100, MAX);
+        int64_t max_base =  get_aggregate_value(measurement_results_base[counter], n_measurements, no_normalization?1:100, MAX);
+
+        if (no_normalization) {
+            snprintf(range_buf, sizeof(range_buf), " [%lld;%lld]", (long long)(min-max_base), (long long)(max-min_base));
+        } else {
+            int64_t min_n = normalize(min-max_base);
+            int64_t max_n = normalize(max-min_base);
+            snprintf(range_buf, sizeof(range_buf), " [%s%lld.%.2lld;%s%lld.%.2lld]", (min_n<0?"-":""), ll_abs(min_n/100), ll_abs(min_n)%100,
+                                                                                 (max_n<0?"-":""), ll_abs(max_n/100), ll_abs(max_n)%100);
+        }
+    }
 
     if (no_normalization) {
-        snprintf(buf, buf_len, "%s: %lld\n", desc, (long long)(agg-agg_base));
+        snprintf(buf, buf_len, "%s: %lld%s\n", desc, (long long)(agg-agg_base), range_buf);
     } else {
-        int64_t n_rep = loop_count * unroll_count;
-        if (loop_count == 0) {
-            n_rep = unroll_count;
-        }
-        int64_t result = ((agg-agg_base) + n_rep/2)/n_rep;
-        snprintf(buf, buf_len, "%s: %s%lld.%.2lld\n", desc, (result<0?"-":""), ll_abs(result/100), ll_abs(result)%100);
+        int64_t result = normalize(agg-agg_base);
+        snprintf(buf, buf_len, "%s: %s%lld.%.2lld%s\n", desc, (result<0?"-":""), ll_abs(result/100), ll_abs(result)%100, range_buf);
     }
     return buf;
 }
 
-int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale) {
-    if (aggregate_function == MIN) {
+int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale, int agg_func) {
+    if (agg_func == MIN) {
         int64_t min = values[0];
         for (int i=0; i<length; i++) {
             if (values[i] < min) {
@@ -811,7 +825,7 @@ int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale) {
             }
         }
         return min * scale;
-    } else if (aggregate_function == MAX)  {
+    } else if (agg_func == MAX)  {
         int64_t max = values[0];
         for (int i=0; i<length; i++) {
             if (values[i] > max) {
@@ -822,7 +836,7 @@ int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale) {
     } else {
         qsort(values, length, sizeof(int64_t), cmpInt64);
 
-        if (aggregate_function == AVG_20_80) {
+        if (agg_func == AVG_20_80) {
             // computes the average of the values between the 20 and 80 percentile
             int64_t sum = 0;
             int count = 0;
@@ -834,6 +848,14 @@ int64_t get_aggregate_value(int64_t* values, size_t length, size_t scale) {
             return values[length/2] * scale;
         }
     }
+}
+
+int64_t normalize(int64_t value) {
+    int64_t n_rep = loop_count * unroll_count;
+    if (loop_count == 0) {
+        n_rep = unroll_count;
+    }
+    return (value + n_rep/2)/n_rep;
 }
 
 int cmpInt64(const void *a, const void *b) {

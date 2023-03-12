@@ -348,6 +348,15 @@ static ssize_t no_normalization_store(struct kobject *kobj, struct kobj_attribut
 }
 static struct kobj_attribute no_normalization_attribute =__ATTR(no_normalization, 0660, no_normalization_show, no_normalization_store);
 
+static ssize_t output_range_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%d\n", output_range);
+}
+static ssize_t output_range_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%d", &output_range);
+    return count;
+}
+static struct kobj_attribute output_range_attribute =__ATTR(output_range, 0660, output_range_show, output_range_store);
+
 static ssize_t agg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
     return sprintf(buf, "%d\n", aggregate_function);
 }
@@ -495,6 +504,7 @@ static ssize_t reset_show(struct kobject *kobj, struct kobj_attribute *attr, cha
     basic_mode = BASIC_MODE_DEFAULT;
     use_fixed_counters = USE_FIXED_COUNTERS_DEFAULT;
     aggregate_function = AGGREGATE_FUNCTION_DEFAULT;
+    output_range = OUTPUT_RANGE_DEFAULT;
     verbose = VERBOSE_DEFAULT;
     alignment_offset = ALIGNMENT_OFFSET_DEFAULT;
     drain_frontend = DRAIN_FRONTEND_DEFAULT;
@@ -798,14 +808,14 @@ static uint64_t get_max_programmable_ctr_value(void) {
 
 static uint64_t get_end_to_end_cycles(void) {
     run_experiment_with_freeze_on_PMI(measurement_results, 0, 0, 0);
-    uint64_t cycles = get_aggregate_value(measurement_results[FIXED_CTR_CORE_CYCLES], n_measurements, 1);
+    uint64_t cycles = get_aggregate_value(measurement_results[FIXED_CTR_CORE_CYCLES], n_measurements, 1, aggregate_function);
     print_verbose("End-to-end cycles: %llu\n", cycles);
     return cycles;
 }
 
 static uint64_t get_end_to_end_retired(void) {
     run_experiment_with_freeze_on_PMI(measurement_results, 0, 0, 0);
-    uint64_t retired = get_aggregate_value(measurement_results[FIXED_CTR_INST_RETIRED], n_measurements, 1);
+    uint64_t retired = get_aggregate_value(measurement_results[FIXED_CTR_INST_RETIRED], n_measurements, 1, aggregate_function);
     print_verbose("End-to-end retired instructions: %llu\n", retired);
     return retired;
 }
@@ -820,7 +830,7 @@ static uint64_t get_cycle_last_retired(bool include_lfence) {
     uint64_t last_applicable_instr = get_end_to_end_retired() - 258 + include_lfence;
 
     run_experiment_with_freeze_on_PMI(measurement_results, 0, 3 + 2, get_max_programmable_ctr_value() - last_applicable_instr);
-    uint64_t time_to_last_retired = get_aggregate_value(measurement_results[1], n_measurements, 1);
+    uint64_t time_to_last_retired = get_aggregate_value(measurement_results[1], n_measurements, 1, aggregate_function);
 
     // The counters freeze a few cycles after an overflow happens; additionally the programmable and fixed counters do not freeze (or do not start) at exactly
     // the same time. In the following, we search for the value that we have to write to the fixed counter such that the programmable counters stop immediately
@@ -828,7 +838,7 @@ static uint64_t get_cycle_last_retired(bool include_lfence) {
     uint64_t cycle_last_retired = 0;
     for (int64_t cycle=time_to_last_retired; cycle>=0; cycle--) {
         run_experiment_with_freeze_on_PMI(measurement_results, 3, FIXED_CTR_CORE_CYCLES, get_max_FF_ctr_value() - cycle);
-        if (get_aggregate_value(measurement_results[2], n_measurements, 1) < last_applicable_instr) {
+        if (get_aggregate_value(measurement_results[2], n_measurements, 1, aggregate_function) < last_applicable_instr) {
             cycle_last_retired = cycle+1;
             break;
         }
@@ -847,7 +857,7 @@ static uint64_t get_cycle_first_added_to_IDQ(uint64_t cycle_last_retired_empty) 
     uint64_t prev_uops = 0;
     for (int64_t cycle=cycle_last_retired_empty-3; cycle>=0; cycle--) {
         run_experiment_with_freeze_on_PMI(measurement_results, 3, FIXED_CTR_CORE_CYCLES, get_max_FF_ctr_value() - cycle);
-        uint64_t uops = get_aggregate_value(measurement_results[2], n_measurements, 1);
+        uint64_t uops = get_aggregate_value(measurement_results[2], n_measurements, 1, aggregate_function);
 
         if ((prev_uops != 0) && (prev_uops - uops > 1)) {
             cycle_first_added_to_IDQ = cycle + 1;
@@ -861,7 +871,7 @@ static uint64_t get_cycle_first_added_to_IDQ(uint64_t cycle_last_retired_empty) 
 
 // Programs the fixed cycle counter such that it overflows in the specified cycle, runs the benchmark,
 // and stores the measurements of the programmable counters in results.
-static void perform_measurements_for_cycle(uint64_t cycle, uint64_t* results) {
+static void perform_measurements_for_cycle(uint64_t cycle, uint64_t* results, uint64_t* results_min, uint64_t* results_max) {
     // on several microarchitectures, the counters 0 or 1 do not freeze at the same time as the other counters
     int avoid_counters = 0;
     if (displ_model == 0x97) { // Alder Lake
@@ -883,7 +893,9 @@ static void perform_measurements_for_cycle(uint64_t cycle, uint64_t* results) {
 
         for (size_t c=0; c<n_used_counters; c++) {
             if (pfc_descriptions[c]) {
-                results[cur_pfc_config] = get_aggregate_value(measurement_results[c], n_measurements, 1);
+                results[cur_pfc_config] = get_aggregate_value(measurement_results[c], n_measurements, 1, aggregate_function);
+                if (results_min) results_min[cur_pfc_config] = get_aggregate_value(measurement_results[c], n_measurements, 1, MIN);
+                if (results_max) results_max[cur_pfc_config] = get_aggregate_value(measurement_results[c], n_measurements, 1, MAX);
                 cur_pfc_config++;
             }
         }
@@ -921,12 +933,12 @@ static int run_nanoBench_cycle_by_cycle(struct seq_file *m, void *v) {
 
     uint64_t cycle_last_retired_empty = get_cycle_last_retired(false);
     uint64_t* results_empty = vmalloc(sizeof(uint64_t[n_pfc_configs]));
-    perform_measurements_for_cycle(cycle_last_retired_empty, results_empty);
+    perform_measurements_for_cycle(cycle_last_retired_empty, results_empty, NULL, NULL);
 
 
     uint64_t cycle_last_retired_empty_with_lfence = get_cycle_last_retired(true);
     uint64_t* results_empty_with_lfence = vmalloc(sizeof(uint64_t[n_pfc_configs]));
-    perform_measurements_for_cycle(cycle_last_retired_empty_with_lfence, results_empty_with_lfence);
+    perform_measurements_for_cycle(cycle_last_retired_empty_with_lfence, results_empty_with_lfence, NULL, NULL);
 
     uint64_t first_cycle = 0;
     uint64_t last_cycle = 0;
@@ -946,9 +958,11 @@ static int run_nanoBench_cycle_by_cycle(struct seq_file *m, void *v) {
     }
 
     uint64_t (*results)[n_pfc_configs] = vmalloc(sizeof(uint64_t[last_cycle+1][n_pfc_configs]));
+    uint64_t (*results_min)[n_pfc_configs] = output_range?vmalloc(sizeof(uint64_t[last_cycle+1][n_pfc_configs])):NULL;
+    uint64_t (*results_max)[n_pfc_configs] = output_range?vmalloc(sizeof(uint64_t[last_cycle+1][n_pfc_configs])):NULL;
 
     for (uint64_t cycle=first_cycle; cycle<=last_cycle; cycle++) {
-        perform_measurements_for_cycle(cycle, results[cycle]);
+        perform_measurements_for_cycle(cycle, results[cycle], output_range?results_min[cycle]:NULL, output_range?results_max[cycle]:NULL);
     }
 
     disable_perf_ctrs_globally();
@@ -965,6 +979,7 @@ static int run_nanoBench_cycle_by_cycle(struct seq_file *m, void *v) {
         seq_printf(m, ",%lld", results_empty_with_lfence[i]);
         for (long cycle=first_cycle; cycle<=last_cycle; cycle++) {
             seq_printf(m, ",%lld", results[cycle][i]);
+            if (output_range) seq_printf(m, ",%lld,%lld", results_min[cycle][i], results_max[cycle][i]);
         }
         seq_printf(m, "\n");
     }
@@ -1094,6 +1109,7 @@ static int __init nb_init(void) {
     error |= sysfs_create_file(nb_kobject, &end_to_end_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &drain_frontend_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &agg_attribute.attr);
+    error |= sysfs_create_file(nb_kobject, &output_range_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &basic_mode_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &no_mem_attribute.attr);
     error |= sysfs_create_file(nb_kobject, &no_normalization_attribute.attr);

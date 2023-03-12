@@ -95,7 +95,7 @@ paramDict = dict()
 # Otherwise, reset() needs to be called first.
 def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConfigFile=None, fixedCounters=None, nMeasurements=None, unrollCount=None,
                            loopCount=None, warmUpCount=None, initialWarmUpCount=None, alignmentOffset=None, codeOffset=None, drainFrontend=None,
-                           aggregateFunction=None, basicMode=None, noMem=None, noNormalization=None, verbose=None, endToEnd=None):
+                           aggregateFunction=None, range=None, basicMode=None, noMem=None, noNormalization=None, verbose=None, endToEnd=None):
    if config is not None:
       if paramDict.get('config', None) != config:
          configFile = '/tmp/ramdisk/config'
@@ -161,6 +161,11 @@ def setNanoBenchParameters(config=None, configFile=None, msrConfig=None, msrConf
       if paramDict.get('aggregateFunction', None) != aggregateFunction:
          writeFile('/sys/nb/agg', aggregateFunction)
          paramDict['aggregateFunction'] = aggregateFunction
+
+   if range is not None:
+      if paramDict.get('range', None) != range:
+         writeFile('/sys/nb/output_range', str(int(range)))
+         paramDict['range'] = range
 
    if basicMode is not None:
       if paramDict.get('basicMode', None) != basicMode:
@@ -254,7 +259,10 @@ def runNanoBench(code='', codeObjFile=None, codeBinFile=None,
       if not ':' in line: continue
       lineSplit = line.split(':')
       counter = lineSplit[0].strip()
-      value = float(lineSplit[1].strip())
+      if paramDict.get('range'):
+         value = tuple(map(float, re.match(r' (.*) \[(.*);(.*)\]', lineSplit[1]).groups()))
+      else:
+         value = float(lineSplit[1].strip())
       ret[counter] = value
    return ret
 
@@ -286,14 +294,21 @@ def runNanoBenchCycleByCycle(code='', codeObjFile=None, codeBinFile=None,
       counter = lineSplit[0].strip()
       valueEmpty = int(lineSplit[1])
       valueEmptyWithLfence = int(lineSplit[2])
-      values = [int(v) for v in lineSplit[3:]]
-      nbDict[counter] = (valueEmpty, valueEmptyWithLfence, values)
+      minValues = []
+      maxValues = []
+      if paramDict.get('range'):
+         values = list(map(int, lineSplit[3::3]))
+         minValues = list(map(int, lineSplit[4::3]))
+         maxValues = list(map(int, lineSplit[5::3]))
+      else:
+         values = list(map(int, lineSplit[3:]))
+      nbDict[counter] = (valueEmpty, valueEmptyWithLfence, values, minValues, maxValues)
 
    if paramDict.get('verbose'):
       print('\n'.join((k + ': ' + str(v)) for k, v in nbDict.items()))
 
    if paramDict.get('endToEnd'):
-      return OrderedDict((k, v) for k, (_, _, v) in nbDict.items() if "_internal" not in k)
+      return OrderedDict((k, (v, vMin, vMax)) for k, (_, _, v, vMin, vMax) in nbDict.items() if "_internal" not in k)
    else:
       instRetired = nbDict['INST_RETIRED_internal'][2]
       if len(instRetired) < 3:
@@ -308,7 +323,7 @@ def runNanoBenchCycleByCycle(code='', codeObjFile=None, codeBinFile=None,
          return None
 
       result = OrderedDict()
-      for k, (valueEmpty, valueEmptyWithLfence, values) in nbDict.items():
+      for k, (valueEmpty, valueEmptyWithLfence, values, minValues, maxValues) in nbDict.items():
          if "_internal" in k: continue
 
          leftMin = values[0]
@@ -325,7 +340,7 @@ def runNanoBenchCycleByCycle(code='', codeObjFile=None, codeBinFile=None,
          elif 'IDQ' in k:
             rightMax = values[cycleOfLfenceUop - 1]
 
-         result[k] = [max(0, min(v, rightMax) - leftMin) for v in values[:cycleLastInstrRetired + 1]]
+         result[k] = tuple([max(0, min(v, rightMax) - leftMin) for v in vx[:cycleLastInstrRetired + 1]] for vx in [values, minValues, maxValues])
 
       return result
 

@@ -113,7 +113,10 @@ while [ "$1" ]; do
     elif [[ "$1" == -avg* ]]; then
         echo "avg" > /sys/nb/agg
         shift
-    elif [[ "$1" == -r* ]]; then
+    elif [[ "$1" == -ra* ]]; then
+        echo "1" > /sys/nb/output_range
+        shift
+    elif [[ "$1" == -re* ]]; then
         filter_output="grep -v 0.00"
         shift
     elif [[ "$1" == -h* ]]; then
@@ -140,6 +143,7 @@ while [ "$1" ]; do
         echo "  -median:                        Selects the median as the aggregate function."
         echo "  -min:                           Selects the minimum as the aggregate function."
         echo "  -max:                           Selects the maximum as the aggregate function."
+        echo "  -range:                         Outputs the range of the measured values (i.e., the minimum and the maximum)."
         echo "  -basic_mode:                    Enables basic mode."
         echo "  -no_mem:                        The code for reading the perf. ctrs. does not make memory accesses."
         echo "  -no_normalization:              The measurement results are not divided by the number of repetitions."
