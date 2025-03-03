@@ -536,13 +536,13 @@ uint32_t prev_APIC_TMICT = 0;
 uint64_t prev_deadline = 0;
 
 static void restore_interrupts_preemption(void) {
-    apic_write(APIC_LVTT, prev_LVTT);
-    apic_write(APIC_LVTTHMR, prev_LVTTHMR);
-    apic_write(APIC_LVTPC, prev_LVTPC);
-    apic_write(APIC_LVT0, prev_LVT0);
-    apic_write(APIC_LVT1, prev_LVT1);
-    apic_write(APIC_LVTERR, prev_LVTERR);
-    apic_write(APIC_TMICT, prev_APIC_TMICT);
+    apic->write(APIC_LVTT, prev_LVTT);
+    apic->write(APIC_LVTTHMR, prev_LVTTHMR);
+    apic->write(APIC_LVTPC, prev_LVTPC);
+    apic->write(APIC_LVT0, prev_LVT0);
+    apic->write(APIC_LVT1, prev_LVT1);
+    apic->write(APIC_LVTERR, prev_LVTERR);
+    apic->write(APIC_TMICT, prev_APIC_TMICT);
     if (supports_tsc_deadline) {
         asm volatile("mfence");
         write_msr(MSR_IA32_TSC_DEADLINE, max(1ULL, prev_deadline));
@@ -564,24 +564,24 @@ static void disable_interrupts_preemption(void) {
     // We mask interrupts in the APIC LVT. We do not mask all maskable interrupts using the cli instruction, as on some
     // microarchitectures, pending interrupts that are masked via the cli instruction can reduce the retirement rate
     // (e.g., on ICL to 4 uops/cycle).
-    prev_LVTT = apic_read(APIC_LVTT);
-    prev_LVTTHMR = apic_read(APIC_LVTTHMR);
-    prev_LVTPC = apic_read(APIC_LVTPC);
-    prev_LVT0 = apic_read(APIC_LVT0);
-    prev_LVT1 = apic_read(APIC_LVT1);
-    prev_LVTERR = apic_read(APIC_LVTERR);
-    prev_APIC_TMICT = apic_read(APIC_TMICT);
+    prev_LVTT = apic->read(APIC_LVTT);
+    prev_LVTTHMR = apic->read(APIC_LVTTHMR);
+    prev_LVTPC = apic->read(APIC_LVTPC);
+    prev_LVT0 = apic->read(APIC_LVT0);
+    prev_LVT1 = apic->read(APIC_LVT1);
+    prev_LVTERR = apic->read(APIC_LVTERR);
+    prev_APIC_TMICT = apic->read(APIC_TMICT);
     if (supports_tsc_deadline) {
         prev_deadline = read_msr(MSR_IA32_TSC_DEADLINE);
         write_msr(MSR_IA32_TSC_DEADLINE, 0);
     }
 
-    apic_write(APIC_LVTT, prev_LVTT | APIC_LVT_MASKED);
-    apic_write(APIC_LVTTHMR, prev_LVTTHMR | APIC_LVT_MASKED);
-    apic_write(APIC_LVTPC, prev_LVTPC | APIC_LVT_MASKED);
-    apic_write(APIC_LVT0, prev_LVT0 | APIC_LVT_MASKED);
-    apic_write(APIC_LVT1, prev_LVT1 | APIC_LVT_MASKED);
-    apic_write(APIC_LVTERR, prev_LVTERR | APIC_LVT_MASKED);
+    apic->write(APIC_LVTT, prev_LVTT | APIC_LVT_MASKED);
+    apic->write(APIC_LVTTHMR, prev_LVTTHMR | APIC_LVT_MASKED);
+    apic->write(APIC_LVTPC, prev_LVTPC | APIC_LVT_MASKED);
+    apic->write(APIC_LVT0, prev_LVT0 | APIC_LVT_MASKED);
+    apic->write(APIC_LVT1, prev_LVT1 | APIC_LVT_MASKED);
+    apic->write(APIC_LVTERR, prev_LVTERR | APIC_LVT_MASKED);
 }
 
 static bool check_memory_allocations(void) {
