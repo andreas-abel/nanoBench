@@ -189,6 +189,7 @@ def version_info(cpu):
 def micro_arch(cpu):
    vi = version_info(cpu)
 
+   # https://en.wikichip.org/wiki/intel/cpuid
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x0F)]:
       return 'Core'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x17)]:
@@ -246,6 +247,8 @@ def micro_arch(cpu):
       return 'SNR'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x8C), (0x06, 0x8D)]:
       return 'TGL'
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0x8F)]:
+      return 'SPR'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0xA7)]:
       return 'RKL'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x6A), (0x06, 0x6C)]:
@@ -254,6 +257,14 @@ def micro_arch(cpu):
       return 'TRM'
    if (vi.displ_family, vi.displ_model) in [(0x06, 0x97), (0x06, 0x9A)]:
       return 'ADL-' + ('P' if (vi.core_type == 0x40) else 'E')
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0xAA), (0x06, 0xAB), (0x06, 0xAC)]:
+      return 'MTL-' + ('P' if (vi.core_type == 0x40) else 'E')
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0xB5), (0x06, 0xC5), (0x06, 0xC6)]:
+      return 'ARL-' + ('P' if (vi.core_type == 0x40) else 'E')
+   if (vi.displ_family, vi.displ_model) in [(0x06, 0xCF)]:
+      return 'EMR'
+
+   # https://en.wikichip.org/wiki/amd/cpuid
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x01), (0x17, 0x11)]:
       return 'ZEN'
    if (vi.displ_family, vi.displ_model) in [(0x17, 0x08), (0x17, 0x18)]:
@@ -262,8 +273,10 @@ def micro_arch(cpu):
       return 'ZEN2'
    if (vi.displ_family == 0x19) and ((vi.displ_model >> 4) in [0x0, 0x2, 0x3, 0x4, 0x5]):
       return 'ZEN3'
-   if (vi.displ_family == 0x19) and ((vi.displ_model >> 4) in [0x1, 0x6, 0x7]):
+   if (vi.displ_family == 0x19) and ((vi.displ_model >> 4) in [0x1, 0x6, 0x7, 0xA]):
       return 'ZEN4'
+   if (vi.displ_family == 0x1A) and ((vi.displ_model >> 4) in [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7]):
+      return 'ZEN5'
 
    return 'unknown'
 
