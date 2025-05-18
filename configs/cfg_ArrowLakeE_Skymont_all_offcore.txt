@@ -1,0 +1,11 @@
+# Based on https://raw.githubusercontent.com/intel/perfmon/refs/heads/main/ARL/events/arrowlake_skymont_core.json (Version: 1.09)
+# Applies to processors with family-model in {6-C5, 6-C6}
+
+# Counts streaming stores that have any type of response.
+B7.01.MSR_RSP0=0x10800.TakenAlone OCR.STREAMING_WR.ANY_RESPONSE
+
+# Counts streaming stores which modify only part of a 64 byte cacheline that have any type of response.
+B7.01.MSR_RSP0=0x400000010000.TakenAlone OCR.PARTIAL_STREAMING_WR.ANY_RESPONSE
+
+# Counts streaming stores which modify a full 64 byte cacheline that have any type of response.
+B7.01.MSR_RSP0=0x800000010000.TakenAlone OCR.FULL_STREAMING_WR.ANY_RESPONSE

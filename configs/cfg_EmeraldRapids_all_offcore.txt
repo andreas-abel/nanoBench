@@ -1,0 +1,200 @@
+# Based on https://raw.githubusercontent.com/intel/perfmon/refs/heads/main/EMR/events/emeraldrapids_core.json (Version: 1.13)
+# Applies to processors with family-model in {6-CF}
+
+# Counts demand data reads that have any type of response.
+2A.01.MSR_RSP0=0x10001.TakenAlone OCR.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts demand data reads that resulted in a snoop hit a modified line in another core's caches which forwarded the data.
+2A.01.MSR_RSP0=0x10003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HITM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that resulted in a snoop hit a modified line in another core's caches which forwarded the data.
+2A.01.MSR_RSP0=0x10003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_HITM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that resulted in a snoop hit a modified line in another core's caches which forwarded the data.
+2A.01.MSR_RSP0=0x10003C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT.SNOOP_HITM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that resulted in a snoop hit a modified line in another core's caches which forwarded the data.
+2A.01.MSR_RSP0=0x10003C4477.TakenAlone OCR.READS_TO_CORE.L3_HIT.SNOOP_HITM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that have any type of response.
+2A.01.MSR_RSP0=0x10004.TakenAlone OCR.DEMAND_CODE_RD.ANY_RESPONSE
+
+# Counts hardware prefetches (which bring data to L2) that have any type of response.
+2A.01.MSR_RSP0=0x10070.TakenAlone OCR.HWPF_L2.ANY_RESPONSE
+
+# Counts demand data reads that hit a modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x1008000001.TakenAlone OCR.DEMAND_DATA_RD.SNC_CACHE.HITM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit a modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x1008000002.TakenAlone OCR.DEMAND_RFO.SNC_CACHE.HITM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit a modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x1008000004.TakenAlone OCR.DEMAND_CODE_RD.SNC_CACHE.HITM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that hit a modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x1008004477.TakenAlone OCR.READS_TO_CORE.SNC_CACHE.HITM
+
+# Counts demand data reads that were supplied by a cache on a remote socket where a snoop hit a modified line in another core's caches which forwarded the data.
+2A.01.MSR_RSP0=0x1030000001.TakenAlone OCR.DEMAND_DATA_RD.REMOTE_CACHE.SNOOP_HITM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by a cache on a remote socket where a snoop hit a modified line in another core's caches which forwarded the data.
+2A.01.MSR_RSP0=0x1030004477.TakenAlone OCR.READS_TO_CORE.REMOTE_CACHE.SNOOP_HITM
+
+# Counts data load hardware prefetch requests to the L1 data cache that have any type of response.
+2A.01.MSR_RSP0=0x10400.TakenAlone OCR.HWPF_L1D.ANY_RESPONSE
+
+# Counts demand data reads that were supplied by DRAM attached to this socket, unless in Sub NUMA Cluster(SNC) Mode.  In SNC Mode counts only those DRAM accesses that are controlled by the close SNC Cluster.
+2A.01.MSR_RSP0=0x104000001.TakenAlone OCR.DEMAND_DATA_RD.LOCAL_DRAM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by DRAM attached to this socket, unless in Sub NUMA Cluster(SNC) Mode.  In SNC Mode counts only those DRAM accesses that are controlled by the close SNC Cluster.
+2A.01.MSR_RSP0=0x104000002.TakenAlone OCR.DEMAND_RFO.LOCAL_DRAM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by DRAM attached to this socket, unless in Sub NUMA Cluster(SNC) Mode.  In SNC Mode counts only those DRAM accesses that are controlled by the close SNC Cluster.
+2A.01.MSR_RSP0=0x104000004.TakenAlone OCR.DEMAND_CODE_RD.LOCAL_DRAM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by DRAM attached to this socket, unless in Sub NUMA Cluster(SNC) Mode.  In SNC Mode counts only those DRAM accesses that are controlled by the close SNC Cluster.
+2A.01.MSR_RSP0=0x104004477.TakenAlone OCR.READS_TO_CORE.LOCAL_DRAM
+
+# Counts streaming stores that have any type of response.
+2A.01.MSR_RSP0=0x10800.TakenAlone OCR.STREAMING_WR.ANY_RESPONSE
+
+# Counts writebacks of modified cachelines and streaming stores that have any type of response.
+2A.01.MSR_RSP0=0x10808.TakenAlone OCR.MODIFIED_WRITE.ANY_RESPONSE
+
+# Counts hardware prefetches to the L3 only that have any type of response.
+2A.01.MSR_RSP0=0x12380.TakenAlone OCR.HWPF_L3.ANY_RESPONSE
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by a cache on a remote socket where a snoop was sent and data was returned (Modified or Not Modified).
+2A.01.MSR_RSP0=0x1830004477.TakenAlone OCR.READS_TO_CORE.REMOTE_CACHE.SNOOP_FWD
+
+# Counts demand reads for ownership (RFO), hardware prefetch RFOs (which bring data to L2), and software prefetches for exclusive ownership (PREFETCHW) that hit to a (M)odified cacheline in the L3 or snoop filter.
+2A.01.MSR_RSP0=0x1F80040022.TakenAlone OCR.RFO_TO_CORE.L3_HIT_M
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that hit in the L3 or were snooped from another core's caches on the same socket.
+2A.01.MSR_RSP0=0x3F003C4477.TakenAlone OCR.READS_TO_CORE.L3_HIT
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were not supplied by the local socket's L1, L2, or L3 caches and the cacheline is homed locally.
+2A.01.MSR_RSP0=0x3F04C04477.TakenAlone OCR.READS_TO_CORE.L3_MISS_LOCAL
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were not supplied by the local socket's L1, L2, or L3 caches and were supplied by a remote socket.
+2A.01.MSR_RSP0=0x3F33004477.TakenAlone OCR.READS_TO_CORE.REMOTE
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were not supplied by the local socket's L1, L2, or L3 caches.
+2A.01.MSR_RSP0=0x3F3FC00002.TakenAlone OCR.DEMAND_RFO.L3_MISS
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were not supplied by the local socket's L1, L2, or L3 caches.
+2A.01.MSR_RSP0=0x3F3FC04477.TakenAlone OCR.READS_TO_CORE.L3_MISS
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that have any type of response.
+2A.01.MSR_RSP0=0x3F3FFC0002.TakenAlone OCR.DEMAND_RFO.ANY_RESPONSE
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that have any type of response.
+2A.01.MSR_RSP0=0x3F3FFC4477.TakenAlone OCR.READS_TO_CORE.ANY_RESPONSE
+
+# Counts demand data reads that hit in the L3 or were snooped from another core's caches on the same socket.
+2A.01.MSR_RSP0=0x3F803C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that hit in the L3 or were snooped from another core's caches on the same socket.
+2A.01.MSR_RSP0=0x3F803C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that hit in the L3 or were snooped from another core's caches on the same socket.
+2A.01.MSR_RSP0=0x3F803C0004.TakenAlone OCR.DEMAND_CODE_RD.L3_HIT
+
+# Counts demand data reads that were not supplied by the local socket's L1, L2, or L3 caches.
+2A.01.MSR_RSP0=0x3FBFC00001.TakenAlone OCR.DEMAND_DATA_RD.L3_MISS
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that were not supplied by the local socket's L1, L2, or L3 caches.
+2A.01.MSR_RSP0=0x3FBFC00004.TakenAlone OCR.DEMAND_CODE_RD.L3_MISS
+
+# Counts demand data reads that resulted in a snoop that hit in another core, which did not forward the data.
+2A.01.MSR_RSP0=0x4003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HIT_NO_FWD
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that resulted in a snoop that hit in another core, which did not forward the data.
+2A.01.MSR_RSP0=0x4003C4477.TakenAlone OCR.READS_TO_CORE.L3_HIT.SNOOP_HIT_NO_FWD
+
+# Counts demand data reads that were supplied by DRAM on a distant memory controller of this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x708000001.TakenAlone OCR.DEMAND_DATA_RD.SNC_DRAM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by DRAM on a distant memory controller of this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x708000002.TakenAlone OCR.DEMAND_RFO.SNC_DRAM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by DRAM on a distant memory controller of this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x708000004.TakenAlone OCR.DEMAND_CODE_RD.SNC_DRAM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by DRAM on a distant memory controller of this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x708004477.TakenAlone OCR.READS_TO_CORE.SNC_DRAM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by DRAM attached to this socket, whether or not in Sub NUMA Cluster(SNC) Mode.  In SNC Mode counts DRAM accesses that are controlled by the close or distant SNC Cluster.
+2A.01.MSR_RSP0=0x70C004477.TakenAlone OCR.READS_TO_CORE.LOCAL_SOCKET_DRAM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that missed the L3 Cache and were supplied by the local socket (DRAM or PMM), whether or not in Sub NUMA Cluster(SNC) Mode.  In SNC Mode counts PMM or DRAM accesses that are controlled by the close or distant SNC Cluster.  It does not count misses to the L3 which go to Local CXL Type 2 Memory or Local Non DRAM.
+2A.01.MSR_RSP0=0x70CC04477.TakenAlone OCR.READS_TO_CORE.L3_MISS_LOCAL_SOCKET
+
+# Counts demand data reads that were supplied by DRAM attached to another socket.
+2A.01.MSR_RSP0=0x730000001.TakenAlone OCR.DEMAND_DATA_RD.REMOTE_DRAM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by DRAM attached to another socket.
+2A.01.MSR_RSP0=0x730004477.TakenAlone OCR.READS_TO_CORE.REMOTE_DRAM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by DRAM or PMM attached to another socket.
+2A.01.MSR_RSP0=0x733004477.TakenAlone OCR.READS_TO_CORE.REMOTE_MEMORY
+
+# Counts demand data reads that were supplied by DRAM.
+2A.01.MSR_RSP0=0x73C000001.TakenAlone OCR.DEMAND_DATA_RD.DRAM
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by DRAM.
+2A.01.MSR_RSP0=0x73C000002.TakenAlone OCR.DEMAND_RFO.DRAM
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by DRAM.
+2A.01.MSR_RSP0=0x73C000004.TakenAlone OCR.DEMAND_CODE_RD.DRAM
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by DRAM.
+2A.01.MSR_RSP0=0x73C004477.TakenAlone OCR.READS_TO_CORE.DRAM
+
+# Counts demand data reads that resulted in a snoop hit in another core's caches which forwarded the unmodified data to the requesting core.
+2A.01.MSR_RSP0=0x8003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that resulted in a snoop hit in another core's caches which forwarded the unmodified data to the requesting core.
+2A.01.MSR_RSP0=0x8003C4477.TakenAlone OCR.READS_TO_CORE.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# Counts streaming stores that hit in the L3 or were snooped from another core's caches on the same socket.
+2A.01.MSR_RSP0=0x80080800.TakenAlone OCR.STREAMING_WR.L3_HIT
+
+# Counts hardware prefetches to the L3 only that hit in the L3 or were snooped from another core's caches on the same socket.
+2A.01.MSR_RSP0=0x80082380.TakenAlone OCR.HWPF_L3.L3_HIT
+
+# Counts demand data reads that either hit a non-modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x808000001.TakenAlone OCR.DEMAND_DATA_RD.SNC_CACHE.HIT_WITH_FWD
+
+# Counts demand reads for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that either hit a non-modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x808000002.TakenAlone OCR.DEMAND_RFO.SNC_CACHE.HIT_WITH_FWD
+
+# Counts demand instruction fetches and L1 instruction cache prefetches that either hit a non-modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x808000004.TakenAlone OCR.DEMAND_CODE_RD.SNC_CACHE.HIT_WITH_FWD
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that either hit a non-modified line in a distant L3 Cache or were snooped from a distant core's L1/L2 caches on this socket when the system is in SNC (sub-NUMA cluster) mode.
+2A.01.MSR_RSP0=0x808004477.TakenAlone OCR.READS_TO_CORE.SNC_CACHE.HIT_WITH_FWD
+
+# Counts demand data reads that were supplied by a cache on a remote socket where a snoop hit in another core's caches which forwarded the unmodified data to the requesting core.
+2A.01.MSR_RSP0=0x830000001.TakenAlone OCR.DEMAND_DATA_RD.REMOTE_CACHE.SNOOP_HIT_WITH_FWD
+
+# Counts all (cacheable) data read, code read and RFO requests including demands and prefetches to the core caches (L1 or L2) that were supplied by a cache on a remote socket where a snoop hit in another core's caches which forwarded the unmodified data to the requesting core.
+2A.01.MSR_RSP0=0x830004477.TakenAlone OCR.READS_TO_CORE.REMOTE_CACHE.SNOOP_HIT_WITH_FWD
+
+# Counts streaming stores that were not supplied by the local socket's L1, L2, or L3 caches and the cacheline is homed locally.
+2A.01.MSR_RSP0=0x84000800.TakenAlone OCR.STREAMING_WR.L3_MISS_LOCAL
+
+# Counts hardware prefetches to the L3 only that were not supplied by the local socket's L1, L2, or L3 caches and the cacheline is homed locally.
+2A.01.MSR_RSP0=0x84002380.TakenAlone OCR.HWPF_L3.L3_MISS_LOCAL
+
+# Counts hardware prefetches to the L3 only that were not supplied by the local socket's L1, L2, or L3 caches and the cacheline was homed in a remote socket.
+2A.01.MSR_RSP0=0x90002380.TakenAlone OCR.HWPF_L3.REMOTE
+
+# Counts streaming stores that missed the local socket's L1, L2, and L3 caches.
+2A.01.MSR_RSP0=0x94000800.TakenAlone OCR.STREAMING_WR.L3_MISS
+
+# Counts hardware prefetches to the L3 only that missed the local socket's L1, L2, and L3 caches.
+2A.01.MSR_RSP0=0x94002380.TakenAlone OCR.HWPF_L3.L3_MISS
+
+# Counts Demand RFOs, ItoM's, PREFECTHW's, Hardware RFO Prefetches to the L1/L2 and Streaming stores that likely resulted in a store to Memory (DRAM or PMM)
+2A.01.MSR_RSP0=0xFBFF80822.TakenAlone OCR.WRITE_ESTIMATE.MEMORY

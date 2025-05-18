@@ -1,0 +1,29 @@
+# Based on https://raw.githubusercontent.com/intel/perfmon/refs/heads/main/ARL/events/arrowlake_lioncove_core.json (Version: 1.09)
+# Applies to processors with family-model in {6-C5, 6-C6}
+
+# Counts demand data reads that have any type of response.
+2A.01.MSR_RSP0=0x10001.TakenAlone OCR.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that have any type of response.
+2A.01.MSR_RSP0=0x10002.TakenAlone OCR.DEMAND_RFO.ANY_RESPONSE
+
+# Counts streaming stores that have any type of response.
+2A.01.MSR_RSP0=0x10800.TakenAlone OCR.STREAMING_WR.ANY_RESPONSE
+
+# Counts demand data reads that were supplied by DRAM.
+2A.01.MSR_RSP0=0x1E780000001.TakenAlone OCR.DEMAND_DATA_RD.DRAM
+
+# Counts demand data reads that were supplied by the L3 cache where a snoop hit in another cores caches which forwarded the unmodified data to the requesting core.
+2A.01.MSR_RSP0=0x20001E00001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
+
+# Counts demand data reads that were supplied by the L3 cache where a snoop hit in another cores caches, data forwarding is required as the data is modified.
+2A.01.MSR_RSP0=0x40001E00001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HITM
+
+# Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by the L3 cache where a snoop hit in another cores caches, data forwarding is required as the data is modified.
+2A.01.MSR_RSP0=0x40001E00002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_HITM
+
+# Counts demand data reads that were not supplied by the L3 cache.
+2A.01.MSR_RSP0=0xFE7F8000001.TakenAlone OCR.DEMAND_DATA_RD.L3_MISS
+
+# Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were not supplied by the L3 cache.
+2A.01.MSR_RSP0=0xFE7F8000002.TakenAlone OCR.DEMAND_RFO.L3_MISS

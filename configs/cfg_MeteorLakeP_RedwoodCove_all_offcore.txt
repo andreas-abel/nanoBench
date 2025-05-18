@@ -1,0 +1,29 @@
+# Based on https://raw.githubusercontent.com/intel/perfmon/refs/heads/main/MTL/events/meteorlake_redwoodcove_core.json (Version: 1.14)
+# Applies to processors with family-model in {6-AA, 6-AC, 6-B5}
+
+# Counts demand data reads that have any type of response.
+2A.01.MSR_RSP0=0x10001.TakenAlone OCR.DEMAND_DATA_RD.ANY_RESPONSE
+
+# Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that have any type of response.
+2A.01.MSR_RSP0=0x10002.TakenAlone OCR.DEMAND_RFO.ANY_RESPONSE
+
+# Counts demand data reads that resulted in a snoop hit in another cores caches, data forwarding is required as the data is modified.
+2A.01.MSR_RSP0=0x10003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HITM
+
+# Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that resulted in a snoop hit in another cores caches, data forwarding is required as the data is modified.
+2A.01.MSR_RSP0=0x10003C0002.TakenAlone OCR.DEMAND_RFO.L3_HIT.SNOOP_HITM
+
+# Counts streaming stores that have any type of response.
+2A.01.MSR_RSP0=0x10800.TakenAlone OCR.STREAMING_WR.ANY_RESPONSE
+
+# Counts demand data reads that were supplied by DRAM.
+2A.01.MSR_RSP0=0x184000001.TakenAlone OCR.DEMAND_DATA_RD.DRAM
+
+# Counts demand data reads that were not supplied by the L3 cache.
+2A.01.MSR_RSP0=0x3FBFC00001.TakenAlone OCR.DEMAND_DATA_RD.L3_MISS
+
+# Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were not supplied by the L3 cache.
+2A.01.MSR_RSP0=0x3FBFC00002.TakenAlone OCR.DEMAND_RFO.L3_MISS
+
+# Counts demand data reads that resulted in a snoop hit in another cores caches which forwarded the unmodified data to the requesting core.
+2A.01.MSR_RSP0=0x8003C0001.TakenAlone OCR.DEMAND_DATA_RD.L3_HIT.SNOOP_HIT_WITH_FWD
