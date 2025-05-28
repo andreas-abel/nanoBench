@@ -18,6 +18,10 @@ if [ $(cat /sys/devices/system/cpu/smt/active) -ne 0 ]; then
     echo "Note: Hyper-threading is enabled; it can be disabled with \"sudo ./disable-HT.sh\"" >&2
 fi
 
+if [ $(cat /sys/fs/selinux/enforce) -ne 0 ]; then
+    echo "Note: selinux enforcing, mprotect call might fail; it can be disabled with \"sudo setenforce 0\"" >&2
+fi
+
 debug=""
 filter_output="cat"
 
