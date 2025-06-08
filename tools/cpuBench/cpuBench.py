@@ -57,7 +57,7 @@ serializingInstructions = {'INVD', 'INVEPT', 'INVLPG', 'INVVPID', 'LGDT', 'LIDT'
                            'CPUID', 'IRET', 'RSM', 'SFENCE', 'LFENCE', 'MFENCE'}
 
 def isAMDCPU():
-   return arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']
+   return arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']
 
 def isIntelCPU():
    return not isAMDCPU()
@@ -84,7 +84,7 @@ def getIndexReg(instrNode, opNode):
 # registers that are not used as implicit registers should come first; RAX (and parts of it) should come last, as some instructions have special encodings for that
 # prefer low registers to high registers
 def sortRegs(regsList):
-   return sorted(regsList, key=lambda r: (not any(i.isdigit() for i in r), 'P' in r, 'I' in r, 'H' in r, 'A' in r, list(map(int, re.findall('\d+',r))), r))
+   return sorted(regsList, key=lambda r: (not any(i.isdigit() for i in r), 'P' in r, 'I' in r, 'H' in r, 'A' in r, list(map(int, re.findall(r'\d+',r))), r))
 
 
 # Initialize registers and memory
@@ -114,7 +114,7 @@ def getRegMemInit(instrNode, opRegDict, memOffset, useIndexedAddr):
 
          if opNode.attrib['type'] == 'reg':
             reg = opRegDict[opIdx]
-            regPrefix = re.sub('\d', '', reg)
+            regPrefix = re.sub(r'\d', '', reg)
 
             if reg in High8Regs:
                init += ['MOV {}, 0'.format(reg)]
@@ -222,9 +222,9 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
          if evt == 'UOPS':
             if arch in ['CON', 'WOL']: evt = 'RS_UOPS_DISPATCHED'
             elif arch in ['NHM', 'WSM', 'BNL', 'GLM', 'GLP']: evt = 'UOPS_RETIRED.ANY'
-            elif arch in ['SNB', 'SLM', 'AMT', 'ADL-E']: evt = 'UOPS_RETIRED.ALL'
+            elif arch in ['SNB', 'SLM', 'AMT', 'ADL-E', 'MTL-E']: evt = 'UOPS_RETIRED.ALL'
             elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
-            elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: evt = 'UOPS_EXECUTED.THREAD'
+            elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: evt = 'UOPS_EXECUTED.THREAD'
             elif arch in ['TRM']: evt = 'TOPDOWN_RETIRING.ALL'
          localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
       localHtmlReports.append('</ul>\n</li>')
@@ -274,34 +274,34 @@ def getEventConfig(event):
       if arch in ['CON', 'WOL']: return 'A0.00' # RS_UOPS_DISPATCHED
       if arch in ['NHM', 'WSM', 'SNB' ]: return 'C2.01' # UOPS_RETIRED.ANY
       if arch in ['SNB']: return 'C2.01' # UOPS_RETIRED.ALL
-      if arch in ['GLM', 'GLP', 'ADL-E']: return 'C2.00' # UOPS_RETIRED.ALL
+      if arch in ['GLM', 'GLP', 'ADL-E', 'MTL-E']: return 'C2.00' # UOPS_RETIRED.ALL
       if arch in ['TRM']: return 'C2.00' # TOPDOWN_RETIRING.ALL
       if arch in ['BNL', 'SLM', 'AMT']: return 'C2.10' # UOPS_RETIRED.ANY
       if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
-      if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return 'B1.01' # UOPS_EXECUTED.THREAD
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '0C1.00'
+      if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return 'B1.01' # UOPS_EXECUTED.THREAD
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return 'C2.02'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return 'C2.02'
    if event == 'UOPS_MITE':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return '79.04'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return '79.04'
    if event == 'UOPS_MITE>=1':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return '79.04.CMSK=1'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return '79.04.CMSK=1'
    if event == 'UOPS_MS':
       if arch in ['NHM', 'WSM']: return 'D1.02'
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '79.30'
-      if arch in ['ADL-P']: return '79.20'
-      if arch in ['SLM', 'AMT', 'GLM', 'GLP', 'TRM', 'ADL-E']: return 'C2.01'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return '79.20'
+      if arch in ['SLM', 'AMT', 'GLM', 'GLP', 'TRM', 'ADL-E', 'MTL-E']: return 'C2.01'
       if arch in ['BNL']: return 'A9.01' # undocumented, but seems to work
    if event == 'UOPS_PORT_0':
       if arch in ['CON', 'WOL']: return 'A1.01.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.01'
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.01'
-      if arch in ['ADL-P']: return 'B2.01'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.01'
    if event == 'UOPS_PORT_1':
       if arch in ['CON', 'WOL']: return 'A1.02.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.02'
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.02'
-      if arch in ['ADL-P']: return 'B2.02'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.02'
    if event == 'UOPS_PORT_2':
       if arch in ['CON', 'WOL']: return 'A1.04.CTR=0'
       if arch in ['NHM', 'WSM']: return 'B1.04'
@@ -324,45 +324,45 @@ def getEventConfig(event):
       if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.20'
    if event == 'UOPS_PORT_6':
       if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return 'A1.40'
-      if arch in ['ADL-P']: return 'B2.40'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.40'
    if event == 'UOPS_PORT_7':
       if arch in ['HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return 'A1.80'
    if event == 'UOPS_PORT_23':
       if arch in ['ICL', 'TGL', 'RKL']: return 'A1.04'
    if event == 'UOPS_PORT_49':
       if arch in ['ICL', 'TGL', 'RKL']: return 'A1.10'
-      if arch in ['ADL-P']: return 'B2.10'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.10'
    if event == 'UOPS_PORT_78':
       if arch in ['ICL', 'TGL', 'RKL']: return 'A1.80'
-      if arch in ['ADL-P']: return 'B2.80'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.80'
    if event == 'UOPS_PORT_5B':
-      if arch in ['ADL-P']: return 'B2.20'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.20'
    if event == 'UOPS_PORT_5B>=2':
-      if arch in ['ADL-P']: return 'B2.20.CMSK=2'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.20.CMSK=2'
    if event == 'UOPS_PORT_23A':
-      if arch in ['ADL-P']: return 'B2.04'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.04'
    if event == 'DIV_CYCLES':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01' # undocumented on HSW, but seems to work
       if arch in ['ICL', 'TGL', 'RKL']: return '14.09'
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '0D3.00'
-      if arch in ['ADL-P']: return 'B0.09.CMSK=1'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '0D3.00'
+      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B0.09.CMSK=1'
    if event == 'ILD_STALL.LCP':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P']: return '87.01'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return '87.01'
    if event == 'INST_DECODED.DEC0':
       if arch in ['NHM', 'WSM']: return '18.01'
    if event == 'FpuPipeAssignment.Total0':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.01'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '000.01'
    if event == 'FpuPipeAssignment.Total1':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.02'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '000.02'
    if event == 'FpuPipeAssignment.Total2':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.04'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '000.04'
    if event == 'FpuPipeAssignment.Total3':
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']: return '000.08'
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '000.08'
    # the following two counters are undocumented so far, but seem to work
    if event == 'FpuPipeAssignment.Total4':
-      if arch in ['ZEN3', 'ZEN4']: return '000.10'
+      if arch in ['ZEN3', 'ZEN4', 'ZEN5']: return '000.10'
    if event == 'FpuPipeAssignment.Total5':
-      if arch in ['ZEN3', 'ZEN4']: return '000.20'
+      if arch in ['ZEN3', 'ZEN4', 'ZEN5']: return '000.20'
    return None
 
 
@@ -575,7 +575,7 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
          print('IACA error')
          return None
 
-      allPortsLine = re.search('\| Cycles \|.*', iacaOut).group(0)
+      allPortsLine = re.search(r'\| Cycles \|.*', iacaOut).group(0)
       instrPortsLine = iacaOut.split('\n')[-3]
 
       allUopsOnBlockedPorts = 0.0
@@ -603,14 +603,14 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
          else:
             events = ['UOPS_PORT_'+str(p) for p in blockedPorts]
 
-         if (arch in ['ADL-P']) and ('5' in blockedPorts): # note that any port combination that contains B also contains 5
+         if (arch in ['ADL-P', 'EMR', 'MTL-P']) and ('5' in blockedPorts): # note that any port combination that contains B also contains 5
             events += ['UOPS_PORT_5B']
             if 'B' not in blockedPorts:
                events += ['UOPS_PORT_5B>=2']
       else:
          if arch in ['ZEN+', 'ZEN2']:
             events = ['FpuPipeAssignment.Total'+str(p) for p in range(0,4)]
-         elif arch in ['ZEN3', 'ZEN4']:
+         elif arch in ['ZEN3', 'ZEN4', 'ZEN5']:
             events = ['FpuPipeAssignment.Total'+str(p) for p in range(0,6)]
 
       configurePFCs(events)
@@ -1120,7 +1120,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                ports_line = iaca_out.split('\n')[-3]
                fused_uops = '^' in ports_line.split()[1]
 
-               num_ports = re.search('\|  Port  \|.*', iaca_out).group(0).count('|')-2
+               num_ports = re.search(r'\|  Port  \|.*', iaca_out).group(0).count('|')-2
 
                for p in range(0, num_ports):
                   portCol = ports_line.split('|')[p+2].split()
@@ -1391,7 +1391,7 @@ def getBasicLatencies(instrNodeList):
       result = runExperiment(instrNodeDict[instr + ' (XMM, XMM, I8)'], instr + ' XMM1, XMM1, 0')
       basicLatency[instr] = int(result['Core cycles'] + .2)
 
-   if any(x for x in instrNodeList if x.findall('[@iclass="VANDPS"]')):
+   if any(x.findall('[@iclass="VANDPS"]') for x in instrNodeList):
       for instr in ['VANDPS', 'VANDPD', 'VORPS', 'VORPD', 'VPAND', 'VPOR']:
          result = runExperiment(instrNodeDict[instr + ' (XMM, XMM, XMM)'], instr + ' XMM1, XMM1, XMM1')
          basicLatency[instr] = int(result['Core cycles'] + .2)
@@ -1404,8 +1404,8 @@ def getBasicLatencies(instrNodeList):
          result = runExperiment(instrNodeDict[instr + ' (XMM, XMM, I8)'], instr + ' XMM1, XMM1, 0')
          basicLatency[instr] = int(result['Core cycles'] + .2)
 
-   if any(x for x in instrNodeList if x.findall('[@extension="AVX512EVEX"]')):
-      kmovq_result = runExperiment(instrNodeDict['KMOVQ (K, K)'], 'KMOVQ K1, K1')
+   if any(x.findall('[@extension="AVX512EVEX"]') for x in instrNodeList):
+      kmovq_result = runExperiment(instrNodeDict['KMOVQ_VEX (K, K)'], 'KMOVQ K1, K1')
       basicLatency['KMOVQ'] = int(kmovq_result['Core cycles'] + .2)
 
       vpandd_result = runExperiment(instrNodeDict['VPANDD (ZMM, ZMM, ZMM)'], 'VPANDD ZMM0, ZMM0, ZMM0')
@@ -1449,7 +1449,7 @@ def getDependencyBreakingInstrs(instrNode, opRegDict, ignoreOperand = None):
          reg = opRegDict[opI]
       elif opNode.attrib.get('suppressed', '0') == '1':
          reg = opNode.text
-      regPrefix = re.sub('\d', '', reg)
+      regPrefix = re.sub(r'\d', '', reg)
       if reg in GPRegs:
          if reg not in globalDoNotWriteRegs|memRegs:
             depBreakingInstrs[opNode] = 'MOV ' + reg + ', 0' # don't use XOR as this would also break flag dependencies
@@ -1943,7 +1943,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
    if cType == 'FP':
       # We use (V)SHUFPD instead of (V)MOV*PD because the latter is a 0-latency operation on some CPUs in some cases
       if isAVXInstr(instrNode):
-         if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']:
+         if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']:
             # on ZEN, all shuffles are integer operations
             chainInstrFP = 'VANDPD {0}, {1}, {1};'.format(targetReg, startReg)
             chainInstrFP += 'VANDPD {0}, {0}, {0};'.format(targetReg) * cRep
@@ -1953,7 +1953,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
             chainInstrFP += 'VSHUFPD {0}, {0}, {0}, 0;'.format(targetReg) * cRep
             chainLatencyFP = basicLatency['VSHUFPD'] * (cRep+1)
       else:
-         if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']:
+         if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']:
             # on ZEN, all shuffles are integer operations
             chainInstrFP = 'VANDPD {0}, {1}, {1};'.format(targetReg, startReg)
             chainInstrFP += 'VANDPD {0}, {0}, {0};'.format(targetReg) * cRep
@@ -1968,7 +1968,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
       if isAVXInstr(instrNode):
          instr = 'VPANDD' if ('ZMM' in targetReg) else 'VPAND'
          chainInstrInt = '{0} {1}, {2}, {2};'.format(instr, targetReg, startReg)
-         chainInstrInt += '{0}  {1}, {1}, {1};'.format(instr, targetReg) * cRep
+         chainInstrInt += '{0} {1}, {1}, {1};'.format(instr, targetReg) * cRep
          chainLatencyInt = basicLatency[instr] * (cRep+1)
       else:
          # we use one shuffle to avoid a read dependency on the target register
@@ -2108,8 +2108,8 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          if reg1 == reg2:
             configList.append(LatConfig(instrI))
 
-         reg1Prefix = re.sub('\d', '', reg1)
-         reg2Prefix = re.sub('\d', '', reg2)
+         reg1Prefix = re.sub(r'\d', '', reg1)
+         reg2Prefix = re.sub(r'\d', '', reg2)
 
          if reg1 in GPRegs and reg2 in GPRegs:
             if reg1 in High8Regs:
@@ -2614,7 +2614,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                            regInit = []
                            for opNode in instrNode.findall('./operand[@r="1"][@type="reg"]'):
                               reg = latConfig.instrI.opRegDict[int(opNode.attrib['idx'])]
-                              regPrefix = re.sub('\d', '', reg)
+                              regPrefix = re.sub(r'\d', '', reg)
                               if (regPrefix in ['XMM', 'YMM', 'ZMM']) and (reg not in globalDoNotWriteRegs|memRegs):
                                  for initOp in instrNode.findall('./operand[@w="1"][@type="reg"]'):
                                     if initOp.text != opNode.text: continue
@@ -2823,7 +2823,7 @@ def filterInstructions(XMLRoot):
       isaSet = XMLInstr.attrib['isa-set']
 
       # Future instruction set extensions
-      if extension in ['AMD_INVLPGB', 'CET', 'KEYLOCKER', 'KEYLOCKER_WIDE', 'RDPRU', 'TDX', 'TSX_LDTRK']: instrSet.discard(XMLInstr)
+      if extension in ['AMD_INVLPGB', 'CET', 'RDPRU', 'TDX', 'TSX_LDTRK']: instrSet.discard(XMLInstr)
 
       # Not supported by assembler
       if XMLInstr.attrib['iclass'] == 'NOP' and len(XMLInstr.findall('operand')) > 1:
@@ -2858,8 +2858,10 @@ def filterInstructions(XMLRoot):
 
    _, _, ecx1, edx1 = cpu(0x01)
    _, ebx7, ecx7, edx7 = cpu(0x07)
-   eax7_1, _, _, edx7_1 = cpu(0x07, 0x01)
+   eax7_1, ebx7_1, ecx7_1, edx7_1 = cpu(0x07, 0x01)
    eaxD_1, _, _, _ = cpu(0x0D, 0x01)
+   _, ebx19, _, _ = cpu(0x19)
+   eax1E_1, _, _, _ = cpu(0x1E, 0x01)
    _, _, ecx8_1, edx8_1 = cpu(0x80000001)
    _, ebx8_8, _, _ = cpu(0x80000008)
 
@@ -2934,6 +2936,9 @@ def filterInstructions(XMLRoot):
       if isaSet.startswith('AVX512_BITALG') and not cpuid.get_bit(ecx7, 12): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_VPOPCNTDQ') and not cpuid.get_bit(ecx7, 14): instrSet.discard(XMLInstr)
       if extension == 'RDPID' and not cpuid.get_bit(ecx7, 22): instrSet.discard(XMLInstr)
+      if extension.startswith('KEYLOCKER'):
+         if not cpuid.get_bit(ecx7, 23) or not cpuid.get_bit(ebx19, 0): instrSet.discard(XMLInstr)
+         if 'WIDE' in extension and not cpuid.get_bit(ebx19, 2): instrSet.discard(XMLInstr)
       if extension == 'CLDEMOTE' and not cpuid.get_bit(ecx7, 25): instrSet.discard(XMLInstr)
       if iclass == 'MOVDIRI' and not cpuid.get_bit(ecx7, 27): instrSet.discard(XMLInstr)
       if iclass == 'MOVDIR64B' and not cpuid.get_bit(ecx7, 28): instrSet.discard(XMLInstr)
@@ -2948,21 +2953,41 @@ def filterInstructions(XMLRoot):
       if isaSet.startswith('AVX512_FP16') and not cpuid.get_bit(edx7, 23): instrSet.discard(XMLInstr)
       if extension == 'AMX_TILE' and not cpuid.get_bit(edx7, 24): instrSet.discard(XMLInstr)
       if extension == 'AMX_INT8' and not cpuid.get_bit(edx7, 25): instrSet.discard(XMLInstr)
+      if extension == 'SHA512' and not cpuid.get_bit(eax7_1, 0): instrSet.discard(XMLInstr)
+      if extension == 'SM3' and not cpuid.get_bit(eax7_1, 1): instrSet.discard(XMLInstr)
+      if extension == 'SM4' and not cpuid.get_bit(eax7_1, 2): instrSet.discard(XMLInstr)
       if extension == 'RAO_INT' and not cpuid.get_bit(eax7_1, 3): instrSet.discard(XMLInstr)
       if extension == 'AVX_VNNI' and not cpuid.get_bit(eax7_1, 4): instrSet.discard(XMLInstr)
       if isaSet.startswith('AVX512_BF16') and not cpuid.get_bit(eax7_1, 5): instrSet.discard(XMLInstr)
       if extension == 'CMPCCXADD' and not cpuid.get_bit(eax7_1, 7): instrSet.discard(XMLInstr)
+      if extension == 'FRED' and not cpuid.get_bit(eax7_1, 17): instrSet.discard(XMLInstr)
+      if extension == 'LKGS' and not cpuid.get_bit(eax7_1, 18): instrSet.discard(XMLInstr)
       if extension == 'WRMSRNS' and not cpuid.get_bit(eax7_1, 19): instrSet.discard(XMLInstr)
       if extension == 'AMX_FP16' and not cpuid.get_bit(eax7_1, 21): instrSet.discard(XMLInstr)
       if extension == 'HRESET' and not cpuid.get_bit(eax7_1, 22): instrSet.discard(XMLInstr)
       if extension == 'AVX_IFMA' and not cpuid.get_bit(eax7_1, 23): instrSet.discard(XMLInstr)
       if extension == 'MSRLIST' and not cpuid.get_bit(eax7_1, 27): instrSet.discard(XMLInstr)
+      if ('MOVRS' in isaSet) and ('AMX' not in isaSet) and not cpuid.get_bit(eax7_1, 31): instrSet.discard(XMLInstr)
+      if extension == 'PBNDKB' and not cpuid.get_bit(ebx7_1, 1): instrSet.discard(XMLInstr)
+      if extension == 'MSR_IMM' and not cpuid.get_bit(ecx7_1, 5): instrSet.discard(XMLInstr)
       if extension == 'AVX_VNNI_INT8' and not cpuid.get_bit(edx7_1, 4): instrSet.discard(XMLInstr)
       if extension == 'AVX_NE_CONVERT' and not cpuid.get_bit(edx7_1, 5): instrSet.discard(XMLInstr)
+      if isaSet == 'AMX_COMPLEX' and not cpuid.get_bit(edx7_1, 8): instrSet.discard(XMLInstr)
+      if extension == 'AVX_VNNI_INT16' and not cpuid.get_bit(edx7_1, 10): instrSet.discard(XMLInstr)
       if extension == 'ICACHE_PREFETCH' and not cpuid.get_bit(edx7_1, 14): instrSet.discard(XMLInstr)
+      if extension == 'USER_MSR' and not cpuid.get_bit(edx7_1, 15): instrSet.discard(XMLInstr)
+      if (extension in ['APXEVEX', 'APXLEGACY']) and not cpuid.get_bit(edx7_1, 21): instrSet.discard(XMLInstr)
       if extension == 'XSAVEOPT' and not cpuid.get_bit(eaxD_1, 0): instrSet.discard(XMLInstr)
       if extension == 'XSAVEC' and not cpuid.get_bit(eaxD_1, 1): instrSet.discard(XMLInstr)
       if extension == 'XSAVES' and not cpuid.get_bit(eaxD_1, 3): instrSet.discard(XMLInstr)
+      if isaSet.startswith('AMX_'):
+         if '_FP8' in isaSet and not cpuid.get_bit(eax1E_1, 4): instrSet.discard(XMLInstr)
+         if '_TRANSPOSE' in isaSet and not cpuid.get_bit(eax1E_1, 5): instrSet.discard(XMLInstr)
+         if '_TF32' in isaSet and not cpuid.get_bit(eax1E_1, 6): instrSet.discard(XMLInstr)
+         if '_MOVRS' in isaSet and not cpuid.get_bit(eax1E_1, 8): instrSet.discard(XMLInstr)
+         if '_TRANSPOSE_COMPLEX' in isaSet and not cpuid.get_bit(eax1E_1, 2): instrSet.discard(XMLInstr)
+         if '_TRANSPOSE_BF16' in isaSet and not cpuid.get_bit(eax1E_1, 1): instrSet.discard(XMLInstr)
+         if '_TRANSPOSE_FP16' in isaSet and not cpuid.get_bit(eax1E_1, 3): instrSet.discard(XMLInstr)
       if extension == 'SSE4a' and not cpuid.get_bit(ecx8_1, 6): instrSet.discard(XMLInstr)
       if extension == 'XOP' and not cpuid.get_bit(ecx8_1, 11): instrSet.discard(XMLInstr)
       if extension == 'FMA4' and not cpuid.get_bit(ecx8_1, 16): instrSet.discard(XMLInstr)
@@ -2971,6 +2996,35 @@ def filterInstructions(XMLRoot):
       if extension == '3DNOW' and not cpuid.get_bit(edx8_1, 31): instrSet.discard(XMLInstr)
       if extension == 'CLZERO' and not cpuid.get_bit(ebx8_8, 0): instrSet.discard(XMLInstr)
       #if extension == 'MCOMMIT' and not cpuid.get_bit(ebx8_8, 8): instrSet.discard(XMLInstr)
+
+      # AVX10
+      avx10Enabled = cpuid.get_bit(edx7_1, 19)
+      avx10Version = -1
+      avx10VectorLengths = set()
+      if avx10Enabled:
+         _, ebx24, _, _ = cpu(0x24)
+         avx10Version = cpuid.get_bytes(ebx24)[0]
+         if cpuid.get_bit(ebx24, 16):
+            avx10VectorLengths.add(128)
+         if cpuid.get_bit(ebx24, 17):
+            avx10VectorLengths.add(256)
+         if cpuid.get_bit(ebx24, 18):
+            avx10VectorLengths.add(512)
+
+         if isaSet.endswith('_128') and 128 not in avx10VectorLengths:
+            instrSet.discard(XMLInstr)
+         if isaSet.endswith('_256') and 256 not in avx10VectorLengths:
+            instrSet.discard(XMLInstr)
+         if isaSet.endswith('_512') and 512 not in avx10VectorLengths:
+            instrSet.discard(XMLInstr)
+
+      if avx10Version < 2 and (isaSet in ['AVX512_COM_EF_SCALAR']
+            or any(isaSet.startswith(x) for x in ['AVX10_2_', 'AVX512_FP8_CONVERT_', 'AVX512_FP16_CONVERT_', 'AVX512_MEDIAX_', 'AVX512_MINMAX_',
+                                                  'AVX512_MOVZXC_', 'AVX512_SAT_CVT_', 'AVX512_VNNI_FP16', 'AVX512_VNNI_INT8_', 'AVX512_VNNI_INT16', 'SM4_'])):
+         instrSet.discard(XMLInstr)
+
+      if isaSet == 'AMX_AVX512' and ((avx10Version < 2) or (512 not in avx10VectorLengths) or not cpuid.get_bit(eax1E_1, 7)):
+         instrSet.discard(XMLInstr)
 
       # Virtualization instructions
       if extension in ['SVM', 'VMFUNC', 'VTX']: instrSet.discard(XMLInstr)
@@ -2992,7 +3046,7 @@ def filterInstructions(XMLRoot):
       if XMLInstr.attrib['category'] in ['X87_ALU']: instrSet.discard(XMLInstr)
 
       # System instructions
-      if extension in ['HRESET', 'INVPCID', 'MONITOR', 'MONITORX', 'PCONFIG', 'RDWRFSGS', 'SMAP', 'SNP']: instrSet.discard(XMLInstr)
+      if extension in ['HRESET', 'INVPCID', 'MONITOR', 'MONITORX', 'PCONFIG', 'RDWRFSGS', 'SMAP', 'SNP', 'UINTR']: instrSet.discard(XMLInstr)
       if XMLInstr.attrib['category'] in ['INTERRUPT', 'SEGOP', 'SYSCALL', 'SYSRET']: instrSet.discard(XMLInstr)
       if XMLInstr.attrib['iclass'] in ['CALL_FAR', 'HLT', 'INVD', 'IRET', 'IRETD', 'IRETQ', 'JMP_FAR', 'LTR', 'RET_FAR', 'UD2']: instrSet.discard(XMLInstr)
       if 'XRSTOR' in XMLInstr.attrib['iclass']: instrSet.discard(XMLInstr)
@@ -3040,7 +3094,7 @@ def main():
       except subprocess.CalledProcessError as e:
          versionString = e.output
       global iacaVersion
-      iacaVersion = re.search('\d\.\d', versionString.decode()).group(0)
+      iacaVersion = re.search(r'\d\.\d', versionString.decode()).group(0)
       global iacaCMDLine
       iacaCMDLine = [args.iaca, '-reduceout', '-arch', arch]
       if iacaVersion == '2.1':
@@ -3050,7 +3104,7 @@ def main():
 
       resetNanoBench()
 
-      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4']:
+      if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']:
          configurePFCs(['UOPS','FpuPipeAssignment.Total0', 'FpuPipeAssignment.Total1', 'FpuPipeAssignment.Total2', 'FpuPipeAssignment.Total3',
                         'FpuPipeAssignment.Total4', 'FpuPipeAssignment.Total5', 'DIV_CYCLES'])
       else:
@@ -3247,7 +3301,7 @@ def main():
          # combining FP with non-FP instr. can lead to wrong port counts
          #disallowedBlockingInstrs |= set(instr for instr in instrNodeList if instr.attrib['category'] in ['LOGICAL_FP'] or
          #                                any(not 'f' in o.attrib.get('xtype','f') for o in instr.findall('./operand')))
-         if arch in ['ZEN3', 'ZEN4']:
+         if arch in ['ZEN3', 'ZEN4', 'ZEN5']:
             # we need one instruction with 1*FP45;
             # their throughput is limited to 1 per cycle; thus, they are disallowed by the TP_noDepBreaking_noLoop check above
             disallowedBlockingInstrs.remove(instrNodeDict['MOVD (R32, XMM)'])
@@ -3300,7 +3354,7 @@ def main():
          # mov to mem has always two uops: store address and store data; there is no instruction that uses just one of them
          movMemInstrNode = instrNodeDict['MOV (M64, R64)']
 
-         if arch in ['ICL', 'TGL', 'RKL', 'ADL-P']:
+         if arch in ['ICL', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']:
             storeDataPort = '49'
          else:
             storeDataPort = '4'

@@ -129,7 +129,7 @@ def getMemAddr(memAddrAsm):
    base = index = None
    displacement = 0
    scale = 1
-   for c in re.split('\+|-', re.search('\[(.*)\]', memAddrAsm).group(1)):
+   for c in re.split(r'\+|-', re.search(r'\[(.*)\]', memAddrAsm).group(1)):
       if '0x' in c:
          displacement = int(c, 0)
          if '-0x' in memAddrAsm:
