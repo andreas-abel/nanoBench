@@ -7,6 +7,8 @@ import sys
 from collections import OrderedDict
 from shutil import copyfile
 
+from x64_lib import *
+
 PFC_START_ASM = '.quad 0xE0B513B1C2813F04'
 PFC_STOP_ASM = '.quad 0xF0B513B1C2813F04'
 
@@ -41,10 +43,18 @@ def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
       code = '.intel_syntax noprefix;' + code + ';1:;.att_syntax prefix\n'
       with open(asmFile, 'w') as f:
          f.write(code);
-      subprocess.check_call(['as', asmFile, '-o', objFile])
+      subprocess.check_output(['as', asmFile, '-o', objFile], stderr=subprocess.STDOUT)
    except subprocess.CalledProcessError as e:
-      sys.stderr.write("Error (assemble): " + str(e))
-      sys.stderr.write(code)
+      # Workaround for https://sourceware.org/bugzilla/show_bug.cgi?id=32813
+      if ('same type of prefix used twice' in e.output.decode()) and ('REX64' in code):
+         return assemble(code.replace('REX64 ', ''), objFile, asmFile)
+      elif "register type mismatch for `lsl'" in e.output.decode():
+         code, n = re.subn(r'(LSL \S*, )(\S*?);', lambda m: f'{m.group(1)}{regToSize(m.group(2),16)};', code)
+         if n > 0:
+            return assemble(code, objFile, asmFile)
+      print(f"Error (assemble): {str(e)}", file=sys.stderr)
+      print(e.output.decode(), file=sys.stderr)
+      print(code, file=sys.stderr)
       exit(1)
 
 
