@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 import argparse
 from utils import *
 
-def getLink(instrNode, text, arch, tool, linkType, anchor=None):
-   url = '/tmp/html-' + linkType + '/' + arch + '/' + canonicalizeInstrString(instrNode.attrib['string']) + '-' + tool + '.html'
+def getLink(instrNode, text, arch, tool, linkType, baseDir, anchor=None):
+   url = baseDir + '/html-' + linkType + '/' + arch + '/' + canonicalizeInstrString(instrNode.attrib['string']) + '-' + tool + '.html'
    if anchor: url += '#' + anchor
    return '<a href="' + url + '">' + text + '</a>'
 
@@ -13,6 +13,7 @@ def main():
    parser = argparse.ArgumentParser(description='Generates a basic HTML table with the results for a microarchitecture')
    parser.add_argument("-input", help="Input XML file", default='result.xml')
    parser.add_argument("-arch", help="Consider only this architecture")
+   parser.add_argument("-base_dir", help="Directory containing HTML files with details", default='/tmp')
    args = parser.parse_args()
 
    root = ET.parse(args.input)
@@ -64,7 +65,7 @@ def main():
                latTableEntry = getLatencyTableEntry(resultNode)
                if latTableEntry is not None:
                   lat = str(latTableEntry[0])
-               f.write('    <td align="right">' + getLink(XMLInstr, lat, args.arch, 'Measurements', 'lat') + '</td>\n')
+               f.write('    <td align="right">' + getLink(XMLInstr, lat, args.arch, 'Measurements', 'lat', args.base_dir) + '</td>\n')
 
                TPPorts = float(resultNode.attrib.get('TP_ports', float("inf")))
                TPPortsStr = ("{:.2f}".format(TPPorts) if TPPorts < float("inf") else '')
@@ -84,10 +85,10 @@ def main():
                      color = ' bgcolor="orange"'
                      TPDiff += 1
 
-               f.write('    <td align="right"' + color + '>' + getLink(XMLInstr, TPMeasuredStr, args.arch, 'Measurements', 'tp')  + '</td>\n')
+               f.write('    <td align="right"' + color + '>' + getLink(XMLInstr, TPMeasuredStr, args.arch, 'Measurements', 'tp', args.base_dir)  + '</td>\n')
 
                f.write('    <td align="right">' + resultNode.attrib.get('uops', '') + '</td>\n')
-               f.write('    <td>' + getLink(XMLInstr, resultNode.attrib.get('ports', ''), args.arch, 'Measurements', 'ports') + '</td>\n')
+               f.write('    <td>' + getLink(XMLInstr, resultNode.attrib.get('ports', ''), args.arch, 'Measurements', 'ports', args.base_dir) + '</td>\n')
                f.write('  <tr>\n')
 
          f.write('</table>\n')

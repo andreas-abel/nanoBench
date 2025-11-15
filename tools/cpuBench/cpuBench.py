@@ -224,7 +224,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
             elif arch in ['NHM', 'WSM', 'BNL', 'GLM', 'GLP']: evt = 'UOPS_RETIRED.ANY'
             elif arch in ['SNB', 'SLM', 'AMT', 'ADL-E', 'MTL-E']: evt = 'UOPS_RETIRED.ALL'
             elif arch in ['HSW']: evt = 'UOPS_EXECUTED.CORE'
-            elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: evt = 'UOPS_EXECUTED.THREAD'
+            elif arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P', 'ARL-P']: evt = 'UOPS_EXECUTED.THREAD'
             elif arch in ['TRM']: evt = 'TOPDOWN_RETIRING.ALL'
          localHtmlReports.append('<li>' + evt + ': ' + str(value) + '</li>\n')
       localHtmlReports.append('</ul>\n</li>')
@@ -279,17 +279,18 @@ def getEventConfig(event):
       if arch in ['BNL', 'SLM', 'AMT']: return 'C2.10' # UOPS_RETIRED.ANY
       if arch in ['HSW']: return 'B1.02' # UOPS_EXECUTED.CORE; note: may undercount due to erratum HSD30
       if arch in ['IVB', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return 'B1.01' # UOPS_EXECUTED.THREAD
+      if arch in ['ARL-P']: return 'B1.01.CTR=3' # UOPS_EXECUTED.THREAD
       if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '0C1.00'
    if event == 'RETIRE_SLOTS':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return 'C2.02'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P', 'ARL-P']: return 'C2.02'
    if event == 'UOPS_MITE':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return '79.04'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P', 'ARL-P']: return '79.04'
    if event == 'UOPS_MITE>=1':
-      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return '79.04.CMSK=1'
+      if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P', 'ARL-P']: return '79.04.CMSK=1'
    if event == 'UOPS_MS':
       if arch in ['NHM', 'WSM']: return 'D1.02'
       if arch in ['SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL']: return '79.30'
-      if arch in ['ADL-P', 'EMR', 'MTL-P']: return '79.20'
+      if arch in ['ADL-P', 'EMR', 'MTL-P', 'ARL-P']: return '79.20'
       if arch in ['SLM', 'AMT', 'GLM', 'GLP', 'TRM', 'ADL-E', 'MTL-E']: return 'C2.01'
       if arch in ['BNL']: return 'A9.01' # undocumented, but seems to work
    if event == 'UOPS_PORT_0':
@@ -341,13 +342,37 @@ def getEventConfig(event):
       if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.20.CMSK=2'
    if event == 'UOPS_PORT_23A':
       if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B2.04'
+   if event == 'UOPS_DISPATCHED.INT_EU_ALL':
+      if arch in ['ARL-P']: return 'B2.01.CTR=2'
+   if event == 'UOPS_DISPATCHED.ALU':
+      if arch in ['ARL-P']: return 'B2.02.CTR=2'
+   if event == 'UOPS_DISPATCHED.LD':
+      if arch in ['ARL-P']: return 'B2.04'
+   if event == 'UOPS_DISPATCHED.SLOW':
+      if arch in ['ARL-P']: return 'B2.08'
+   if event == 'UOPS_DISPATCHED.STD':
+      if arch in ['ARL-P']: return 'B2.10'
+   if event == 'UOPS_DISPATCHED.SHIFT':
+      if arch in ['ARL-P']: return 'B2.20'
+   if event == 'UOPS_DISPATCHED.JMP':
+      if arch in ['ARL-P']: return 'B2.40'
+   if event == 'UOPS_DISPATCHED.STA':
+      if arch in ['ARL-P']: return 'B2.80'
+   if event == 'UOPS_DISPATCHED.V0':
+      if arch in ['ARL-P']: return 'B3.01'
+   if event == 'UOPS_DISPATCHED.V1':
+      if arch in ['ARL-P']: return 'B3.02'
+   if event == 'UOPS_DISPATCHED.V2':
+      if arch in ['ARL-P']: return 'B3.04'
+   if event == 'UOPS_DISPATCHED.V3':
+      if arch in ['ARL-P']: return 'B3.08'
    if event == 'DIV_CYCLES':
       if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'CLX']: return '14.01' # undocumented on HSW, but seems to work
       if arch in ['ICL', 'TGL', 'RKL']: return '14.09'
       if arch in ['ZEN+', 'ZEN2', 'ZEN3', 'ZEN4', 'ZEN5']: return '0D3.00'
-      if arch in ['ADL-P', 'EMR', 'MTL-P']: return 'B0.09.CMSK=1'
+      if arch in ['ADL-P', 'EMR', 'MTL-P', 'ARL-P']: return 'B0.09.CMSK=1'
    if event == 'ILD_STALL.LCP':
-      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P']: return '87.01'
+      if arch in ['NHM', 'WSM', 'SNB', 'IVB', 'HSW', 'BDW', 'SKL', 'SKX', 'KBL', 'CFL', 'CNL', 'ICL', 'CLX', 'TGL', 'RKL', 'ADL-P', 'EMR', 'MTL-P', 'ARL-P']: return '87.01'
    if event == 'INST_DECODED.DEC0':
       if arch in ['NHM', 'WSM']: return '18.01'
    if event == 'FpuPipeAssignment.Total0':
@@ -407,7 +432,7 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
    commonReg = None
    if not useDistinctRegs:
       commonRegs = findCommonRegisters(instrNode)
-      commonRegs -= set(doNotWriteRegs)|set(doNotReadRegs)|globalDoNotWriteRegs|(memRegs if hasMemOperand else set())
+      commonRegs -= set(map(getCanonicalReg, set(doNotWriteRegs)|set(doNotReadRegs)|globalDoNotWriteRegs|(memRegs if hasMemOperand else set())))
       if commonRegs:
          commonReg = sortRegs(commonRegs)[0]
 
@@ -543,7 +568,7 @@ def createIacaAsmFile(fileName, prefixInstr, prefixRep, instr):
    writeFile(fileName, asm)
 
 
-def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstrRep, blockedPorts, config, htmlReports):
+def getUopsOnBlockedPorts(instrNode, blockInstrNode, blockInstrRep, blockedPorts, config, htmlReports):
    instrInstance = config.independentInstrs[0]
    instr = instrInstance.asm
    readRegs = instrInstance.readRegs
@@ -600,6 +625,8 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
          if arch in ['NHM', 'WSM']:
             # Needed for workaround for broken port 5 counter
             events = ['UOPS_PORT_'+str(p) for p in range(0,6)] + ['UOPS']
+         elif arch in ['ARL-P']:
+            events = ['UOPS_DISPATCHED.V0', 'UOPS_DISPATCHED.V1', 'UOPS_DISPATCHED.V2', 'UOPS_DISPATCHED.V3']
          else:
             events = ['UOPS_PORT_'+str(p) for p in blockedPorts]
 
@@ -637,17 +664,55 @@ def getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockInstrNode, blockInstr
          measurementResult['UOPS_PORT_5'] = measurementResult['UOPS_PORT_5B']
          del measurementResult['UOPS_PORT_5B']
 
-      if isIntelCPU():
-         ports_dict = {p[10:]: i for p, i in measurementResult.items() if p.startswith('UOPS_PORT')}
-      else:
-         ports_dict = {p[23:]: i for p, i in measurementResult.items() if 'FpuPipeAssignment.Total' in p}
-
+      ports_dict = {getPortNameFromEventName(p): i for p, i in measurementResult.items() if getPortNameFromEventName(p) is not None}
       if sum(ports_dict.values()) < blockInstrRep-.5:
          # something went wrong; fewer uops on ports than blockInstrRep
          # happens, e.g., on SKX for ports {0, 1} if AVX-512 is active
          return None
 
       return int(.2+sum([uops for p, uops in ports_dict.items() if p in blockedPorts])) - blockInstrRep
+
+
+# Example return value: {'ALU': 2, 'LOAD': 1, 'INT_OTHER': 2}
+def getUopTypes(instrNode, config, lfenceUopTypeDict, htmlReports):
+   htmlReports.append('<hr><h3>With lfence (to avoid incorrect counts due to replays)</h3>')
+
+   if arch in ['ARL-P']:
+      events = ['UOPS_DISPATCHED.INT_EU_ALL', 'UOPS_DISPATCHED.ALU', 'UOPS_DISPATCHED.LD', 'UOPS_DISPATCHED.SLOW', 'UOPS_DISPATCHED.STD',
+                  'UOPS_DISPATCHED.SHIFT', 'UOPS_DISPATCHED.JMP', 'UOPS_DISPATCHED.STA']
+   else:
+      raise RuntimeError(f"getUopTypes() does not support {arch}")
+   configurePFCs(events)
+
+   instrInstance = config.independentInstrs[0]
+   init = instrInstance.regMemInit + config.init
+
+   htmlReports.append('<ul>\n')
+   # Without the nops, the INT_EU_ALL counter undercounts on ARL in some cases, e.g., 'RCR AL, 0;'
+   measurementResult = runExperiment(instrNode, f'{config.preInstrCode}; {instrInstance.asm}; 10*|nop|; lfence', init=init, unrollCount=100, basicMode=True,
+                                     htmlReports=htmlReports)
+   htmlReports.append('</ul>\n')
+
+   if config.preInstrCode:
+      htmlReports.append('<ul>\n')
+      preInstrResult = runExperiment(instrNode, config.preInstrCode, init=init, unrollCount=100, basicMode=True, htmlReports=htmlReports)
+      htmlReports.append('</ul>\n')
+      for ev in events:
+         measurementResult[ev] -= preInstrResult[ev]
+
+   uopTypeDict = {t.replace('UOPS_DISPATCHED.', ''): int(i + .2) for t, i in measurementResult.items() if t in events}
+   intAll = uopTypeDict['INT_EU_ALL']
+   del uopTypeDict['INT_EU_ALL']
+   uopTypeDict['INT_OTHER'] = intAll - uopTypeDict['ALU'] - uopTypeDict['SLOW'] - uopTypeDict['SHIFT'] - uopTypeDict['JMP']
+   if uopTypeDict['INT_OTHER'] < 0:
+      print((f"unexpected uopTypeDict {config.preInstrCode} {instrInstance.asm} {measurementResult}"))
+      return {}
+
+   if lfenceUopTypeDict:
+      for t in uopTypeDict:
+         uopTypeDict[t] = uopTypeDict[t] - lfenceUopTypeDict[t]
+
+   return uopTypeDict
 
 
 # Takes an instrNode and returns a list [instrI, instrI', ...] s.t. instrI(')* are the results of
@@ -1057,6 +1122,16 @@ def fancyRound(cycles):
    return round(cycles, 2)
 
 
+def getPortNameFromEventName(evtName: str) -> str:
+   if evtName.startswith('UOPS_PORT'):
+      return evtName[10:]
+   elif evtName.startswith('UOPS_DISPATCHED.V'):
+      return evtName[17:]
+   elif evtName.startswith('FpuPipeAssignment.Total'):
+      return evtName[23:]
+   return None
+
+
 TPResult = namedtuple('TPResult', ['TP', 'TP_loop', 'TP_noLoop', 'TP_noDepBreaking_noLoop', 'TP_single', 'uops', 'fused_uops', 'uops_MITE', 'uops_MS', 'divCycles',
                                    'ILD_stalls', 'complexDec', 'nAvailableSimpleDecoders', 'config', 'unblocked_ports', 'all_used_ports'])
 
@@ -1138,10 +1213,10 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                else:
                   divCycles = 0
 
-      return TPResult(minTP, minTP, minTP, minTP_noDepBreaking_noLoop, minTP_single, unfused_uops, fused_uops, None, None, divCycles, 0, False, None, config,
-                      ports_dict, all_used_ports)
+      return TPResult(TP=minTP, TP_loop=minTP, TP_noLoop=minTP, TP_noDepBreaking_noLoop=minTP_noDepBreaking_noLoop, TP_single=minTP_single, uops=unfused_uops,
+                      fused_uops=fused_uops, uops_MITE=None, uops_MS=None, divCycles=divCycles, ILD_stalls=0, complexDec=False, nAvailableSimpleDecoders=None,
+                      config=config, unblocked_ports=ports_dict, all_used_ports=all_used_ports)
    else:
-      hasMemWriteOperand = len(instrNode.findall('./operand[@type="mem"][@r="1"][@w="1"]'))>0
       uops = None
       uopsFused = None
       uopsMITE = None
@@ -1249,8 +1324,8 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                               if not useDepBreakingInstrs:
                                  minTP_noDepBreaking_noLoop = min(minTP_noDepBreaking_noLoop, cycles)
                                  for p, i in result.items():
-                                    if (i/ic > .1) and (('UOPS_PORT' in p) or ('FpuPipeAssignment.Total' in p)):
-                                       all_used_ports.add(p[10:] if ('UOPS_PORT' in p) else p[23:])
+                                    if (i/ic > .1) and (getPortNameFromEventName(p) is not None):
+                                       all_used_ports.add(getPortNameFromEventName(p))
                            else:
                               minTP_loop = min(minTP_loop, cycles)
 
@@ -1258,11 +1333,9 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                               minConfig = config
                               minTP_single = min(minTP_single, cycles)
 
-                              if isIntelCPU():
-                                 ports_dict = {p[10:]: i for p, i in result.items() if 'UOPS_PORT' in p}
-                              elif isAMDCPU() and not instrNode.attrib['extension'] == 'BASE':
-                                 # We ignore BASE instructions, as they sometimes wrongly count floating point uops
-                                 ports_dict = {p[23:]: i for p, i in result.items() if 'FpuPipeAssignment.Total' in p}
+                              if not isAMDCPU() or not instrNode.attrib['extension'] == 'BASE':
+                                 # We ignore BASE instructions for AMD, as they sometimes wrongly count floating point uops
+                                 ports_dict = {getPortNameFromEventName(p): i for p, i in result.items() if getPortNameFromEventName(p) is not None}
 
                               uops = int(result['UOPS']+.2)
                               if 'RETIRE_SLOTS' in result:
@@ -1300,8 +1373,9 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
             htmlReports.append('</div>')
 
       if minTP < sys.maxsize:
-         return TPResult(minTP, minTP_loop, minTP_noLoop, minTP_noDepBreaking_noLoop, minTP_single, uops, uopsFused, uopsMITE, uopsMS, divCycles, ILD_stalls,
-                         complexDec, nAvailableSimpleDecoders, minConfig, ports_dict, all_used_ports)
+         return TPResult(TP=minTP, TP_loop=minTP_loop, TP_noLoop=minTP_noLoop, TP_noDepBreaking_noLoop=minTP_noDepBreaking_noLoop, TP_single=minTP_single,
+                         uops=uops, fused_uops=uopsFused, uops_MITE=uopsMITE, uops_MS=uopsMS, divCycles=divCycles, ILD_stalls=ILD_stalls, complexDec=complexDec,
+                         nAvailableSimpleDecoders=nAvailableSimpleDecoders, config=minConfig, unblocked_ports=ports_dict, all_used_ports=all_used_ports)
 
 
 def canMacroFuse(flagInstrNode, branchInstrNode, htmlReports):
@@ -1359,7 +1433,7 @@ def getBasicLatencies(instrNodeList):
    for flag in STATUSFLAGS_noAF:
       testSetResult = runExperiment(None, 'TEST AL, AL; SET' + flag[0] + ' AL')
       # we additionally test with a nop, as the result may be higher than the actual latency (e.g., on ADL-P), probably due to non-optimal port assignments
-      testSetResultNop = runExperiment(None, 'TEST AL, AL; SET' + flag[0] + ' AL; NOP')
+      testSetResultNop = runExperiment(None, 'TEST AL, AL; NOP; SET' + flag[0] + ' AL;')
       testSetCycles = min(int(testSetResult['Core cycles'] + .2), int(testSetResultNop['Core cycles'] + .2))
 
       if testSetCycles == 2:
@@ -3110,7 +3184,9 @@ def main():
       else:
          configurePFCs(['UOPS', 'RETIRE_SLOTS', 'UOPS_MITE', 'UOPS_MS', 'UOPS_PORT_0', 'UOPS_PORT_1', 'UOPS_PORT_2', 'UOPS_PORT_3', 'UOPS_PORT_4',
                         'UOPS_PORT_5', 'UOPS_PORT_6', 'UOPS_PORT_7', 'UOPS_PORT_23', 'UOPS_PORT_49', 'UOPS_PORT_78', 'UOPS_PORT_5B', 'UOPS_PORT_5B>=2',
-                        'UOPS_PORT_23A', 'DIV_CYCLES', 'ILD_STALL.LCP', 'INST_DECODED.DEC0', 'UOPS_MITE>=1'])
+                        'UOPS_PORT_23A', 'UOPS_DISPATCHED.INT_EU_ALL', 'UOPS_DISPATCHED.ALU', 'UOPS_DISPATCHED.LOAD', 'UOPS_DISPATCHED.SLOW',
+                        'UOPS_DISPATCHED.STD', 'UOPS_DISPATCHED.SHIFT', 'UOPS_DISPATCHED.JMP', 'UOPS_DISPATCHED.STA', 'UOPS_DISPATCHED.V0',
+                        'UOPS_DISPATCHED.V1', 'UOPS_DISPATCHED.V2', 'UOPS_DISPATCHED.V3', 'DIV_CYCLES', 'ILD_STALL.LCP', 'INST_DECODED.DEC0', 'UOPS_MITE>=1'])
 
    try:
       subprocess.check_output('mkdir -p /tmp/ramdisk; sudo mount -t tmpfs -o size=100M none /tmp/ramdisk/', shell=True)
@@ -3255,6 +3331,9 @@ def main():
    portCombinationsResultDict = {}
    portCombinationsResultDictSameReg = {}
    portCombinationsResultDictIndexedAddr = {}
+   uopTypeResultDict = {}
+   uopTypeResultDictSameReg = {}
+   uopTypeResultDictIndexedAddr = {}
 
    if not args.noPorts:
       for instr, tpResult in tpDict.items():
@@ -3374,7 +3453,11 @@ def main():
 
       sortedPortCombinationsNonAVX = sorted(blockingInstructionsDictNonAVX.keys(), key=lambda x:(len(x), sorted(x)))
       sortedPortCombinationsNonSSE = sorted(blockingInstructionsDictNonSSE.keys(), key=lambda x:(len(x), sorted(x)))
-      print('sortedPortCombinations: ' + str(sortedPortCombinationsNonAVX))
+      print('sortedPortCombinationsNonAVX: ' + str(sortedPortCombinationsNonAVX))
+      print('sortedPortCombinationsNonSSE: ' + str(sortedPortCombinationsNonSSE))
+
+      if arch in ['ARL-P']:
+         lfenceUopTypeDict = getUopTypes(instrNodeDict['LFENCE'], TPConfig(independentInstrs=[InstrInstance(None, '', [], [], {}, [])]), None, [])
 
       for i, instrNode in enumerate(sorted(tpDict.keys(), key=lambda x: (len(tpDict[x].config.preInstrNodes), x.attrib['string']))):
          #if not 'CVTPD2PI' in instrNode.attrib['string']: continue
@@ -3401,6 +3484,17 @@ def main():
                if not useIACA and tpResult.config.preInstrNodes:
                   rem_uops -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops for preInstrNode in tpResult.config.preInstrNodes)
 
+               if arch in ['ARL-P']:
+                  uopTypeDict = getUopTypes(instrNode, tpResult.config, lfenceUopTypeDict, htmlReports)
+                  print(f"{instrNode.attrib['string']}: {uopTypeDict}")
+                  if not useDistinctRegs:
+                     uopTypeResultDictSameReg[instrNode] = uopTypeDict
+                  elif useIndexedAddr:
+                     uopTypeResultDictIndexedAddr[instrNode] = uopTypeDict
+                  else:
+                     uopTypeResultDict[instrNode] = uopTypeDict
+                  rem_uops -= sum(uopTypeDict.values())
+
                used_ports = tpResult.all_used_ports
                if debugOutput: print(instrNode.attrib['string'] + ' - used ports: ' + str(used_ports) + ', dict: ' + str(tpResult.unblocked_ports))
 
@@ -3421,6 +3515,7 @@ def main():
                      if used_ports.issubset(combination):
                         uopsCombinationList = [(combination, 1)]
                         htmlReports.append('<hr>Port usage: 1*' + ('p' if isIntelCPU() else 'FP') + ''.join(str(p) for p in combination))
+                        rem_uops = 0
                         break
                elif (rem_uops > 0) and (arch not in ['ZEN+', 'ZEN2']):
                   for combination in sortedPortCombinations:
@@ -3445,7 +3540,7 @@ def main():
                      nPortsInComb = sum(len(str(x)) for x in combination)
                      blockInstrRep = max(2 * nPortsInComb * max(1,int(tpDict[instrNode].TP_single)), nPortsInComb * tpDict[instrNode].uops, 10)
                      blockInstrRep = min(blockInstrRep, 100)
-                     uopsOnBlockedPorts = getUopsOnBlockedPorts(instrNode, useDistinctRegs, blockingInstrs[combination], blockInstrRep, combination, tpResult.config, htmlReports)
+                     uopsOnBlockedPorts = getUopsOnBlockedPorts(instrNode, blockingInstrs[combination], blockInstrRep, combination, tpResult.config, htmlReports)
                      if uopsOnBlockedPorts is None:
                         #print('no uops on blocked ports: ' + str(combination))
                         continue
@@ -3474,6 +3569,9 @@ def main():
                      rem_uops -= uopsOnBlockedPorts
                      if rem_uops <= 0: break
 
+               if arch in ['ARL-P'] and rem_uops > 0:
+                  uopTypeDict['UNKNOWN'] = rem_uops
+
                # on ICL, some combinations (e.g. {4,9}) are treated as one port (49) above, as there is only a single counter for both ports
                # we split these combinations now, as, e.g., the call to getTP_LP requires them to be separate
                uopsCombinationList = [(frozenset(''.join(comb)), uops) for comb, uops in uopsCombinationList]
@@ -3499,18 +3597,18 @@ def main():
       else:
          resultNode = archNode.find('./measurement')
 
-      applicableResults = [(tpDict[instrNode], portCombinationsResultDict.get(instrNode, None), '')]
-      for otherTPDict, otherPCDict, suffix in [(tpDictSameReg, portCombinationsResultDictSameReg, '_same_reg'),
-                                               (tpDictIndexedAddr, portCombinationsResultDictIndexedAddr, '_indexed')]:
+      applicableResults = [(tpDict[instrNode], portCombinationsResultDict.get(instrNode), uopTypeResultDict.get(instrNode, {}), '')]
+      for otherTPDict, otherPCDict, otherUopTypeDict, suffix in [(tpDictSameReg, portCombinationsResultDictSameReg, uopTypeResultDictSameReg, '_same_reg'),
+                                               (tpDictIndexedAddr, portCombinationsResultDictIndexedAddr, uopTypeResultDictIndexedAddr, '_indexed')]:
          if instrNode in otherTPDict:
-            t1 = tpDict[instrNode]
+            t1, p1, u1, _ = applicableResults[0]
             t2 = otherTPDict[instrNode]
-            p1 = portCombinationsResultDict.get(instrNode, None)
-            p2 = otherPCDict.get(instrNode, None)
-            if (t1.uops != t2.uops or t1.fused_uops != t2.fused_uops or t1.uops_MITE != t2.uops_MITE or ((p2 is not None) and (p1 != p2))):
-               applicableResults.append((t2, p2, suffix))
+            p2 = otherPCDict.get(instrNode)
+            u2 = otherUopTypeDict.get(instrNode, {})
+            if (t1.uops != t2.uops or t1.fused_uops != t2.fused_uops or t1.uops_MITE != t2.uops_MITE or ((p2 is not None) and (p1 != p2)) or (u1 != u2)):
+               applicableResults.append((t2, p2, u2, suffix))
 
-      for tpResult, portUsageList, suffix in applicableResults:
+      for tpResult, portUsageList, uopTypeDict, suffix in applicableResults:
          uops = tpResult.uops
          uopsFused = tpResult.fused_uops
          uopsMITE = tpResult.uops_MITE
@@ -3553,15 +3651,49 @@ def main():
          divCycles = tpResult.divCycles
          if divCycles: resultNode.attrib['div_cycles'+suffix] = str(divCycles)
 
-         portPrefix = ('p' if isIntelCPU() else 'FP')
-         computePortStr = lambda lst: '+'.join(str(uops)+'*'+portPrefix+''.join(p for p in sorted(c)) for c, uops in sorted(lst, key=lambda x: sorted(x[0])))
-         if portUsageList:
-            resultNode.attrib['ports'+suffix] = computePortStr(portUsageList)
-            try:
-               resultNode.attrib['TP_ports'+suffix] = "%.2f" % getTP_LP(portUsageList)
-            except ValueError as err:
-               print('Could not solve LP for ' + instrNode.attrib['string'] + ':')
-               print(err)
+
+         def computePortStr(lst):
+            portPrefix = ''
+            if isIntelCPU() and not arch in ['ARL-P']:
+               portPrefix = 'p'
+            elif arch in ['ARL-P']:
+               portPrefix = 'V'
+            elif isAMDCPU():
+               portPrefix = 'FP'
+            elements = []
+            for c, uops in sorted(lst, key=lambda x: sorted(x[0])):
+               elements.append(f"{uops}*{portPrefix}{''.join(p for p in sorted(c))}")
+            return '+'.join(elements)
+
+         uopTypePortMapping = {
+            'ARL-P': {'ALU': {'I0', 'I1', 'I2', 'I3', 'I4', 'I5'},
+                      'JMP': {'I0', 'I1', 'I2'},
+                      'MUL': {'I3', 'I4', 'I5'},
+                      'SHIFT': {'I3', 'I4', 'I5'},
+                      'SLOW': {'I3'},
+                      'LD': {'M0', 'M1', 'M2'},
+                      'STA': {'M3', 'M4', 'M5'},
+                      'STD': {'D0', 'D1'},
+                      'INT_OTHER': {},
+                      'UNKNOWN': {},
+                     }
+         }
+         portUsageForLP = list(portUsageList or [])
+         uopTypeStrList = []
+         for t, n in sorted(uopTypeDict.items()):
+            if n > 0:
+               uopTypeStrList.append(f'{n}*{t}')
+               portUsageForLP.append((frozenset(uopTypePortMapping[arch][t]), n))
+
+         portStr = '+'.join(uopTypeStrList + ([computePortStr(portUsageList)] if portUsageList else []))
+         if portStr:
+            resultNode.attrib['ports'+suffix] = portStr
+            if (not uopTypeDict.get('INT_OTHER')) and (not uopTypeDict.get('UNKNOWN')):
+               try:
+                  resultNode.attrib['TP_ports'+suffix] = "%.2f" % getTP_LP(portUsageForLP)
+               except ValueError as err:
+                  print('Could not solve LP for ' + instrNode.attrib['string'] + ':')
+                  print(err)
 
    with open(args.output or 'result_'+arch+(('_IACA_' + iacaVersion) if useIACA else '_measured')+'.xml' , "w") as f:
       reparsed = XMLRoot

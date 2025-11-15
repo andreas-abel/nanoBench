@@ -7,8 +7,6 @@ import sys
 from collections import OrderedDict
 from shutil import copyfile
 
-from x64_lib import *
-
 PFC_START_ASM = '.quad 0xE0B513B1C2813F04'
 PFC_STOP_ASM = '.quad 0xF0B513B1C2813F04'
 
@@ -49,7 +47,7 @@ def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
       if ('same type of prefix used twice' in e.output.decode()) and ('REX64' in code):
          return assemble(code.replace('REX64 ', ''), objFile, asmFile)
       elif "register type mismatch for `lsl'" in e.output.decode():
-         code, n = re.subn(r'(LSL \S*, )(\S*?);', lambda m: f'{m.group(1)}{regToSize(m.group(2),16)};', code)
+         code, n = re.subn(r'(LSL \S*, )E?(\S*?)(D?);', lambda m: f'{m.group(1)}{m.group(2)}{m.group(3).replace("D", "W")};', code)
          if n > 0:
             return assemble(code, objFile, asmFile)
       print(f"Error (assemble): {str(e)}", file=sys.stderr)
