@@ -2912,10 +2912,6 @@ def filterInstructions(XMLRoot):
       if 'VIA_' in extension:
          instrSet.discard(XMLInstr)
 
-      # "no CPU available today has PTWRITE support" (https://software.intel.com/en-us/forums/intel-isa-extensions/topic/704356)
-      if extension in ['PTWRITE']:
-         instrSet.discard(XMLInstr)
-
       if useIACA:
          if extension in ['AVX512VEX', 'AVX512EVEX'] and arch != 'SKX': instrSet.discard(XMLInstr)
          # AMD
@@ -2934,6 +2930,7 @@ def filterInstructions(XMLRoot):
    _, ebx7, ecx7, edx7 = cpu(0x07)
    eax7_1, ebx7_1, ecx7_1, edx7_1 = cpu(0x07, 0x01)
    eaxD_1, _, _, _ = cpu(0x0D, 0x01)
+   _, ebx14, _, _ = cpu(0x14)
    _, ebx19, _, _ = cpu(0x19)
    eax1E_1, _, _, _ = cpu(0x1E, 0x01)
    _, _, ecx8_1, edx8_1 = cpu(0x80000001)
@@ -3054,6 +3051,7 @@ def filterInstructions(XMLRoot):
       if extension == 'XSAVEOPT' and not cpuid.get_bit(eaxD_1, 0): instrSet.discard(XMLInstr)
       if extension == 'XSAVEC' and not cpuid.get_bit(eaxD_1, 1): instrSet.discard(XMLInstr)
       if extension == 'XSAVES' and not cpuid.get_bit(eaxD_1, 3): instrSet.discard(XMLInstr)
+      if extension == ['PTWRITE'] and not cpuid.get_bit(ebx14, 4): instrSet.discard(XMLInstr)
       if isaSet.startswith('AMX_'):
          if '_FP8' in isaSet and not cpuid.get_bit(eax1E_1, 4): instrSet.discard(XMLInstr)
          if '_TRANSPOSE' in isaSet and not cpuid.get_bit(eax1E_1, 5): instrSet.discard(XMLInstr)
@@ -3486,7 +3484,6 @@ def main():
 
                if arch in ['ARL-P']:
                   uopTypeDict = getUopTypes(instrNode, tpResult.config, lfenceUopTypeDict, htmlReports)
-                  print(f"{instrNode.attrib['string']}: {uopTypeDict}")
                   if not useDistinctRegs:
                      uopTypeResultDictSameReg[instrNode] = uopTypeDict
                   elif useIndexedAddr:
