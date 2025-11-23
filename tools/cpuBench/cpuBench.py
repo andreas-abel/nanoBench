@@ -46,7 +46,7 @@ globalDoNotWriteRegs = {'R15', 'R15D', 'R15W', 'R15B', 'RSP', 'ESP' , 'SP', 'SPL
 memRegs = {'R14', 'R14D', 'R14W', 'R14B', 'R13', 'R13D', 'R13W', 'R13B', 'RDI', 'EDI', 'DI', 'DIL', 'RSI', 'ESI', 'SI', 'SIL',  'RBP', 'EBP', 'BP', 'BPL'}
 
 
-specialRegs = {'ES', 'CS', 'SS', 'DS', 'FS', 'GS', 'IP', 'EIP', 'FSBASEy', 'GDTR', 'GSBASEy', 'IDTR', 'IP', 'LDTR', 'MSRS', 'MXCSR', 'RFLAGS', 'RIP',
+specialRegs = {'ES', 'CS', 'SS', 'DS', 'FS', 'GS', 'IP', 'EIP', 'FSBASE', 'GDTR', 'GSBASE', 'IDTR', 'IP', 'LDTR', 'MSRS', 'MXCSR', 'RFLAGS', 'RIP',
    'TR', 'TSC', 'TSCAUX', 'X87CONTROL', 'X87POP', 'X87POP2', 'X87PUSH', 'X87STATUS', 'X87TAG', 'XCR0', 'XMM0dq', 'CR0', 'CR2', 'CR3', 'CR4', 'CR8', 'ERROR',
    'BND0', 'BND1', 'BND2', 'BND3'}
 
@@ -100,6 +100,8 @@ def getRegMemInit(instrNode, opRegDict, memOffset, useIndexedAddr):
    if iform == 'LGDT_MEMs64': init += ['SGDT [R14+' + str(memOffset) + ']']
    if iform == 'LIDT_MEMs64': init += ['SIDT [R14+' + str(memOffset) + ']']
    if iform == 'LLDT_MEMw': init += ['SLDT [R14+' + str(memOffset) + ']']
+   if iclass == 'WRFSBASE': init += [f'RDFSBASE {opRegDict[1]}']
+   if iclass == 'WRGSBASE': init += [f'RDGSBASE {opRegDict[1]}']
    if iform == 'XLAT': init += ['MOV RBX, R14', 'mov qword ptr [RBX], 0']
 
    if (isSSEInstr(instrNode) or isAVXInstr(instrNode)) and supportsAVX:
@@ -2086,6 +2088,8 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
       if instrNode.attrib.get('mask', '') == '1' and (startNode == targetNode): return None
       return getDivLatConfigLists(instrNode, startNode, targetNode, cRep)
 
+   iclass = instrNode.attrib['iclass']
+
    startNodeIdx = int(startNode.attrib['idx'])
    targetNodeIdx = int(targetNode.attrib['idx'])
 
@@ -2096,7 +2100,7 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
 
    configList = LatConfigList()
 
-   if instrNode.attrib['iclass'] == 'LEAVE':
+   if iclass == 'LEAVE':
       if startNode.text and targetNode.text and 'BP' in startNode.text and 'BP' in targetNode.text:
          chainInstrs = 'MOVSX RBP, BP; ' * cRep
          chainInstrs += 'AND RBP, R14; OR RBP, R14; '
@@ -2110,15 +2114,22 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
          configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=chainLatency))
       else:
          return None
-   elif instrNode.attrib['iclass'] == 'MOVDIR64B':
+   elif iclass == 'MOVDIR64B':
       if (startNodeIdx == 1) and (targetNodeIdx == 3):
          instrI = getInstrInstanceFromNode(instrNode, opRegDict={1: 'RSI'})
          chainInstrs = 'MOV RSI, [RSI]'
          configList.isUpperBound = True
-         configList.append(LatConfig(getInstrInstanceFromNode(instrNode), chainInstrs=chainInstrs, chainLatency=1, init='MOV [R14], RSI'))
+         configList.append(LatConfig(instrI, chainInstrs=chainInstrs, chainLatency=1, init=['MOV [R14], RSI']))
       else:
          return None
-   elif instrNode.attrib['iclass'] == 'XGETBV':
+   elif iclass in ['RDFSBASE', 'RDGSBASE', 'WRFSBASE', 'WRGSBASE']:
+      if 'SBASE' in (startNode.text if iclass.startswith('RD') else targetNode.text) and startNode.attrib['width'] == '64':
+         chainInstrs = f'{"WR" if iclass.startswith("RD") else "RD"}{iclass[2]}SBASE RAX'
+         configList.isUpperBound = True
+         configList.append(LatConfig(getInstrInstanceFromNode(instrNode, opRegDict={1: 'RAX'}), chainInstrs=chainInstrs, chainLatency=1))
+      else:
+         return None
+   elif iclass == 'XGETBV':
       if startNode.text == 'ECX':
          chainInstrs = 'MOVSX ECX, {}; '.format(regTo16(targetNode.text))
          chainInstrs += 'MOVSX ECX, CX; ' * cRep
@@ -2572,7 +2583,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
          latency = iaca_lat.split('\n')[3].split()[1]
          return latency
    else:
-      if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'MOVDIR64B', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR',
+      if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR',
                                         'RDPMC', 'CPUID', 'POPF', 'POPFQ']:
          return None
       if 'XSAVE' in instrNode.attrib['iclass']:
@@ -2908,6 +2919,10 @@ def filterInstructions(XMLRoot):
       if (isaSet == 'MPX') and ('R' in XMLInstr.attrib.get('agen', '')):
          instrSet.discard(XMLInstr)
 
+      # The 32-bit variants would require resetting FS/GS to the original value after the benchmark run, which is currently not supported
+      if XMLInstr.attrib['iclass'] in ['WRFSBASE', 'WRGSBASE'] and XMLInstr.attrib['eosz'] == '2':
+         instrSet.discard(XMLInstr)
+
       # Only supported by VIA
       if 'VIA_' in extension:
          instrSet.discard(XMLInstr)
@@ -2964,6 +2979,7 @@ def filterInstructions(XMLRoot):
       if extension == 'MMX' and not cpuid.get_bit(edx1, 23): instrSet.discard(XMLInstr)
       if extension == 'SSE' and not cpuid.get_bit(edx1, 25): instrSet.discard(XMLInstr)
       if extension == 'SSE2' and not cpuid.get_bit(edx1, 26): instrSet.discard(XMLInstr)
+      if extension == 'RDWRFSGS' and not cpuid.get_bit(ebx7, 0): instrSet.discard(XMLInstr)
       if extension == 'BMI1' and not cpuid.get_bit(ebx7, 3): instrSet.discard(XMLInstr)
       if extension in ['AVX2', 'AVX2GATHER'] and not cpuid.get_bit(ebx7, 5): instrSet.discard(XMLInstr)
       if extension == 'BMI2' and not cpuid.get_bit(ebx7, 8): instrSet.discard(XMLInstr)
@@ -3118,7 +3134,7 @@ def filterInstructions(XMLRoot):
       if XMLInstr.attrib['category'] in ['X87_ALU']: instrSet.discard(XMLInstr)
 
       # System instructions
-      if extension in ['HRESET', 'INVPCID', 'MONITOR', 'MONITORX', 'PCONFIG', 'RDWRFSGS', 'SMAP', 'SNP', 'UINTR']: instrSet.discard(XMLInstr)
+      if extension in ['HRESET', 'INVPCID', 'MONITOR', 'MONITORX', 'PCONFIG', 'SMAP', 'SNP', 'UINTR']: instrSet.discard(XMLInstr)
       if XMLInstr.attrib['category'] in ['INTERRUPT', 'SEGOP', 'SYSCALL', 'SYSRET']: instrSet.discard(XMLInstr)
       if XMLInstr.attrib['iclass'] in ['CALL_FAR', 'HLT', 'INVD', 'IRET', 'IRETD', 'IRETQ', 'JMP_FAR', 'LTR', 'RET_FAR', 'UD2']: instrSet.discard(XMLInstr)
       if 'XRSTOR' in XMLInstr.attrib['iclass']: instrSet.discard(XMLInstr)
