@@ -40,7 +40,7 @@ def assemble(code, objFile, asmFile='/tmp/ramdisk/asm.s'):
          code = re.sub(r'(\d*)\*\|(.*?)\|', lambda m: int(m.group(1))*(m.group(2)+';'), code)
       code = '.intel_syntax noprefix;' + code + ';1:;.att_syntax prefix\n'
       with open(asmFile, 'w') as f:
-         f.write(code);
+         f.write(code)
       subprocess.check_output(['as', asmFile, '-o', objFile], stderr=subprocess.STDOUT)
    except subprocess.CalledProcessError as e:
       # Workaround for https://sourceware.org/bugzilla/show_bug.cgi?id=32813
