@@ -319,7 +319,11 @@ uint64_t read_msr(unsigned int msr) {
 
 void write_msr(unsigned int msr, uint64_t value) {
     #ifdef __KERNEL__
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(6,16,0)
+        native_write_msr(msr, value);
+    #elif
         native_write_msr(msr, (uint32_t)value, (uint32_t)(value>>32));
+    #endif
     #else
         char cmd[50];
         snprintf(cmd, sizeof(cmd), "wrmsr -p%d %#x %#lx", cpu, msr, value);

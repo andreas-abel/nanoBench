@@ -15,6 +15,7 @@
 #ifdef __KERNEL__
     #include <linux/module.h>
     #include <linux/sort.h>
+    #include <linux/version.h>
 #else
     #include <inttypes.h>
     #include <stddef.h>
