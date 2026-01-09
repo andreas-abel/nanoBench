@@ -728,16 +728,13 @@ def getIndependentInstructions(instrNode, useDistinctRegs, useIndexedAddr, doNot
    if hasMemOperand:
       doNotWriteRegs |= memRegs
 
-   for opNode in instrNode.iter('operand'):
-      if opNode.attrib['type'] == 'reg':
-         regs = sortRegs(opNode.text.split(","))
-         if len(regs) == 1:
-            doNotReadRegs.add(regs[0])
-            doNotWriteRegs.add(regs[0])
-         if len(regs) >= 8 and 'RAX' in map(regTo64, regs):
-            #avoid RAX register if possible as some instructions have a special encoding for this
-            doNotReadRegs.add('RAX')
-            doNotWriteRegs.add('RAX')
+   for opNode in instrNode.iterfind('./operand[@type="reg"]'):
+      regs = sortRegs(opNode.text.split(","))
+      if (len(regs) >= 8) and ('RAX' in map(regTo64, regs)) and (
+            not any(regTo64(opNode2.text) == 'RAX' for opNode2 in instrNode.iterfind('./operand[@type="reg"]'))):
+         # avoid RAX register if possible as some instructions have a special encoding for this
+         doNotReadRegs.add('RAX')
+         doNotWriteRegs.add('RAX')
 
    independentInstructions = []
    offset = initialOffset
@@ -2077,7 +2074,7 @@ class LatConfigList:
 
 LatResult = namedtuple('LatResult', ['minLat','maxLat','lat_sameReg','isUpperBound'])
 
-def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem, tpDict):
+def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, alsoTestSameRegForSrcDst, addrMem, tpDict):
    cRep = min(100, 2 + 2 * int(math.ceil(tpDict[instrNode].TP_single / 2))) # must be a multiple of 2
 
    if isDivOrSqrtInstr(instrNode):
@@ -2187,6 +2184,9 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, addrMem
                   otherRegs = [x for x in regs2 if getCanonicalReg(x) != getCanonicalReg(reg1)]
                   if otherRegs:
                      reg2 = sortRegs(otherRegs)[0]
+                  if (alsoTestSameRegForSrcDst and (reg1 in regs2)
+                        and ('GATHER' not in instrNode.attrib['category']) and ('SCATTER' not in instrNode.attrib['category'])):
+                     configList.append(LatConfig(getInstrInstanceFromNode(instrNode, useDistinctRegs=True, opRegDict={startNodeIdx:reg1, targetNodeIdx:reg1})))
 
          instrI = getInstrInstanceFromNode(instrNode, useDistinctRegs=useDistinctRegs, opRegDict={startNodeIdx:reg1, targetNodeIdx:reg2})
 
@@ -2655,7 +2655,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
 
                configI = 0
                for useDistinctRegs in ([True, False] if instrNode in tpDictSameReg else [True]):
-                  latConfigLists = getLatConfigLists(instrNode, opNode1, opNode2, useDistinctRegs, addrMem, tpDict)
+                  latConfigLists = getLatConfigLists(instrNode, opNode1, opNode2, useDistinctRegs, (instrNode not in tpDictSameReg), addrMem, tpDict)
                   if latConfigLists is None: continue
 
                   minLat = sys.maxsize
@@ -2764,9 +2764,6 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                               pass
                            else:
                               latConfig.chainInstrs += 'VPCMPD {0}, {1}, {1}, 7;'.format(maskReg, 'XMM15')
-
-                     mlDP = sys.maxsize
-                     mlnoDP = sys.maxsize
 
                      for latConfig in latConfigList.latConfigs:
                         configI += 1
@@ -3067,7 +3064,7 @@ def filterInstructions(XMLRoot):
       if extension == 'XSAVEOPT' and not cpuid.get_bit(eaxD_1, 0): instrSet.discard(XMLInstr)
       if extension == 'XSAVEC' and not cpuid.get_bit(eaxD_1, 1): instrSet.discard(XMLInstr)
       if extension == 'XSAVES' and not cpuid.get_bit(eaxD_1, 3): instrSet.discard(XMLInstr)
-      if extension == ['PTWRITE'] and not cpuid.get_bit(ebx14, 4): instrSet.discard(XMLInstr)
+      if extension == 'PTWRITE' and not cpuid.get_bit(ebx14, 4): instrSet.discard(XMLInstr)
       if isaSet.startswith('AMX_'):
          if '_FP8' in isaSet and not cpuid.get_bit(eax1E_1, 4): instrSet.discard(XMLInstr)
          if '_TRANSPOSE' in isaSet and not cpuid.get_bit(eax1E_1, 5): instrSet.discard(XMLInstr)
