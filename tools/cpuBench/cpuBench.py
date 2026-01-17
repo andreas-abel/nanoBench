@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from typing import List
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 from xml.dom import minidom
@@ -2053,7 +2054,7 @@ def getChainInstrForVectorRegs(instrNode, startReg, targetReg, cRep, cType):
 
 class LatConfig:
    def __init__(self, instrI, chainInstrs='', chainLatency=0, init=None, basicMode=False, notes=None):
-      self.instrI = instrI
+      self.instrI: InstrInstance = instrI
       self.chainInstrs = chainInstrs
       self.chainLatency = chainLatency
       self.init = ([] if init is None else init)
@@ -2061,8 +2062,8 @@ class LatConfig:
       self.notes = ([] if notes is None else notes)
 
 class LatConfigList:
-   def __init__(self, latConfigs=None, sameReg = False, isUpperBound=False, notes=None):
-      self.latConfigs = ([] if latConfigs is None else latConfigs)
+   def __init__(self, latConfigs=None, isUpperBound=False, notes=None):
+      self.latConfigs: List[LatConfig] = ([] if latConfigs is None else latConfigs)
       self.isUpperBound = isUpperBound
       self.notes = ([] if notes is None else notes)
 
@@ -2074,7 +2075,7 @@ class LatConfigList:
 
 LatResult = namedtuple('LatResult', ['minLat','maxLat','lat_sameReg','isUpperBound'])
 
-def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, alsoTestSameRegForSrcDst, addrMem, tpDict):
+def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, alsoTestSameRegForSrcDst, addrMem, tpDict) -> List[LatConfigList] | None:
    cRep = min(100, 2 + 2 * int(math.ceil(tpDict[instrNode].TP_single / 2))) # must be a multiple of 2
 
    if isDivOrSqrtInstr(instrNode):
@@ -2184,8 +2185,8 @@ def getLatConfigLists(instrNode, startNode, targetNode, useDistinctRegs, alsoTes
                   otherRegs = [x for x in regs2 if getCanonicalReg(x) != getCanonicalReg(reg1)]
                   if otherRegs:
                      reg2 = sortRegs(otherRegs)[0]
-                  if (alsoTestSameRegForSrcDst and (reg1 in regs2)
-                        and ('GATHER' not in instrNode.attrib['category']) and ('SCATTER' not in instrNode.attrib['category'])):
+                  if (alsoTestSameRegForSrcDst and (reg1 in regs2) and ('GATHER' not in instrNode.attrib['category'])
+                        and ('SCATTER' not in instrNode.attrib['category']) and not instrNode.attrib['isa-set'].startswith('AVX512_FP16')):
                      configList.append(LatConfig(getInstrInstanceFromNode(instrNode, useDistinctRegs=True, opRegDict={startNodeIdx:reg1, targetNodeIdx:reg1})))
 
          instrI = getInstrInstanceFromNode(instrNode, useDistinctRegs=useDistinctRegs, opRegDict={startNodeIdx:reg1, targetNodeIdx:reg2})
@@ -2710,6 +2711,24 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
                               newlatConfig.instrI.regMemInit.extend(regInit)
                               newlatConfig.notes.append('source registers initialized by an instruction of the same kind')
                               latConfigList.latConfigs.append(newlatConfig)
+
+                     # For instructions that read a 32-bit or 64-bit GPR, we create a copy of each experiment where the corresponding registers are initialized
+                     # with clean upper 32 bits. See also https://github.com/andreas-abel/nanoBench/issues/33
+                     for latConfig in list(latConfigList.latConfigs):
+                        inputOpnds_32_64 = []
+                        for opNode in inputOpnds:
+                           if (opNode == opNode1) or (opNode == opNode2) or (opNode in outputOpnds):
+                              continue
+                           reg = latConfig.instrI.opRegDict.get(int(opNode.attrib['idx']))
+                           if reg and (reg in GPRegs) and (getRegSize(reg) in [32,64]) and (reg not in globalDoNotWriteRegs) and (
+                                 not any((sr in init) for sr in getSubRegs(regTo64(reg)) for init in latConfig.init+latConfig.instrI.regMemInit)):
+                              inputOpnds_32_64.append(reg)
+                        if inputOpnds_32_64:
+                           newlatConfig = copy.deepcopy(latConfig)
+                           for reg in inputOpnds_32_64:
+                              newlatConfig.init += ['MOV {0}, {0};'.format(regTo32(reg))]
+                           newlatConfig.notes.append('with clean upper 32 bits')
+                           latConfigList.latConfigs.append(newlatConfig)
 
                      # Create a copy of each experiment with dependency-breaking instructions for all dependencies other than the dependency from opNode2 to
                      # opNode1 if there aren't sufficiently many fill instructions in the chain

@@ -91,6 +91,17 @@ def regToSize(reg, size):
    elif size == 32: return regTo32(reg)
    else: return regTo64(reg)
 
+def getSubRegs(reg):
+   if reg in GPRegs:
+      size = getRegSize(reg)
+      return {regToSize(reg, s) for s in set([min(8, size), min(16, size), min(32, size), min(64, size)])}
+   elif 'ZMM' in reg:
+      return {reg, re.sub('^Z', 'Y', reg), re.sub('^Z', 'X', reg)}
+   elif 'YMM' in reg:
+      return {reg, re.sub('^Y', 'X', reg)}
+   else:
+      return {reg}
+
 # Returns for a GPR the corresponding 64-bit registers, and for a (X|Y|Z)MM register the corresponding XMM register
 def getCanonicalReg(reg):
    if reg in GPRegs:
