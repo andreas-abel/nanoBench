@@ -1590,10 +1590,22 @@ def getDependencyBreakingInstrsForSuppressedOperands(instrNode):
       depBreakingInstrs += ['MOV qword ptr [' + opNode.attrib['base'] + '], 0']
    if not xorInDepBreakingInstrs:
       for opNode in instrNode.findall('./operand[@type="flags"][@w="1"]'):
-         # on some CPUs, instructions that write flags conditionally also read the flags
-         if not (opNode.attrib.get('r', '') == '1' or opNode.attrib.get('conditionalWrite', '') == '1'): continue
          if not any(('flag_'+f in opNode.attrib) for f in STATUSFLAGS_noAF): continue
-         depBreakingInstrs += ['TEST R15, R15']
+         mayReadFlags = (opNode.attrib.get('r', '') == '1')
+         if opNode.attrib.get('conditionalWrite', '') == '1':
+            # on some CPUs, instructions that write flags conditionally also read the flags
+            mayReadFlags = True
+         if any(('flag_'+f not in opNode.attrib) for f in STATUSFLAGS_noAF):
+            # on some CPUs, there is a false dependency if not all flags are written
+            # https://github.com/andreas-abel/nanoBench/issues/34
+            mayReadFlags = True
+         if mayReadFlags:
+            depBreakingInstrs += ['TEST R15, R15']
+            break
+      else:
+         if (instrNode.attrib['iclass'] in ['RCL', 'RCR', 'ROL', 'ROR']) and (instrNode.attrib.get('immzero') == '1'):
+            # on some CPUs, these instructions have a false flag dependency
+            depBreakingInstrs += ['TEST R15, R15']
 
    return ';'.join(depBreakingInstrs)
 
