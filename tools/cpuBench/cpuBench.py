@@ -1239,13 +1239,15 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
 
             init = list(chain.from_iterable(i.regMemInit for i in instrIList[0:ic])) + config.init
 
-            for useDepBreakingInstrs in ([False, True] if config.depBreakingInstrs else [False]):
+            for useDepBreakingInstrs in ([False, 'once'] + (['always'] if ic > 1 else []) if config.depBreakingInstrs else [False]):
                if ic > 1 and minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
 
                depBreakingInstrs = ''
                if useDepBreakingInstrs:
                   depBreakingInstrs = config.depBreakingInstrs
-                  htmlReports.append('<h4>With additional dependency-breaking instructions</h4>\n')
+                  htmlReports.append('<h4>With additional dependency-breaking instructions'
+                                     f'{" (before each instruction)" if useDepBreakingInstrs=="always" else ""}'
+                                     '</h4>\n')
 
                for repType in ['unrollOnly', 'loopSmall', 'loopBig']:
                   if ic > 1 and minTP_noLoop < sys.maxsize and minTP_loop < sys.maxsize and minTP_noLoop > 100 and minTP_loop > 100: break
@@ -1261,9 +1263,11 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                   for paddingType in paddingTypes:
                      # an lfence is added for measuring DIV_CYCLES accurately
                      for addLfence in ([False, True] if isDivOrSqrtInstr(instrNode) and (ic == 1) and (repType == 'unrollOnly') else [False]):
-                        instrStr = ''
+                        instrStr = f'{depBreakingInstrs};' if useDepBreakingInstrs == 'once' else ''
                         for i, instr in enumerate(instrIList[0:ic]):
-                           instrStr += depBreakingInstrs + ';' + config.preInstrCode + ';'
+                           if useDepBreakingInstrs == 'always':
+                              instrStr += f'{depBreakingInstrs};'
+                           instrStr += f'{config.preInstrCode};'
                            if paddingType == 'redundant prefixes':
                               nPrefixes = max(1, 8 - instrLen) if (not useDepBreakingInstrs and not config.preInstrCode) else (14 - instrLen)
                               instrStr += '.byte ' + ','.join(['0x40'] * nPrefixes) + ';' # 'empty' REX prefixes
@@ -1479,7 +1483,7 @@ def getBasicLatencies(instrNodeList):
          basicLatency[instr] = int(result['Core cycles'] + .2)
 
    if any(x.findall('[@extension="AVX512EVEX"]') for x in instrNodeList):
-      kmovq_result = runExperiment(instrNodeDict['KMOVQ_VEX (K, K)'], 'KMOVQ K1, K1')
+      kmovq_result = runExperiment(instrNodeDict['KMOVQ (K, K)'], 'KMOVQ K1, K1')
       basicLatency['KMOVQ'] = int(kmovq_result['Core cycles'] + .2)
 
       vpandd_result = runExperiment(instrNodeDict['VPANDD (ZMM, ZMM, ZMM)'], 'VPANDD ZMM0, ZMM0, ZMM0')
