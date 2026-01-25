@@ -1270,6 +1270,9 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                         paddingTypes.append('redundant prefixes')
 
                   for paddingType in paddingTypes:
+                     if (paddingType != '') and (minTP_noLoop < sys.maxsize) and (minTP_noLoop > 100):
+                        continue
+
                      # an lfence is added for measuring DIV_CYCLES accurately
                      for addLfence in ([False, True] if isDivOrSqrtInstr(instrNode) and (ic == 1) and (repType == 'unrollOnly') else [False]):
                         instrStr = f'{depBreakingInstrs};' if useDepBreakingInstrs == 'once' else ''
@@ -1287,25 +1290,34 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                         if addLfence:
                            instrStr += 'lfence;'
 
+                        warmUpCount = 10
                         if repType == 'unrollOnly':
                            unrollCount = int(round(500/ic+49, -2)) # should still fit in the icache
                            if instrNode.attrib['iclass'] in ['RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
                               unrollCount = 10
+                              warmUpCount = 1
                            loopCount = 0
                         else:
                            # we test with a small loop body so that uops may be delivered from the loop stream detector (LSD)
                            # we also test with a larger loop body to minimize potential overhead from the loop itself
-                           if instrNode.attrib['iclass'] in ['RDRAND', 'RDSEED', 'WBINVD'] or instrNode.attrib['category'] in ['IO', 'IOSTRINGOP']:
-                              continue
                            unrollCount = max(1, int(round(10.0/ic)))
                            if repType == 'loopSmall':
                               loopCount = 1000
+                              if minTP < sys.maxsize and minTP > 10000:
+                                 unrollCount = 1
+                                 loopCount = 2
+                                 warmUpCount = 1
+                              elif minTP < sys.maxsize and minTP > 100:
+                                 unrollCount = 1
+                                 loopCount = 10
+                                 warmUpCount = 1
+                           elif minTP > 100:
+                              # skip large test if TP value is very high
+                              continue
                            else:
                               loopCount = 100
                               unrollCount *= 10
-                           if minTP < sys.maxsize and minTP > 100:
-                              unrollCount = 1
-                              loopCount = 10
+
 
                         htmlReports.append('<h4>')
                         if loopCount > 0:
@@ -1317,8 +1329,8 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                         htmlReports.append('</h4>\n')
 
                         htmlReports.append('<ul>\n')
-                        result = runExperiment(instrNode, instrStr, init=init, unrollCount=unrollCount, loopCount=loopCount, basicMode=(loopCount>0),
-                                               htmlReports=htmlReports)
+                        result = runExperiment(instrNode, instrStr, init=init, unrollCount=unrollCount, loopCount=loopCount, warmUpCount=warmUpCount,
+                                               basicMode=(loopCount>0), htmlReports=htmlReports)
                         htmlReports.append('</ul>\n')
 
                         cycles = fancyRound(result['Core cycles']/ic)
@@ -1368,7 +1380,7 @@ def getThroughputAndUops(instrNode, useDistinctRegs, useIndexedAddr, htmlReports
                                  # ToDo: preInstrs
                                  complexDec = True
 
-                              if complexDec and ('UOPS_MITE>=1' in result):
+                              if complexDec and ('UOPS_MITE>=1' in result) and result['UOPS_MITE>=1'] < 100:
                                  for nNops in count(1):
                                     nopStr = str(nNops) + ' NOP' + ('s' if nNops > 1 else '')
                                     htmlReports.append('<h4>With unroll_count=' + str(unrollCount) +', no inner loop, and ' + nopStr + '</h4>\n')
@@ -3439,8 +3451,8 @@ def main():
          if arch in ['ZEN3', 'ZEN4', 'ZEN5']:
             # we need one instruction with 1*FP45;
             # their throughput is limited to 1 per cycle; thus, they are disallowed by the TP_noDepBreaking_noLoop check above
-            disallowedBlockingInstrs.remove(instrNodeDict['MOVD (R32, XMM)'])
-            disallowedBlockingInstrs.remove(instrNodeDict['VMOVD (R32, XMM)'])
+            disallowedBlockingInstrs.discard(instrNodeDict['MOVD (R32, XMM)'])
+            disallowedBlockingInstrs.discard(instrNodeDict['VMOVD (R32, XMM)'])
 
       print('disallowedBlockingInstrs')
       for instrNode in disallowedBlockingInstrs:
@@ -3686,11 +3698,11 @@ def main():
                if uopsMS is not None:
                   uopsMS -= sum(tpDict[instrNodeDict[preInstrNode.attrib['string']]].uops_MS for preInstrNode in tpResult.config.preInstrNodes)
             if uopsFused is not None:
-               resultNode.attrib['uops_retire_slots'+suffix] = str(uopsFused)
+               resultNode.attrib['uops_retire_slots'+suffix] = str(max(0, uopsFused))
             if uopsMITE is not None:
-               resultNode.attrib['uops_MITE'+suffix] = str(uopsMITE)
+               resultNode.attrib['uops_MITE'+suffix] = str(max(0, uopsMITE))
             if uopsMS is not None:
-               resultNode.attrib['uops_MS'+suffix] = str(uopsMS)
+               resultNode.attrib['uops_MS'+suffix] = str(max(0, uopsMS))
             if tpResult.complexDec:
                resultNode.attrib['complex_decoder'+suffix] = '1'
                if tpResult.nAvailableSimpleDecoders is not None:
@@ -3698,7 +3710,7 @@ def main():
             resultNode.attrib['TP_unrolled'+suffix] = "%.2f" % tpResult.TP_noLoop
             resultNode.attrib['TP_loop'+suffix] = "%.2f" % tpResult.TP_loop
 
-         resultNode.attrib['uops'+suffix] = str(uops)
+         resultNode.attrib['uops'+suffix] = str(max(0, uops))
 
          if instrNode in macroFusionDict:
             resultNode.attrib['macro_fusible'] = ';'.join(sorted(m.attrib['string'] for m in macroFusionDict[instrNode]))
