@@ -253,7 +253,7 @@ def runExperiment(instrNode, instrCode, init=None, unrollCount=500, loopCount=0,
 
 def writeFile(fileName, content):
    with open(fileName, "w") as f:
-      f.write(content+"\n");
+      f.write(content+"\n")
 
 
 def getMachineCode(objFile):
@@ -446,13 +446,13 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
       opI = int(operandNode.attrib['idx'])
 
       if operandNode.attrib.get('suppressed', '0') == '1':
-         continue;
+         continue
 
       if not first and not operandNode.attrib.get('opmask', '') == '1':
          asm += ", "
       else:
          asm += " "
-         first=False;
+         first=False
 
       if operandNode.attrib['type'] == "reg":
          if opI in opRegDict:
@@ -475,7 +475,7 @@ def getInstrInstanceFromNode(instrNode, doNotWriteRegs=None, doNotReadRegs=None,
                      ignoreRegs |= set(doNotReadRegs)|writtenRegs|readRegs|set(opRegDict.values())
                   regsList = [x for x in regsList if not any(getCanonicalReg(x) == getCanonicalReg(y) for y in ignoreRegs)]
                if not regsList:
-                  return None;
+                  return None
                reg = sortRegs(regsList)[0]
 
             opRegDict[opI] = reg
@@ -850,11 +850,20 @@ def getTPConfigs(instrNode, useDistinctRegs=True, useIndexedAddr=False, computeI
       for eax in (0x0, 0x80000000):
          maxEax = cpu(eax)[0]
          while eax <= maxEax + 1:
-            preInstrCode = 'mov EAX, {}; mov ECX, 0'.format(hex(eax))
+            preInstrCode = f'mov EAX, {hex(eax)}; mov ECX, 0'
             preInstrNodes = [instrNodeDict['MOV (R32, I32)'], instrNodeDict['MOV (R32, I32)']]
-            note = 'With EAX={}, and ECX=0'.format(hex(eax))
+            note = f'With EAX={hex(eax)}, and ECX=0'
             configs.append(TPConfig(independentInstrs=independentInstrs, preInstrCode=preInstrCode, preInstrNodes=preInstrNodes, note=note))
             eax += 1
+      return configs
+
+   if iclass == 'RDPRU':
+      configs = []
+      for ecx in range(0, (cpuid.CPUID()(0x80000008)[3] >> 16) + 2):
+         preInstrCode = f'mov ECX, {ecx}'
+         preInstrNodes = [instrNodeDict['MOV (R32, I32)']]
+         note = f'With ECX={ecx}'
+         configs.append(TPConfig(independentInstrs=independentInstrs, preInstrCode=preInstrCode, preInstrNodes=preInstrNodes, note=note))
       return configs
 
    if iclass in ['JB', 'JBE', 'JLE', 'JNB', 'JNBE', 'JNLE', 'JNO', 'JNP', 'JNS', 'JNZ', 'JO', 'JP', 'JS', 'JZ']:
@@ -2601,7 +2610,7 @@ def getLatencies(instrNode, instrNodeList, tpDict, tpDictSameReg, htmlReports):
          return latency
    else:
       if instrNode.attrib['iclass'] in ['CALL_NEAR', 'CALL_NEAR_MEMv', 'CLZERO', 'JMP', 'JMP_MEMv', 'RET_NEAR', 'RET_NEAR_IMMw', 'RDMSR', 'WRMSR',
-                                        'RDPMC', 'CPUID', 'POPF', 'POPFQ']:
+                                        'RDPMC', 'CPUID', 'POPF', 'POPFQ', 'RDPRU']:
          return None
       if 'XSAVE' in instrNode.attrib['iclass']:
          return None
@@ -2940,7 +2949,7 @@ def filterInstructions(XMLRoot):
       isaSet = XMLInstr.attrib['isa-set']
 
       # Future instruction set extensions
-      if extension in ['AMD_INVLPGB', 'CET', 'RDPRU', 'TDX', 'TSX_LDTRK']: instrSet.discard(XMLInstr)
+      if extension in ['AMD_INVLPGB', 'CET', 'TDX', 'TSX_LDTRK']: instrSet.discard(XMLInstr)
 
       # Not supported by assembler
       if XMLInstr.attrib['iclass'] == 'NOP' and len(XMLInstr.findall('operand')) > 1:
@@ -3115,6 +3124,7 @@ def filterInstructions(XMLRoot):
       if extension == 'RDTSCP' and not cpuid.get_bit(edx8_1, 27): instrSet.discard(XMLInstr)
       if extension == '3DNOW' and not cpuid.get_bit(edx8_1, 31): instrSet.discard(XMLInstr)
       if extension == 'CLZERO' and not cpuid.get_bit(ebx8_8, 0): instrSet.discard(XMLInstr)
+      if extension == 'RDPRU' and not cpuid.get_bit(ebx8_8, 4): instrSet.discard(XMLInstr)
       #if extension == 'MCOMMIT' and not cpuid.get_bit(ebx8_8, 8): instrSet.discard(XMLInstr)
 
       # AVX10
